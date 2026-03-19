@@ -1,0 +1,398 @@
+import 'package:dating_app/models/api_models.dart';
+import 'package:dating_app/models/user_model.dart';
+import 'package:dating_app/models/user_preferences_model.dart';
+import 'package:dating_app/network/api_client.dart';
+import 'package:dating_app/network/api_endpoints.dart';
+import 'package:logger/logger.dart';
+
+/// User Service
+/// Handles user profile, preferences, and related operations
+class UserService {
+  final ApiClient _apiClient = ApiClient();
+  final Logger _logger = Logger();
+
+  // Singleton
+  static final UserService _instance = UserService._internal();
+
+  factory UserService() {
+    return _instance;
+  }
+
+  UserService._internal();
+
+  // Get user profile
+  Future<ApiResponse<UserModel>> getUserProfile(String userId) async {
+    try {
+      _logger.i('Fetching user profile: $userId');
+
+      final endpoint = ApiEndpoints.getEndpoint(
+        ApiEndpoints.getUserProfile,
+        {'id': userId},
+      );
+
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        endpoint,
+        fromJsonT: (json) => json,
+      );
+
+      if (response.success && response.data != null) {
+        final user = UserModel.fromJson(response.data!);
+        return ApiResponse.success(
+          message: 'Profile fetched successfully',
+          data: user,
+        );
+      } else {
+        return ApiResponse.error(
+          message: response.message,
+          error: response.error ?? 'Failed to fetch profile',
+        );
+      }
+    } catch (e) {
+      _logger.e('Get user profile error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to fetch profile',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // Update user profile
+  Future<ApiResponse<UserModel>> updateUserProfile(
+    String userId,
+    UserModel user,
+  ) async {
+    try {
+      _logger.i('Updating user profile: $userId');
+
+      final endpoint = ApiEndpoints.getEndpoint(
+        ApiEndpoints.updateUserProfile,
+        {'id': userId},
+      );
+
+      final response = await _apiClient.put<Map<String, dynamic>>(
+        endpoint,
+        data: user.toJson(),
+        fromJsonT: (json) => json,
+      );
+
+      if (response.success && response.data != null) {
+        final updatedUser = UserModel.fromJson(response.data!);
+        return ApiResponse.success(
+          message: 'Profile updated successfully',
+          data: updatedUser,
+        );
+      } else {
+        return ApiResponse.error(
+          message: response.message,
+          error: response.error ?? 'Failed to update profile',
+        );
+      }
+    } catch (e) {
+      _logger.e('Update user profile error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to update profile',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // Upload profile photo
+  Future<ApiResponse<List<String>>> uploadProfilePhoto(
+    String userId,
+    String filePath,
+  ) async {
+    try {
+      _logger.i('Uploading profile photo for user: $userId');
+
+      final endpoint = ApiEndpoints.getEndpoint(
+        ApiEndpoints.uploadProfilePhoto,
+        {'id': userId},
+      );
+
+      final response = await _apiClient.uploadFile<Map<String, dynamic>>(
+        endpoint,
+        filePath: filePath,
+        fromJsonT: (json) => json,
+      );
+
+      if (response.success && response.data != null) {
+        final photoUrls = List<String>.from(response.data!['photoUrls'] ?? []);
+        return ApiResponse.success(
+          message: 'Photo uploaded successfully',
+          data: photoUrls,
+        );
+      } else {
+        return ApiResponse.error(
+          message: response.message,
+          error: response.error ?? 'Failed to upload photo',
+        );
+      }
+    } catch (e) {
+      _logger.e('Upload profile photo error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to upload photo',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // Upload multiple profile photos
+  Future<ApiResponse<List<String>>> uploadMultipleProfilePhotos(
+    String userId,
+    List<String> filePaths,
+  ) async {
+    try {
+      _logger.i('Uploading ${filePaths.length} profile photos for user: $userId');
+
+      final endpoint = ApiEndpoints.getEndpoint(
+        ApiEndpoints.uploadProfilePhoto,
+        {'id': userId},
+      );
+
+      final response = await _apiClient.uploadMultipleFiles<Map<String, dynamic>>(
+        endpoint,
+        filePaths: filePaths,
+        fromJsonT: (json) => json,
+      );
+
+      if (response.success && response.data != null) {
+        final photoUrls = List<String>.from(response.data!['photoUrls'] ?? []);
+        return ApiResponse.success(
+          message: 'Photos uploaded successfully',
+          data: photoUrls,
+        );
+      } else {
+        return ApiResponse.error(
+          message: response.message,
+          error: response.error ?? 'Failed to upload photos',
+        );
+      }
+    } catch (e) {
+      _logger.e('Upload multiple profile photos error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to upload photos',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // Delete profile photo
+  Future<ApiResponse<void>> deleteProfilePhoto(
+    String userId,
+    String photoId,
+  ) async {
+    try {
+      _logger.i('Deleting profile photo: $photoId');
+
+      final endpoint = ApiEndpoints.getEndpoint(
+        ApiEndpoints.deleteProfilePhoto,
+        {'id': userId, 'photoId': photoId},
+      );
+
+      final response = await _apiClient.delete<void>(
+        endpoint,
+        fromJsonT: (_) {},
+      );
+
+      return response;
+    } catch (e) {
+      _logger.e('Delete profile photo error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to delete photo',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // Get user preferences
+  Future<ApiResponse<UserPreferencesModel>> getUserPreferences(String userId) async {
+    try {
+      _logger.i('Fetching user preferences: $userId');
+
+      final endpoint = ApiEndpoints.getEndpoint(
+        ApiEndpoints.getUserPreferences,
+        {'id': userId},
+      );
+
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        endpoint,
+        fromJsonT: (json) => json,
+      );
+
+      if (response.success && response.data != null) {
+        final preferences = UserPreferencesModel.fromJson(response.data!);
+        return ApiResponse.success(
+          message: 'Preferences fetched successfully',
+          data: preferences,
+        );
+      } else {
+        return ApiResponse.error(
+          message: response.message,
+          error: response.error ?? 'Failed to fetch preferences',
+        );
+      }
+    } catch (e) {
+      _logger.e('Get user preferences error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to fetch preferences',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // Update user preferences
+  Future<ApiResponse<UserPreferencesModel>> updateUserPreferences(
+    String userId,
+    UserPreferencesModel preferences,
+  ) async {
+    try {
+      _logger.i('Updating user preferences: $userId');
+
+      final endpoint = ApiEndpoints.getEndpoint(
+        ApiEndpoints.updateUserPreferences,
+        {'id': userId},
+      );
+
+      final response = await _apiClient.put<Map<String, dynamic>>(
+        endpoint,
+        data: preferences.toJson(),
+        fromJsonT: (json) => json,
+      );
+
+      if (response.success && response.data != null) {
+        final updatedPreferences = UserPreferencesModel.fromJson(response.data!);
+        return ApiResponse.success(
+          message: 'Preferences updated successfully',
+          data: updatedPreferences,
+        );
+      } else {
+        return ApiResponse.error(
+          message: response.message,
+          error: response.error ?? 'Failed to update preferences',
+        );
+      }
+    } catch (e) {
+      _logger.e('Update user preferences error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to update preferences',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // Block user
+  Future<ApiResponse<void>> blockUser(String userId, String blockUserId) async {
+    try {
+      _logger.i('Blocking user: $blockUserId');
+
+      final endpoint = ApiEndpoints.getEndpoint(
+        ApiEndpoints.blockUser,
+        {'id': userId},
+      );
+
+      final response = await _apiClient.post<void>(
+        endpoint,
+        data: {'blockedUserId': blockUserId},
+        fromJsonT: (_) {},
+      );
+
+      return response;
+    } catch (e) {
+      _logger.e('Block user error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to block user',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // Unblock user
+  Future<ApiResponse<void>> unblockUser(
+    String userId,
+    String blockedUserId,
+  ) async {
+    try {
+      _logger.i('Unblocking user: $blockedUserId');
+
+      final endpoint = ApiEndpoints.getEndpoint(
+        ApiEndpoints.unblockUser,
+        {'id': userId, 'blockedUserId': blockedUserId},
+      );
+
+      final response = await _apiClient.delete<void>(
+        endpoint,
+        fromJsonT: (_) {},
+      );
+
+      return response;
+    } catch (e) {
+      _logger.e('Unblock user error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to unblock user',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // Get blocked users
+  Future<ApiResponse<List<String>>> getBlockedUsers(String userId) async {
+    try {
+      _logger.i('Fetching blocked users');
+
+      final endpoint = ApiEndpoints.getEndpoint(
+        ApiEndpoints.getBlockedUsers,
+        {'id': userId},
+      );
+
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        endpoint,
+        fromJsonT: (json) => json,
+      );
+
+      if (response.success && response.data != null) {
+        final blockedUsers =
+            List<String>.from(response.data!['blockedUsers'] ?? []);
+        return ApiResponse.success(
+          message: 'Blocked users fetched successfully',
+          data: blockedUsers,
+        );
+      } else {
+        return ApiResponse.error(
+          message: response.message,
+          error: response.error ?? 'Failed to fetch blocked users',
+        );
+      }
+    } catch (e) {
+      _logger.e('Get blocked users error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to fetch blocked users',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // Delete account
+  Future<ApiResponse<void>> deleteAccount(String userId) async {
+    try {
+      _logger.i('Deleting account: $userId');
+
+      final endpoint = ApiEndpoints.getEndpoint(
+        ApiEndpoints.deleteAccount,
+        {'id': userId},
+      );
+
+      final response = await _apiClient.delete<void>(
+        endpoint,
+        fromJsonT: (_) {},
+      );
+
+      return response;
+    } catch (e) {
+      _logger.e('Delete account error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to delete account',
+        error: e.toString(),
+      );
+    }
+  }
+}
