@@ -3,6 +3,7 @@ import '../chat/chat_list_screen.dart';
 import '../filter/filter_screen.dart';
 import '../profile/profile_screen.dart';
 import '../myprofile/my_profile_screen.dart';
+import '../like/liked_you_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -176,13 +177,23 @@ class HomeScreen extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  const Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.favorite_border),
-                      SizedBox(height: 4),
-                      Text("Liked you"),
-                    ],
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const LikedYouScreen(),
+                        ),
+                      );
+                    },
+                    child: const Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.favorite_border),
+                        SizedBox(height: 4),
+                        Text("Liked you"),
+                      ],
+                    ),
                   ),
                   const Column(
                     mainAxisSize: MainAxisSize.min,

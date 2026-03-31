@@ -1,8 +1,333 @@
 import 'package:flutter/material.dart';
 import 'Edit_Profile_Screen.dart';
+import 'Safety_Toolkit_Screen.dart';
+import 'Blocked_Users_Screen.dart';
+import 'Take_Break_Screen.dart';
+import 'Dating_Tips_Screen.dart';
+import 'Notifications_Screen.dart';
+import 'Help_Support_Screen.dart';
 
-class MyProfileScreen extends StatelessWidget {
+class MyProfileScreen extends StatefulWidget {
   const MyProfileScreen({super.key});
+
+  @override
+  State<MyProfileScreen> createState() => _MyProfileScreenState();
+}
+
+class _MyProfileScreenState extends State<MyProfileScreen> {
+  bool isBreakEnabled = false; // ✅ STATE VARIABLE
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                /// 🔥 YOUR IMAGE
+                Container(
+                  height: 140,
+                  width: 140,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: Image.asset(
+                      "assets/images/logout.png", // ✅ your image path
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                const Text(
+                  "Log out?",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 10),
+
+                const Text(
+                  "You'll be signed out of your account on this device. You can log back in anytime.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+
+                const SizedBox(height: 20),
+
+                /// Cancel Button
+                Container(
+                  width: double.infinity,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: Colors.pink),
+                  ),
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                    },
+                    child: const Text(
+                      "Cancel",
+                      style: TextStyle(
+                        color: Colors.pink,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                /// Logout Button
+                Container(
+                  width: double.infinity,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: Colors.pink,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+
+                      /// 👉 ADD YOUR LOGOUT LOGIC HERE
+                    },
+                    child: const Text(
+                      "Log out",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showDeactivateDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                /// IMAGE
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.asset(
+                    "assets/images/Deactivate.png", // ✅ your image
+                    height: 140,
+                    width: 140,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                const Text(
+                  "Deactivate your account?",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 10),
+
+                const Text(
+                  "Your account will be temporarily disabled. Your profile and data will be hidden, but you can restore everything by logging back in.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+
+                const SizedBox(height: 20),
+
+                /// Cancel
+                Container(
+                  width: double.infinity,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: Colors.pink),
+                  ),
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      "Cancel",
+                      style: TextStyle(
+                        color: Colors.pink,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                /// Deactivate
+                Container(
+                  width: double.infinity,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: Colors.pink,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+
+                      /// 👉 ADD DEACTIVATE LOGIC
+                    },
+                    child: const Text(
+                      "Deactivate",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                const Text(
+                  "You can reactivate your account anytime.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showDeleteDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                /// IMAGE
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: Image.asset(
+                    "assets/images/Delete.png", // ✅ your image
+                    height: 140,
+                    width: 140,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                const Text(
+                  "Delete your account permanently?",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 10),
+
+                const Text(
+                  "This action cannot be undone. All your data, including your profile, activity, and saved information, will be permanently deleted.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+
+                const SizedBox(height: 20),
+
+                /// Cancel
+                Container(
+                  width: double.infinity,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: Colors.pink),
+                  ),
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      "Cancel",
+                      style: TextStyle(
+                        color: Colors.pink,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                /// Delete
+                Container(
+                  width: double.infinity,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: Colors.pink,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+
+                      /// 👉 ADD DELETE LOGIC
+                    },
+                    child: const Text(
+                      "Delete",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                const Text(
+                  "Note: This action is irreversible.",
+                  style: TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -391,12 +716,35 @@ class MyProfileScreen extends StatelessWidget {
 
                       const SizedBox(height: 12),
 
-                      _buildTile(Icons.shield_outlined, "Safety Toolkit"),
+                      _buildTile(
+                        Icons.shield_outlined,
+                        "Safety Toolkit",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SafetyToolkitScreen(),
+                            ),
+                          );
+                        },
+                      ),
                       _buildTile(
                         Icons.visibility_off_outlined,
                         "Hide My Profile",
                       ),
-                      _buildTile(Icons.block_outlined, "Block List"),
+
+                      _buildTile(
+                        Icons.block_outlined,
+                        "Block List",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const BlockedUsersScreen(),
+                            ),
+                          );
+                        },
+                      ),
 
                       /// Take a Break with toggle
                       Padding(
@@ -425,16 +773,40 @@ class MyProfileScreen extends StatelessWidget {
                                 ),
                               ),
                               Switch(
-                                value: false,
-                                onChanged: (val) {},
+                                value: isBreakEnabled,
                                 activeColor: const Color(0xFFF04D8C),
+                                onChanged: (val) {
+                                  setState(() {
+                                    isBreakEnabled = val;
+                                  });
+
+                                  if (val) {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => const TakeBreakScreen(),
+                                      ),
+                                    );
+                                  }
+                                },
                               ),
                             ],
                           ),
                         ),
                       ),
 
-                      _buildTile(Icons.lightbulb_outline, "Dating Tips"),
+                      _buildTile(
+                        Icons.lightbulb_outline,
+                        "Dating Tips",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const DatingTipsScreen(),
+                            ),
+                          );
+                        },
+                      ),
 
                       const SizedBox(height: 25),
 
@@ -455,28 +827,72 @@ class MyProfileScreen extends StatelessWidget {
 
                       const SizedBox(height: 12),
 
-                      _buildTile(Icons.notifications_none, "Notifications"),
-                      _buildTile(Icons.help_outline, "Help & Support"),
+                      _buildTile(
+                        Icons.notifications_none,
+                        "Notifications",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const NotificationsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+                      _buildTile(
+                        Icons.help_outline,
+                        "Help & Support",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const HelpSupportScreen(),
+                            ),
+                          );
+                        },
+                      ),
 
+                      /// Logout
                       /// Logout
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          child: Row(
-                            children: const [
-                              Icon(Icons.logout, color: Colors.pink),
-                              SizedBox(width: 12),
-                              Text(
-                                "Logout",
-                                style: TextStyle(
-                                  color: Colors.pink,
-                                  fontWeight: FontWeight.w600,
+                        child: InkWell(
+                          onTap: () {
+                            _showLogoutDialog(context);
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Row(
+                              children: const [
+                                Icon(Icons.logout, color: Colors.pink),
+                                SizedBox(width: 12),
+                                Text(
+                                  "Logout",
+                                  style: TextStyle(
+                                    color: Colors.pink,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
+                      ),
+
+                      _buildTile(
+                        Icons.person_off_outlined,
+                        "Deactivate Account",
+                        onTap: () {
+                          _showDeactivateDialog(context);
+                        },
+                      ),
+
+                      _buildTile(
+                        Icons.delete_outline,
+                        "Delete account",
+                        onTap: () {
+                          _showDeleteDialog(context);
+                        },
                       ),
 
                       const SizedBox(height: 20),
@@ -489,32 +905,29 @@ class MyProfileScreen extends StatelessWidget {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-  currentIndex: 3, // Profile selected
-  selectedItemColor: Colors.pink,
-  unselectedItemColor: Colors.black54,
-  type: BottomNavigationBarType.fixed,
-  onTap: (index) {
-    // handle navigation here
-  },
-  items: const [
-    BottomNavigationBarItem(
-      icon: Icon(Icons.favorite_border),
-      label: "Liked you",
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.people),
-      label: "People",
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.chat_bubble_outline),
-      label: "Chat",
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.person_outline),
-      label: "Profile",
-    ),
-  ],
-),
+        currentIndex: 3, // Profile selected
+        selectedItemColor: Colors.pink,
+        unselectedItemColor: Colors.black54,
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          // handle navigation here
+        },
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_border),
+            label: "Liked you",
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: "People"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_outline),
+            label: "Chat",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: "Profile",
+          ),
+        ],
+      ),
     );
   }
 
@@ -544,21 +957,26 @@ class MyProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTile(IconData icon, String title) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-        decoration: BoxDecoration(
-          border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: Colors.grey),
-            const SizedBox(width: 12),
-            Expanded(child: Text(title, style: const TextStyle(fontSize: 16))),
-            const Icon(Icons.chevron_right, color: Colors.grey),
-          ],
+  Widget _buildTile(IconData icon, String title, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: Colors.grey),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(title, style: const TextStyle(fontSize: 16)),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
         ),
       ),
     );

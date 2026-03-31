@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:country_code_picker/country_code_picker.dart';
 import 'package:dating_app/screens/auth/otp_screen.dart';
 
 class PhoneNumberScreen extends StatefulWidget {
-
-  final bool isLogin; // true = existing user, false = new user
+  final bool isLogin;
 
   const PhoneNumberScreen({
     super.key,
@@ -15,8 +16,9 @@ class PhoneNumberScreen extends StatefulWidget {
 }
 
 class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
-
   final TextEditingController phoneController = TextEditingController();
+
+  String countryCode = "+91";
 
   @override
   void dispose() {
@@ -25,25 +27,27 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
   }
 
   void sendCode() {
-  String phone = phoneController.text.trim();
+    String phone = phoneController.text.trim();
 
-  if (phone.isEmpty || phone.length < 10) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Please enter valid phone number")),
-    );
-    return;
-  }
+    if (phone.length != 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Enter valid 10 digit number")),
+      );
+      return;
+    }
 
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => OTPScreen(
-        phoneNumber: phone,
-        isLogin: widget.isLogin,
+    String fullPhone = "$countryCode$phone";
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OTPScreen(
+          phoneNumber: fullPhone,
+          isLogin: widget.isLogin,
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,55 +69,13 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: 10),
-
-                /// Top Bar
-                Row(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.6),
-                      ),
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-                    const Expanded(
-                      child: Center(
-                        child: Text(
-                          "Phone number",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 40),
-                  ],
-                ),
-
                 const SizedBox(height: 40),
 
-                /// Main Title
                 const Text(
-                  "Enter your phone\nnumber",
+                  "Enter your phone number",
                   style: TextStyle(
-                    fontSize: 32,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    height: 1.2,
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                const Text(
-                  "We'll send you a verification code to your phone.",
-                  style: TextStyle(
-                    color: Colors.black54,
-                    fontSize: 16,
                   ),
                 ),
 
@@ -122,117 +84,108 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                 /// Labels
                 const Row(
                   children: [
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        "Country",
-                        style: TextStyle(color: Colors.black54),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 4,
-                      child: Text(
-                        "Phone Number",
-                        style: TextStyle(color: Colors.black54),
-                      ),
-                    ),
+                    Expanded(child: Text("Country")),
+                    Expanded(flex: 1, child: Text("Phone Number")),
                   ],
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
 
-                /// Input Fields
+                /// ✅ INPUT ROW (FIXED)
                 Row(
                   children: [
-                    /// Country Code
+                    /// 🌍 COUNTRY CODE
                     Expanded(
                       flex: 2,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 18),
+                        height: 55,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.6),
+                          color: Colors.white.withOpacity(0.7),
                           borderRadius: BorderRadius.circular(30),
                         ),
-                        child: const Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: Row(
                           children: [
-                            Text("+91"),
-                            Icon(Icons.keyboard_arrow_down),
+                            /// COUNTRY PICKER
+                            Expanded(
+                              child: CountryCodePicker(
+                                onChanged: (code) {
+                                  setState(() {
+                                    countryCode = code.dialCode!;
+                                  });
+                                },
+                                initialSelection: 'IN',
+
+                                showFlag: false,
+                                showCountryOnly: false,
+                                showOnlyCountryWhenClosed: false,
+
+                                alignLeft: true,
+
+                                textStyle: const TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w500,
+                                ),
+
+                                padding: EdgeInsets.zero,
+                              ),
+                            ),
+
+                            /// DROPDOWN ICON
+                            const Icon(
+                              Icons.keyboard_arrow_down,
+                              size: 18,
+                              color: Colors.black,
+                            ),
                           ],
                         ),
                       ),
                     ),
 
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
 
-                    /// Phone Input
+                    /// 📱 PHONE FIELD
                     Expanded(
-                      flex: 4,
+                      flex: 3,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        height: 55,
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(horizontal: 18),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.6),
+                          color: Colors.white.withOpacity(0.9),
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: TextField(
                           controller: phoneController,
-                          keyboardType: TextInputType.phone,
+                          keyboardType: TextInputType.number,
+
+                          textAlignVertical: TextAlignVertical.center,
+
                           decoration: const InputDecoration(
-                            hintText: "9876543210",
+                            isCollapsed: true,
                             border: InputBorder.none,
+                            hintText: "000-000-0000",
                           ),
+
+                          style: const TextStyle(
+                            fontSize: 17,
+                            letterSpacing: 1.1,
+                          ),
+
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(10),
+                          ],
                         ),
                       ),
                     ),
                   ],
-                ),
-
-                const SizedBox(height: 24),
-
-                /// Use Email Instead
-                Center(
-                  child: TextButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(
-                      Icons.mail_outline,
-                      color: Colors.purple,
-                      size: 18,
-                    ),
-                    label: const Text(
-                      "Use email instead",
-                      style: TextStyle(color: Colors.purple),
-                    ),
-                  ),
                 ),
 
                 const Spacer(),
 
-                /// Terms Section
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Icon(Icons.check_circle,
-                        color: Colors.purple, size: 18),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'By clicking "Send Code", you agree to our Terms of '
-                        'Service and Privacy Policy. Standard messaging '
-                        'rates may apply.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.black54,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                /// Send Code Button
+                /// 🚀 BUTTON
                 Container(
                   width: double.infinity,
                   height: 55,
@@ -250,9 +203,6 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
                     ),
                     child: const Text(
                       "Send Code",

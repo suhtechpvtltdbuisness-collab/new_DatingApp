@@ -15,7 +15,6 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-
   final TextEditingController messageController = TextEditingController();
 
   List<Map<String, dynamic>> messages = [
@@ -32,7 +31,7 @@ class _ChatScreenState extends State<ChatScreen> {
       "time": "3:02 PM"
     },
     {
-      "text": "Sure, let's do it! 😊",
+      "text": "Sure, let’s do it! 😊",
       "isMe": false,
       "time": "3:10 PM"
     },
@@ -61,22 +60,21 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F7),
+      backgroundColor: const Color(0xFFF6F6F6),
 
-      /// App Bar
+      /// APP BAR
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
         titleSpacing: 0,
         title: Row(
           children: [
-
+            const SizedBox(width: 8),
             CircleAvatar(
+              radius: 20,
               backgroundImage: AssetImage(widget.image),
             ),
-
             const SizedBox(width: 10),
-
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -85,103 +83,208 @@ class _ChatScreenState extends State<ChatScreen> {
                         color: Colors.black,
                         fontSize: 16,
                         fontWeight: FontWeight.bold)),
-                const Text(
-                  "Online",
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                )
+                const Text("Online",
+                    style: TextStyle(fontSize: 12, color: Colors.grey)),
               ],
-            )
+            ),
           ],
         ),
-        actions: const [
-          Icon(Icons.more_vert, color: Colors.black)
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 10),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: Icon(Icons.more_vert, color: Colors.black),
+            ),
+          )
         ],
       ),
 
       body: Column(
         children: [
-
-          /// Messages
+          /// CHAT LIST
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(15),
-              itemCount: messages.length,
-              itemBuilder: (context, index) {
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 10),
+              children: [
+                /// TODAY DIVIDER
+                Row(
+                  children: [
+                    Expanded(
+                        child: Divider(color: Colors.grey.shade300)),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 10),
+                      child: Text("Today",
+                          style: TextStyle(color: Colors.grey)),
+                    ),
+                    Expanded(
+                        child: Divider(color: Colors.grey.shade300)),
+                  ],
+                ),
 
-                bool isMe = messages[index]["isMe"];
+                const SizedBox(height: 10),
 
-                return Align(
-                  alignment:
-                      isMe ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Column(
-                    crossAxisAlignment:
-                        isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-                    children: [
+                /// MESSAGES
+                ...messages.map((msg) {
+                  bool isMe = msg["isMe"];
 
-                      Container(
-                        margin: const EdgeInsets.symmetric(vertical: 5),
-                        padding: const EdgeInsets.all(12),
-                        constraints:
-                            const BoxConstraints(maxWidth: 260),
-                        decoration: BoxDecoration(
-                          color: isMe
-                              ? const Color(0xFFEAD1DC)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(15),
+                  return Align(
+                    alignment: isMe
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Column(
+                      crossAxisAlignment: isMe
+                          ? CrossAxisAlignment.end
+                          : CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          padding: const EdgeInsets.all(14),
+                          constraints:
+                              const BoxConstraints(maxWidth: 260),
+                          decoration: BoxDecoration(
+                            color: isMe
+                                ? const Color(0xFFEFD6DE)
+                                : Colors.white,
+                            borderRadius: BorderRadius.only(
+                              topLeft: const Radius.circular(16),
+                              topRight: const Radius.circular(16),
+                              bottomLeft: Radius.circular(isMe ? 16 : 4),
+                              bottomRight: Radius.circular(isMe ? 4 : 16),
+                            ),
+                          ),
+                          child: Text(
+                            msg["text"],
+                            style: const TextStyle(fontSize: 14),
+                          ),
                         ),
-                        child: Text(messages[index]["text"]),
-                      ),
 
-                      Text(
-                        messages[index]["time"],
-                        style: const TextStyle(
-                            fontSize: 10, color: Colors.grey),
-                      )
-                    ],
+                        /// TIME + TICKS
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              msg["time"],
+                              style: const TextStyle(
+                                  fontSize: 10, color: Colors.grey),
+                            ),
+                            if (isMe) ...[
+                              const SizedBox(width: 4),
+                              const Icon(Icons.done_all,
+                                  size: 14, color: Colors.pink),
+                            ]
+                          ],
+                        )
+                      ],
+                    ),
+                  );
+                }),
+
+                const SizedBox(height: 10),
+
+                /// TYPING INDICATOR
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black12.withOpacity(0.05),
+                          blurRadius: 6,
+                        )
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: const [
+                        Dot(),
+                        SizedBox(width: 4),
+                        Dot(),
+                        SizedBox(width: 4),
+                        Dot(),
+                      ],
+                    ),
                   ),
-                );
-              },
+                )
+              ],
             ),
           ),
 
-          /// Message Input
+          /// INPUT BAR
           Container(
             padding:
                 const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             color: Colors.white,
             child: Row(
               children: [
-
                 Expanded(
-                  child: TextField(
-                    controller: messageController,
-                    decoration: InputDecoration(
-                      hintText: "Your message",
-                      filled: true,
-                      fillColor: Colors.grey.shade200,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 15),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(30),
-                        borderSide: BorderSide.none,
-                      ),
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 15),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: messageController,
+                            decoration: const InputDecoration(
+                              hintText: "Type your message..",
+                              border: InputBorder.none,
+                            ),
+                          ),
+                        ),
+                        const Icon(Icons.emoji_emotions_outlined,
+                            color: Colors.grey)
+                      ],
                     ),
                   ),
                 ),
-
                 const SizedBox(width: 8),
-
-                CircleAvatar(
-                  backgroundColor: Colors.pink,
-                  child: IconButton(
-                    icon: const Icon(Icons.mic, color: Colors.white),
-                    onPressed: sendMessage,
+                GestureDetector(
+                  onTap: sendMessage,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.pink,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: const Icon(Icons.send,
+                        color: Colors.white, size: 20),
                   ),
                 )
               ],
             ),
           )
         ],
+      ),
+    );
+  }
+}
+
+/// TYPING DOT
+class Dot extends StatelessWidget {
+  const Dot({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 6,
+      height: 6,
+      decoration: const BoxDecoration(
+        color: Colors.grey,
+        shape: BoxShape.circle,
       ),
     );
   }
