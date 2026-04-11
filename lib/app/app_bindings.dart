@@ -2,6 +2,7 @@ import 'package:dating_app/controllers/auth_controller.dart';
 import 'package:dating_app/controllers/chat_controller.dart';
 import 'package:dating_app/controllers/swipe_controller.dart';
 import 'package:dating_app/controllers/user_controller.dart';
+import 'package:dating_app/controllers/registration_controller.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/services/chat_service.dart';
 import 'package:dating_app/services/swipe_service.dart';
@@ -39,6 +40,9 @@ class AppBindings extends Bindings {
   void _initializeControllers() {
     // Auth Controller
     Get.put<AuthController>(AuthController(), permanent: true);
+
+    // Registration Controller
+    Get.put<RegistrationController>(RegistrationController(), permanent: true);
 
     // User Controller - lazy load
     Get.lazyPut<UserController>(() => UserController());

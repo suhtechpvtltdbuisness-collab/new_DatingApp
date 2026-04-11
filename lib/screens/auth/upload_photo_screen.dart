@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'dart:io';
-import 'final_step_screen.dart';
+import 'location_screen.dart';
 
 class UploadPhotoScreen extends StatefulWidget {
   const UploadPhotoScreen({super.key});
@@ -34,7 +34,7 @@ class _UploadPhotoScreenState extends State<UploadPhotoScreen> {
   Navigator.push(
     context,
     MaterialPageRoute(
-      builder: (_) => FinalStepScreen(image: image),
+      builder: (_) => const LocationScreen(),
     ),
   );
 
@@ -84,7 +84,7 @@ class _UploadPhotoScreenState extends State<UploadPhotoScreen> {
                 const SizedBox(height: 20),
 
                 const Text(
-                  "STEP 5 OF 5",
+                  "STEP 8 OF 8",
                   style: TextStyle(
                     color: Colors.purple,
                     fontWeight: FontWeight.w600,

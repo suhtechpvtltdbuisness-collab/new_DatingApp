@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'upload_photo_screen.dart';
+import 'package:get/get.dart';
+import 'package:dating_app/controllers/registration_controller.dart';
+import 'profile_text_screen.dart';
 
 class InterestedScreen extends StatefulWidget {
   const InterestedScreen({super.key});
@@ -11,14 +13,18 @@ class InterestedScreen extends StatefulWidget {
 class _InterestedScreenState extends State<InterestedScreen> {
 
   String? selected;
+  final RegistrationController registrationController = Get.find<RegistrationController>();
 
   void goNext() {
     if (selected == null) return;
 
+    // Store interestedIn in controller
+    registrationController.setInterestedIn(selected!.toLowerCase());
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => const UploadPhotoScreen(),
+        builder: (_) => const ProfileTextScreen(),
       ),
     );
   }
@@ -120,7 +126,7 @@ class _InterestedScreenState extends State<InterestedScreen> {
                 const SizedBox(height: 20),
 
                 const Text(
-                  "STEP 4 OF 5",
+                  "STEP 6 OF 8",
                   style: TextStyle(
                     color: Colors.purple,
                     fontWeight: FontWeight.w600,
@@ -130,7 +136,7 @@ class _InterestedScreenState extends State<InterestedScreen> {
                 const SizedBox(height: 8),
 
                 LinearProgressIndicator(
-                  value: 0.8,
+                  value: 6 / 8,
                   backgroundColor: Colors.purple.shade100,
                   color: Colors.purple,
                 ),

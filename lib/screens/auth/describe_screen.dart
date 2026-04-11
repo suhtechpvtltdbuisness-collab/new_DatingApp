@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:dating_app/controllers/registration_controller.dart';
 import 'interested_screen.dart';
 
 class DescribeScreen extends StatefulWidget {
@@ -11,9 +13,13 @@ class DescribeScreen extends StatefulWidget {
 class _DescribeScreenState extends State<DescribeScreen> {
 
   String? selected;
+  final RegistrationController registrationController = Get.find<RegistrationController>();
 
   void goNext() {
     if (selected == null) return;
+
+    // Store gender in controller
+    registrationController.setGender(selected!.toLowerCase());
 
     Navigator.push(
       context,
@@ -120,7 +126,7 @@ class _DescribeScreenState extends State<DescribeScreen> {
                 const SizedBox(height: 20),
 
                 const Text(
-                  "STEP 3 OF 5",
+                  "STEP 5 OF 8",
                   style: TextStyle(
                     color: Colors.purple,
                     fontWeight: FontWeight.w600,
@@ -130,7 +136,7 @@ class _DescribeScreenState extends State<DescribeScreen> {
                 const SizedBox(height: 8),
 
                 LinearProgressIndicator(
-                  value: 0.6,
+                  value: 5 / 8,
                   backgroundColor: Colors.purple.shade100,
                   color: Colors.purple,
                 ),

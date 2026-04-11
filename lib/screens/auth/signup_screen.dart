@@ -18,13 +18,14 @@ class _SignupScreenState extends State<SignupScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
+  final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _profileController = TextEditingController();
   final authController = Get.find<AuthController>();
 
   DateTime? _selectedDate;
   String? _selectedGender;
+  String? _selectedInterestedIn;
 
   @override
   Widget build(BuildContext context) {
@@ -60,22 +61,11 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               const SizedBox(height: 12),
 
-              // First Name
+              // Name
               TextFormField(
-                controller: _firstNameController,
+                controller: _nameController,
                 decoration: const InputDecoration(
-                  labelText: 'First Name',
-                  prefixIcon: Icon(Icons.person),
-                ),
-                validator: Validators.validateName,
-              ),
-              const SizedBox(height: 12),
-
-              // Last Name
-              TextFormField(
-                controller: _lastNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Last Name',
+                  labelText: 'Full Name',
                   prefixIcon: Icon(Icons.person),
                 ),
                 validator: Validators.validateName,
@@ -122,7 +112,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     .map(
                       (gender) => DropdownMenuItem(
                         value: gender.name,
-                        child: Text(gender.name.capitalize ?? ''),
+                        child: Text(gender.name[0].toUpperCase() + gender.name.substring(1)),
                       ),
                     )
                     .toList(),
@@ -133,6 +123,45 @@ class _SignupScreenState extends State<SignupScreen> {
                 },
                 validator: (value) =>
                     value?.isEmpty ?? true ? 'Gender is required' : null,
+              ),
+              const SizedBox(height: 12),
+
+              // Interested In
+              DropdownButtonFormField<String>(
+                initialValue: _selectedInterestedIn,
+                decoration: const InputDecoration(
+                  labelText: 'Interested In',
+                  prefixIcon: Icon(Icons.favorite),
+                ),
+                items: Gender.values
+                    .map(
+                      (gender) => DropdownMenuItem(
+                        value: gender.name,
+                        child: Text(gender.name[0].toUpperCase() + gender.name.substring(1)),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedInterestedIn = value;
+                  });
+                },
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Interested in is required' : null,
+              ),
+              const SizedBox(height: 12),
+
+              // Profile
+              TextFormField(
+                controller: _profileController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  labelText: 'Profile Description',
+                  prefixIcon: Icon(Icons.description),
+                  hintText: 'Tell us about yourself...',
+                ),
+                validator: (value) =>
+                    value?.isEmpty ?? true ? 'Profile description is required' : null,
               ),
               const SizedBox(height: 12),
 
@@ -192,16 +221,20 @@ class _SignupScreenState extends State<SignupScreen> {
                         ? null
                         : () {
                             if (_formKey.currentState!.validate()) {
+                              // For demo, use sample coordinates. In real app, get from location service
+                              final coordinates = ['28.4786688', '77.4786688'];
+                              
                               authController
                                   .signUp(
+                                    name: _nameController.text,
+                                    phoneNumber: _phoneController.text,
+                                    dob: _selectedDate!.toIso8601String().split('T')[0],
+                                    gender: _selectedGender!,
+                                    profile: _profileController.text,
+                                    interestedIn: _selectedInterestedIn!,
                                     email: _emailController.text,
                                     password: _passwordController.text,
-                                    firstName: _firstNameController.text,
-                                    lastName: _lastNameController.text,
-                                    dateOfBirth:
-                                        _selectedDate!.toIso8601String(),
-                                    gender: _selectedGender!,
-                                    phoneNumber: _phoneController.text,
+                                    coordinates: coordinates,
                                   )
                                   .then((success) {
                                 if (success) {
@@ -269,9 +302,9 @@ class _SignupScreenState extends State<SignupScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _firstNameController.dispose();
-    _lastNameController.dispose();
+    _nameController.dispose();
     _phoneController.dispose();
+    _profileController.dispose();
     super.dispose();
   }
 }

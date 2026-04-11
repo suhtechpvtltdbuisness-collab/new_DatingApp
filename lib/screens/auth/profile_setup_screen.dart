@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:dating_app/controllers/registration_controller.dart';
 import 'birthday_screen.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
@@ -11,6 +13,7 @@ class ProfileSetupScreen extends StatefulWidget {
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   final TextEditingController nameController = TextEditingController();
+  final RegistrationController registrationController = Get.find<RegistrationController>();
 
   @override
   void dispose() {
@@ -25,6 +28,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       );
       return;
     }
+
+    // Store name in controller
+    registrationController.setName(nameController.text.trim());
 
     Navigator.push(
       context,
@@ -75,7 +81,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 const SizedBox(height: 20),
 
                 const Text(
-                  "STEP 1 OF 5",
+                  "STEP 3 OF 8",
                   style: TextStyle(
                     color: Colors.purple,
                     fontWeight: FontWeight.w600,
@@ -85,7 +91,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 const SizedBox(height: 8),
 
                 LinearProgressIndicator(
-                  value: 0.2,
+                  value: 3 / 8,
                   backgroundColor: Colors.purple.shade100,
                   color: Colors.purple,
                 ),

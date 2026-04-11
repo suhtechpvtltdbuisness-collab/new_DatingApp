@@ -1,6 +1,6 @@
 class AppConstants {
   // API Configuration
-  static const String baseUrl = 'https://api.datingapp.com/v1';
+  static const String baseUrl = 'https://dating-backend-rust.vercel.app';
   static const Duration apiTimeout = Duration(seconds: 30);
   static const int maxRetries = 3;
 
@@ -51,7 +51,7 @@ class AppConstants {
 
   // Error Messages
   static const String networkError = 'Network connection failed';
-  static const String serverError = 'Server error occurred';
+  static const String serverError = 'Server error. Please try again later.';
   static const String unauthorizedError = 'Unauthorized access';
   static const String notFoundError = 'Resource not found';
   static const String invalidInputError = 'Invalid input provided';

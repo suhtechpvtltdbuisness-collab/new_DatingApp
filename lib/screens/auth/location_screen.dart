@@ -1,56 +1,125 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:get/get.dart';
+import 'package:dating_app/controllers/registration_controller.dart';
+import 'package:permission_handler/permission_handler.dart';
 
-class LocationScreen extends StatelessWidget {
+class LocationScreen extends StatefulWidget {
   const LocationScreen({super.key});
+
+  @override
+  State<LocationScreen> createState() => _LocationScreenState();
+}
+
+class _LocationScreenState extends State<LocationScreen> {
+  final RegistrationController registrationController = Get.find<RegistrationController>();
+  bool isLoading = false;
+  int denyCount = 0;
 
   /// Function to check location permission
   Future<void> _checkLocation(BuildContext context) async {
+    setState(() => isLoading = true);
 
-    bool serviceEnabled;
-    LocationPermission permission;
+    try {
+      bool serviceEnabled;
+      LocationPermission permission;
 
-    /// 1️⃣ Check if location service is enabled
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      /// 1️⃣ Check if location service is enabled
+      serviceEnabled = await Geolocator.isLocationServiceEnabled();
 
-    if (!serviceEnabled) {
-      await Geolocator.openLocationSettings();
-      return;
-    }
+      if (!serviceEnabled) {
+        await Geolocator.openLocationSettings();
+        setState(() => isLoading = false);
+        return;
+      }
 
-    /// 2️⃣ Check permission
-    permission = await Geolocator.checkPermission();
+      /// 2️⃣ Check permission
+      permission = await Geolocator.checkPermission();
 
-    /// If permission not given → request permission
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-    }
+      /// If permission not given → request permission
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          denyCount++;
+        }
+      }
 
-    /// If permission denied again → stop
-    if (permission == LocationPermission.denied) {
-      return;
-    }
+      /// If permission denied again → stop
+      if (permission == LocationPermission.denied) {
+        if (denyCount >= 2) {
+          _showSettingsDialog();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Location permission is required to continue")),
+          );
+        }
+        setState(() => isLoading = false);
+        return;
+      }
 
-    /// If permission permanently denied
-    if (permission == LocationPermission.deniedForever) {
-      await Geolocator.openAppSettings();
-      return;
-    }
+      /// If permission permanently denied
+      if (permission == LocationPermission.deniedForever) {
+        _showSettingsDialog();
+        setState(() => isLoading = false);
+        return;
+      }
 
-    /// 3️⃣ If permission granted → get location
-    if (permission == LocationPermission.whileInUse ||
-        permission == LocationPermission.always) {
+      /// 3️⃣ If permission granted → get location
+      if (permission == LocationPermission.whileInUse ||
+          permission == LocationPermission.always) {
 
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+        Position position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+
+        // Store location in controller
+        registrationController.setLocation([
+          position.longitude.toString(),
+          position.latitude.toString()
+        ]);
+
+        // Call register API
+        bool success = await registrationController.registerUser();
+
+        if (success) {
+          // Navigate to Home Screen
+          Navigator.pushReplacementNamed(context, "/home");
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(registrationController.errorMessage.value)),
+          );
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Failed to get location. Please try again.")),
       );
-
-      print("Latitude: ${position.latitude}");
-      print("Longitude: ${position.longitude}");
-
-      /// Navigate to Home Screen
-      Navigator.pushReplacementNamed(context, "/home");
+    } finally {
+      setState(() => isLoading = false);
     }
+  }
+
+  void _showSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Location Permission Required"),
+        content: const Text("Location access is mandatory to use this app. Please enable it in settings."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              openAppSettings();
+            },
+            child: const Text("Open Settings"),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -113,20 +182,27 @@ class LocationScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: ElevatedButton(
-                    onPressed: () {
-                      _checkLocation(context);
-                    },
+                    onPressed: isLoading ? null : () => _checkLocation(context),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
                     ),
-                    child: const Text(
-                      "Check location settings",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            "Enable Location Access",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
 

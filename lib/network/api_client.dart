@@ -372,9 +372,11 @@ class ApiClient {
         final data = response.data;
 
         if (data is Map<String, dynamic>) {
+          final payload = data.containsKey('data') ? data['data'] : data;
+
           return ApiResponse.success(
             message: data['message'] ?? 'Success',
-            data: fromJsonT != null ? fromJsonT(data['data']) : data as T,
+            data: fromJsonT != null ? fromJsonT(payload) : payload as T,
             statusCode: statusCode,
           );
         } else {
@@ -385,8 +387,17 @@ class ApiClient {
           );
         }
       } else {
+        String errorMessage = 'Server error';
+
+        if (response.data is Map<String, dynamic>) {
+          final responseMap = response.data as Map<String, dynamic>;
+          errorMessage = responseMap['message']?.toString() ?? errorMessage;
+        } else if (response.statusMessage != null) {
+          errorMessage = response.statusMessage!;
+        }
+
         return ApiResponse.error(
-          message: 'Server error',
+          message: errorMessage,
           error: response.data?.toString() ?? 'Unknown error',
           statusCode: statusCode,
         );
@@ -408,7 +419,9 @@ class ApiClient {
 
     switch (error.type) {
       case DioErrorType.badResponse:
-        message = 'Server error occurred';
+        message = error.response?.data is Map<String, dynamic>
+            ? (error.response?.data['message']?.toString() ?? 'Server error occurred')
+            : (error.response?.statusMessage ?? 'Server error occurred');
         errorDetails = error.response?.data?.toString() ?? 'Unknown error';
         break;
       case DioErrorType.connectionTimeout:

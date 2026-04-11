@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 Widget baseLayout({
   required BuildContext context,
   required int step,
+  required int totalSteps,
   required String title,
   required Widget child,
   required VoidCallback onContinue,
@@ -48,7 +49,7 @@ Widget baseLayout({
 
               /// Step Text
               Text(
-                "STEP $step OF 5",
+                "STEP $step OF $totalSteps",
                 style: const TextStyle(
                   color: Colors.purple,
                   fontWeight: FontWeight.w600,
@@ -59,7 +60,7 @@ Widget baseLayout({
 
               /// Progress Bar
               LinearProgressIndicator(
-                value: step / 5,
+                value: step / totalSteps,
                 backgroundColor: Colors.purple.shade100,
                 color: Colors.purple,
               ),

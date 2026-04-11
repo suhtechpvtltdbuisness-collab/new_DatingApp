@@ -113,33 +113,51 @@ class PaginatedResponse<T> {
 
 // Authentication models
 class SignUpRequest {
+  final String name;
+  final String phoneNumber;
+  final String dob;
+  final String gender;
+  final String profile;
+  final String interestedIn;
   final String email;
   final String password;
-  final String firstName;
-  final String lastName;
-  final String dateOfBirth;
-  final String gender;
-  final String phoneNumber;
+  final Location location;
 
   SignUpRequest({
+    required this.name,
+    required this.phoneNumber,
+    required this.dob,
+    required this.gender,
+    required this.profile,
+    required this.interestedIn,
     required this.email,
     required this.password,
-    required this.firstName,
-    required this.lastName,
-    required this.dateOfBirth,
-    required this.gender,
-    required this.phoneNumber,
+    required this.location,
   });
 
   Map<String, dynamic> toJson() {
     return {
+      'name': name,
+      'phoneNumber': phoneNumber,
+      'dob': dob,
+      'gender': gender,
+      'profile': profile,
+      'interestedIn': interestedIn,
       'email': email,
       'password': password,
-      'firstName': firstName,
-      'lastName': lastName,
-      'dateOfBirth': dateOfBirth,
-      'gender': gender,
-      'phoneNumber': phoneNumber,
+      'location': location.toJson(),
+    };
+  }
+}
+
+class Location {
+  final List<String> coordinates;
+
+  Location({required this.coordinates});
+
+  Map<String, dynamic> toJson() {
+    return {
+      'coordinates': coordinates,
     };
   }
 }

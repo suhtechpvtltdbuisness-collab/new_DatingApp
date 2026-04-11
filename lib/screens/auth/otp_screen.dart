@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
 import 'profile_setup_screen.dart';
 import 'location_screen.dart';
 
@@ -40,37 +41,65 @@ class _OTPScreenState extends State<OTPScreen> {
     return controllers.map((e) => e.text).join();
   }
 
-  void verifyOtp() {
+ void verifyOtp() async {
+  String otp = getOtp();
 
-  if (getOtp().length != 4) {
+  if (otp.length != 4) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text("Please enter 4 digit OTP")),
     );
     return;
   }
 
-  if (widget.isLogin) {
+  final dio = Dio();
 
-    // Existing user → Location
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const LocationScreen(),
-      ),
+  try {
+    /// 🔄 LOADER
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
-  } else {
+    final response = await dio.post(
+      "https://dating-backend-rust.vercel.app/users/otp/validate",
+      data: {
+        "otp": otp,
+        "number": widget.phoneNumber,
+      },
+    );
 
-    // New user → Profile setup
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const ProfileSetupScreen(),
-      ),
+    Navigator.pop(context);
+
+    print("VERIFY RESPONSE: ${response.data}");
+
+    if (response.statusCode == 200) {
+      if (widget.isLogin) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LocationScreen()),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ProfileSetupScreen()),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Invalid OTP")),
+      );
+    }
+  } catch (e) {
+    Navigator.pop(context);
+
+    print(e);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("OTP verification failed")),
     );
   }
 }
-
   void onChanged(String value, int index) {
 
     if (value.isNotEmpty) {

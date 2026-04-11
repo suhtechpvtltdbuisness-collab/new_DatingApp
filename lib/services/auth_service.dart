@@ -1,207 +1,292 @@
 import 'package:dating_app/models/api_models.dart';
-
 import 'package:dating_app/network/api_client.dart';
 import 'package:dating_app/network/api_endpoints.dart';
 import 'package:dating_app/utils/constants.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Authentication Service
-/// Handles all authentication-related operations
 class AuthService {
   final ApiClient _apiClient = ApiClient();
   final Logger _logger = Logger();
-  late SharedPreferences _prefs;
+  SharedPreferences? _prefs;
 
-  // Singleton
   static final AuthService _instance = AuthService._internal();
-
-  factory AuthService() {
-    return _instance;
-  }
-
+  factory AuthService() => _instance;
   AuthService._internal();
 
-  // Initialize service
+  // ===============================
+  // INIT
+  // ===============================
+
+  Future<SharedPreferences> _getPrefs() async {
+    _prefs ??= await SharedPreferences.getInstance();
+    return _prefs!;
+  }
+
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
-    final accessToken = _prefs.getString(StorageKeys.userToken);
+    final token = _prefs?.getString(StorageKeys.userToken);
 
-    if (accessToken != null) {
-      _apiClient.setTokens(accessToken);
+    if (token != null) {
+      _apiClient.setTokens(token);
     }
   }
 
-  // Sign up (demo flow)
+  // ===============================
+  // ✅ SEND OTP
+  // ===============================
+
+  Future<ApiResponse<void>> sendEmailOtp(String email) async {
+    try {
+      _logger.i('Sending OTP to: $email');
+
+      final response = await _apiClient.get<void>(
+        ApiEndpoints.sendEmailOtp(Uri.encodeComponent(email)),
+        fromJsonT: (_) {},
+      );
+
+      return response;
+    } catch (e) {
+      _logger.e('Send OTP error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to send OTP',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // ===============================
+  // ✅ VERIFY OTP
+  // ===============================
+
+  Future<ApiResponse<void>> verifyEmail(
+      String email, String otp) async {
+    try {
+      _logger.i('Verifying OTP for: $email');
+
+      final response = await _apiClient.post<void>(
+        ApiEndpoints.verifyEmailOtp,
+        data: {
+          "email": email,
+          "otp": otp,
+        },
+        fromJsonT: (_) {},
+      );
+
+      return response;
+    } catch (e) {
+      _logger.e('Verify OTP error', error: e);
+      return ApiResponse.error(
+        message: 'OTP verification failed',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // ===============================
+  // ✅ REGISTER USER (EMAIL FLOW)
+  // ===============================
+
+  Future<ApiResponse<void>> registerUser({
+    required String name,
+    required String phoneNumber,
+    required String dob,
+    required String gender,
+    required String profile,
+    required String interestedIn,
+    required String email,
+    required String password,
+    required List<String> coordinates,
+  }) async {
+    try {
+      _logger.i('Registering user: $email');
+
+      final response = await _apiClient.post<void>(
+        ApiEndpoints.signup,
+        data: {
+          "name": name,
+          "phoneNumber": phoneNumber,
+          "dob": dob,
+          "gender": gender,
+          "profile": profile,
+          "interestedIn": interestedIn,
+          "email": email,
+          "password": password,
+          "location": {
+            "coordinates": coordinates,
+          },
+        },
+        fromJsonT: (_) {},
+      );
+
+      return response;
+    } catch (e) {
+      _logger.e('Register error', error: e);
+      return ApiResponse.error(
+        message: 'Registration failed',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // ===============================
+  // TOKEN STORAGE
+  // ===============================
+
+  Future<void> _saveTokens(
+    String accessToken,
+    String refreshToken,
+    String userId,
+    String email,
+  ) async {
+    final prefs = await _getPrefs();
+
+    await prefs.setString(StorageKeys.userToken, accessToken);
+    await prefs.setString(StorageKeys.refreshToken, refreshToken);
+    await prefs.setString(StorageKeys.userId, userId);
+    await prefs.setString(StorageKeys.userEmail, email);
+
+    _apiClient.setTokens(accessToken);
+
+    _logger.i('Tokens saved');
+  }
+
+  Future<void> _clearTokens() async {
+    final prefs = await _getPrefs();
+
+    await prefs.clear();
+    _apiClient.clearTokens();
+
+    _logger.i('Tokens cleared');
+  }
+
+  // ===============================
+  // HELPERS
+  // ===============================
+
+  String? getAccessToken() =>
+      _prefs?.getString(StorageKeys.userToken);
+
+  bool isLoggedIn() =>
+      _prefs?.getString(StorageKeys.userToken) != null;
+
+  String? getCurrentUserId() =>
+      _prefs?.getString(StorageKeys.userId);
+
+  String? getCurrentUserEmail() =>
+      _prefs?.getString(StorageKeys.userEmail);
+
+  // ===============================
+  // SIGN UP
+  // ===============================
+
   Future<ApiResponse<AuthResponse>> signUp(SignUpRequest request) async {
-    // Demo implementation: accept any credentials and return a dummy token
-    _logger.i('Demo sign up: ${request.email}');
-    // create fake response
-    final authResponse = AuthResponse(
-      accessToken: 'demo_access_token',
-      refreshToken: 'demo_refresh_token',
-      userId: 'demo_user',
-      expiresIn: 3600,
-      userEmail: request.email,
-    );
-    // save tokens locally
-    await _saveTokens(
-      authResponse.accessToken,
-      authResponse.refreshToken,
-      authResponse.userId,
-      authResponse.userEmail,
-    );
-    return ApiResponse.success(
-      message: 'Sign up successful (demo)',
-      data: authResponse,
-    );
+    try {
+      _logger.i('Signing up user: ${request.email}');
+
+      final response = await _apiClient.post<AuthResponse>(
+        ApiEndpoints.signup,
+        data: request.toJson(),
+        fromJsonT: (json) => AuthResponse.fromJson(json),
+      );
+
+      if (response.success && response.data != null) {
+        await _saveTokens(
+          response.data!.accessToken,
+          response.data!.refreshToken,
+          response.data!.userId,
+          response.data!.userEmail,
+        );
+      }
+
+      return response;
+    } catch (e) {
+      _logger.e('Sign up error', error: e);
+      return ApiResponse.error(
+        message: 'Sign up failed',
+        error: e.toString(),
+      );
+    }
   }
 
-  // Login (demo flow)
+  // ===============================
+  // LOGIN
+  // ===============================
+
   Future<ApiResponse<AuthResponse>> login(LoginRequest request) async {
-    // Demo implementation: accept any credentials and return a dummy token
-    _logger.i('Demo login: ${request.email}');
-    final authResponse = AuthResponse(
-      accessToken: 'demo_access_token',
-      refreshToken: 'demo_refresh_token',
-      userId: 'demo_user',
-      expiresIn: 3600,
-      userEmail: request.email,
-    );
-    await _saveTokens(
-      authResponse.accessToken,
-      authResponse.refreshToken,
-      authResponse.userId,
-      authResponse.userEmail,
-    );
-    return ApiResponse.success(
-      message: 'Login successful (demo)',
-      data: authResponse,
-    );
+    try {
+      _logger.i('Logging in user: ${request.email}');
+
+      final response = await _apiClient.post<AuthResponse>(
+        ApiEndpoints.login,
+        data: request.toJson(),
+        fromJsonT: (json) => AuthResponse.fromJson(json),
+      );
+
+      if (response.success && response.data != null) {
+        await _saveTokens(
+          response.data!.accessToken,
+          response.data!.refreshToken,
+          response.data!.userId,
+          response.data!.userEmail,
+        );
+      }
+
+      return response;
+    } catch (e) {
+      _logger.e('Login error', error: e);
+      return ApiResponse.error(
+        message: 'Login failed',
+        error: e.toString(),
+      );
+    }
   }
 
-  // Logout
+  // ===============================
+  // LOGOUT
+  // ===============================
+
   Future<ApiResponse<void>> logout() async {
     try {
-      _logger.i('Logout');
+      _logger.i('Logging out user');
 
       final response = await _apiClient.post<void>(
         ApiEndpoints.logout,
         fromJsonT: (_) {},
       );
 
-      // Clear local data
       await _clearTokens();
 
       return response;
     } catch (e) {
       _logger.e('Logout error', error: e);
-      // Clear local data anyway
-      await _clearTokens();
+      await _clearTokens(); // Clear tokens even if API call fails
       return ApiResponse.error(
-        message: 'Logout error',
+        message: 'Logout failed',
         error: e.toString(),
       );
     }
   }
 
-  // Refresh token
-  Future<ApiResponse<AuthResponse>> refreshAccessToken() async {
-    try {
-      _logger.i('Refreshing access token');
+  // ===============================
+  // RESEND OTP
+  // ===============================
 
-      final refreshToken = _prefs.getString(StorageKeys.refreshToken);
-      if (refreshToken == null) {
-        return ApiResponse.error(
-          message: 'Refresh token not found',
-          error: 'No refresh token available',
-        );
-      }
-
-      final response = await _apiClient.post<Map<String, dynamic>>(
-        ApiEndpoints.refreshToken,
-        data: {'refreshToken': refreshToken},
-        fromJsonT: (json) => json,
-      );
-
-      if (response.success && response.data != null) {
-        final authResponse = AuthResponse.fromJson(response.data!);
-
-        // Save new tokens
-        await _saveTokens(authResponse.accessToken, authResponse.refreshToken,
-            authResponse.userId, authResponse.userEmail);
-
-        return ApiResponse.success(
-          message: 'Token refreshed',
-          data: authResponse,
-        );
-      } else {
-        // Token refresh failed, logout user
-        await logout();
-        return ApiResponse.error(
-          message: response.message,
-          error: response.error ?? 'Token refresh failed',
-        );
-      }
-    } catch (e) {
-      _logger.e('Token refresh error', error: e);
-      return ApiResponse.error(
-        message: 'Token refresh failed',
-        error: e.toString(),
-      );
-    }
-  }
-
-  // Verify email
-  Future<ApiResponse<void>> verifyEmail(String email, String otp) async {
-    try {
-      _logger.i('Verifying email: $email');
-
-      final response = await _apiClient.post<void>(
-        ApiEndpoints.verifyEmail,
-        data: {'email': email, 'otp': otp},
-        fromJsonT: (_) {},
-      );
-
-      return response;
-    } catch (e) {
-      _logger.e('Email verification error', error: e);
-      return ApiResponse.error(
-        message: 'Email verification failed',
-        error: e.toString(),
-      );
-    }
-  }
-
-  // Resend OTP
   Future<ApiResponse<void>> resendOtp(String email) async {
-    try {
-      _logger.i('Resending OTP to: $email');
-
-      final response = await _apiClient.post<void>(
-        ApiEndpoints.resendOtp,
-        data: {'email': email},
-        fromJsonT: (_) {},
-      );
-
-      return response;
-    } catch (e) {
-      _logger.e('Resend OTP error', error: e);
-      return ApiResponse.error(
-        message: 'Resend OTP failed',
-        error: e.toString(),
-      );
-    }
+    return sendEmailOtp(email); // Reuse the existing method
   }
 
-  // Reset password
+  // ===============================
+  // RESET PASSWORD
+  // ===============================
+
   Future<ApiResponse<void>> resetPassword(String email) async {
     try {
-      _logger.i('Reset password for: $email');
+      _logger.i('Resetting password for: $email');
 
       final response = await _apiClient.post<void>(
-        ApiEndpoints.resetPassword,
-        data: {'email': email},
+        '/users/forgot-password', // Assuming this endpoint exists
+        data: {"email": email},
         fromJsonT: (_) {},
       );
 
@@ -209,25 +294,26 @@ class AuthService {
     } catch (e) {
       _logger.e('Reset password error', error: e);
       return ApiResponse.error(
-        message: 'Reset password failed',
+        message: 'Failed to reset password',
         error: e.toString(),
       );
     }
   }
 
-  // Change password
+  // ===============================
+  // CHANGE PASSWORD
+  // ===============================
+
   Future<ApiResponse<void>> changePassword(
-    String currentPassword,
-    String newPassword,
-  ) async {
+      String currentPassword, String newPassword) async {
     try {
       _logger.i('Changing password');
 
       final response = await _apiClient.post<void>(
-        ApiEndpoints.changePassword,
+        '/users/change-password', // Assuming this endpoint exists
         data: {
-          'currentPassword': currentPassword,
-          'newPassword': newPassword,
+          "currentPassword": currentPassword,
+          "newPassword": newPassword,
         },
         fromJsonT: (_) {},
       );
@@ -236,58 +322,9 @@ class AuthService {
     } catch (e) {
       _logger.e('Change password error', error: e);
       return ApiResponse.error(
-        message: 'Password change failed',
+        message: 'Failed to change password',
         error: e.toString(),
       );
     }
-  }
-
-  // Get current user ID
-  String? getCurrentUserId() {
-    return _prefs.getString(StorageKeys.userId);
-  }
-
-  // Get current user email
-  String? getCurrentUserEmail() {
-    return _prefs.getString(StorageKeys.userEmail);
-  }
-
-  // Get access token
-  String? getAccessToken() {
-    return _prefs.getString(StorageKeys.userToken);
-  }
-
-  // Check if user is logged in
-  bool isLoggedIn() {
-    return _prefs.getString(StorageKeys.userToken) != null;
-  }
-
-  // Save tokens
-  Future<void> _saveTokens(
-    String accessToken,
-    String refreshToken,
-    String userId,
-    String email,
-  ) async {
-    await _prefs.setString(StorageKeys.userToken, accessToken);
-    await _prefs.setString(StorageKeys.refreshToken, refreshToken);
-    await _prefs.setString(StorageKeys.userId, userId);
-    await _prefs.setString(StorageKeys.userEmail, email);
-
-    _apiClient.setTokens(accessToken);
-
-    _logger.i('Tokens saved for user: $userId');
-  }
-
-  // Clear tokens
-  Future<void> _clearTokens() async {
-    await _prefs.remove(StorageKeys.userToken);
-    await _prefs.remove(StorageKeys.refreshToken);
-    await _prefs.remove(StorageKeys.userId);
-    await _prefs.remove(StorageKeys.userEmail);
-
-    _apiClient.clearTokens();
-
-    _logger.i('Tokens cleared');
   }
 }

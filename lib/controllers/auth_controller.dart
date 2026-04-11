@@ -34,13 +34,15 @@ class AuthController extends GetxController {
 
   /// Sign up
   Future<bool> signUp({
+    required String name,
+    required String phoneNumber,
+    required String dob,
+    required String gender,
+    required String profile,
+    required String interestedIn,
     required String email,
     required String password,
-    required String firstName,
-    required String lastName,
-    required String dateOfBirth,
-    required String gender,
-    required String phoneNumber,
+    required List<String> coordinates,
   }) async {
     try {
       isLoading.value = true;
@@ -48,13 +50,15 @@ class AuthController extends GetxController {
       successMessage.value = '';
 
       final request = SignUpRequest(
+        name: name,
+        phoneNumber: phoneNumber,
+        dob: dob,
+        gender: gender,
+        profile: profile,
+        interestedIn: interestedIn,
         email: email,
         password: password,
-        firstName: firstName,
-        lastName: lastName,
-        dateOfBirth: dateOfBirth,
-        gender: gender,
-        phoneNumber: phoneNumber,
+        location: Location(coordinates: coordinates),
       );
 
       final response = await _authService.signUp(request);

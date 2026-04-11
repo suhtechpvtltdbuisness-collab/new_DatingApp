@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:dating_app/controllers/registration_controller.dart';
 import 'describe_screen.dart';
 import 'base_layout.dart';
 
@@ -18,6 +20,7 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
   int selectedMonth = 5;
   int selectedDay = 14;
   int selectedYear = 1999;
+  final RegistrationController registrationController = Get.find<RegistrationController>();
 
   int calculateAge() {
     final now = DateTime.now();
@@ -26,6 +29,10 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
   }
 
   void goNext() {
+    // Format DOB as YYYY-MM-DD
+    String dob = '${selectedYear.toString().padLeft(4, '0')}-${(selectedMonth + 1).toString().padLeft(2, '0')}-${selectedDay.toString().padLeft(2, '0')}';
+    registrationController.setDob(dob);
+
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const DescribeScreen()),
@@ -75,7 +82,8 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
 
     return baseLayout(
       context: context,
-      step: 2,
+      step: 4,
+      totalSteps: 8,
       title: "birthday",
       onContinue: goNext,
       child: Column(
