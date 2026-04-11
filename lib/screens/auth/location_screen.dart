@@ -3,6 +3,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:dating_app/controllers/registration_controller.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:dating_app/models/api_models.dart';
 
 class LocationScreen extends StatefulWidget {
   const LocationScreen({super.key});
@@ -79,16 +80,22 @@ class _LocationScreenState extends State<LocationScreen> {
         ]);
 
         // Call register API
-        bool success = await registrationController.registerUser();
+        ApiResponse<void> response = await registrationController.registerUser();
 
-        if (success) {
-          // Navigate to Home Screen
+        // Show toast with API response message
+        String message;
+        if (response.success) {
+          message = response.message ?? 'Account created successfully';
+          // Navigate to Home Screen only on success
           Navigator.pushReplacementNamed(context, "/home");
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(registrationController.errorMessage.value)),
-          );
+          message = response.error ?? response.message ?? 'Registration failed';
+          // Don't navigate on error
         }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

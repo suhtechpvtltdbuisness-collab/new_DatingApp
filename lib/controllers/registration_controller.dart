@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/models/api_models.dart';
+import 'package:dating_app/models/api_models.dart';
 
 class RegistrationController extends GetxController {
   final AuthService _authService = AuthService();
@@ -44,7 +45,7 @@ class RegistrationController extends GetxController {
   void setLocation(List<String> coordinates) => location.value = coordinates;
 
   // Register user with all collected data
-  Future<bool> registerUser() async {
+  Future<ApiResponse<void>> registerUser() async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
@@ -67,14 +68,17 @@ class RegistrationController extends GetxController {
       if (response.success) {
         // Clear data after successful registration
         clearData();
-        return true;
       } else {
         errorMessage.value = response.error ?? response.message ?? 'Registration failed';
-        return false;
       }
+
+      return response;
     } catch (e) {
       errorMessage.value = 'An unexpected error occurred';
-      return false;
+      return ApiResponse.error(
+        message: 'An unexpected error occurred',
+        error: 'Network error',
+      );
     } finally {
       isLoading.value = false;
     }
