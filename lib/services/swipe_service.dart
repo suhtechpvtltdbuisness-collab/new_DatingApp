@@ -101,6 +101,49 @@ class SwipeService {
     }
   }
 
+  // Get suggestions for swiping
+  Future<ApiResponse<List<UserModel>>> getSuggestions({
+    int page = 1,
+    int limit = 10,
+  }) async {
+    try {
+      _logger.i('Fetching suggestions for swiping (page: $page)');
+
+      final queryParams = {
+        'page': page,
+        'limit': limit,
+      };
+
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        ApiEndpoints.getSuggestions,
+        queryParameters: queryParams,
+        fromJsonT: (json) => json,
+      );
+
+      if (response.success && response.data != null) {
+        final suggestions = (response.data!['suggestions'] as List?)
+                ?.map((e) => UserModel.fromJson(e))
+                .toList() ??
+            [];
+        return ApiResponse.success(
+          message: 'Suggestions fetched successfully',
+          data: suggestions,
+        );
+      } else {
+        return ApiResponse.error(
+          message: response.message,
+          error: response.error ?? 'Failed to fetch suggestions',
+        );
+      }
+    } catch (e) {
+      _logger.e('Get suggestions error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to fetch suggestions',
+        error: e.toString(),
+      );
+    }
+  }
+
   // Like profile
   Future<ApiResponse<MatchModel>> likeProfile(String targetUserId) async {
     try {

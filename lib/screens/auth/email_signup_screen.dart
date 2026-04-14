@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dating_app/screens/auth/email_signin_screen.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'email_otp_screen.dart';
 
@@ -292,7 +293,12 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
                   Center(
                     child: GestureDetector(
                       onTap: () {
-                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const EmailSigninScreen(),
+                          ),
+                        );
                       },
                       child: RichText(
                         text: TextSpan(

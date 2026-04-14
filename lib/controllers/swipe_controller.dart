@@ -59,7 +59,7 @@ class SwipeController extends GetxController {
         return true;
       }
 
-      final response = await _swipeService.getProfiles(
+      final response = await _swipeService.getSuggestions(
         page: currentPage.value,
         limit: PAGE_SIZE,
       );

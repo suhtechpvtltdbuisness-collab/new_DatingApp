@@ -9,7 +9,7 @@ class ApiEndpoints {
   // ===============================
 
   static const String signup = '/users/register';
-  static const String login = '/auth/login';
+  static const String login = '/users/login';
   static const String logout = '/auth/logout';
   static const String refreshToken = '/auth/refresh-token';
 
@@ -38,6 +38,7 @@ class ApiEndpoints {
 
   static const String getProfiles = '/profiles';
   static const String getProfileDetail = '/profiles/:id';
+  static const String getSuggestions = '/users/suggestions';
   static const String likeProfile = '/profiles/like';
   static const String superLikeProfile = '/profiles/super-like';
   static const String passProfile = '/profiles/pass';
