@@ -102,102 +102,115 @@ class _DescribeScreenState extends State<DescribeScreen> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
 
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+            /// ✅ Fix: Wrap Column in SingleChildScrollView + ConstrainedBox + IntrinsicHeight
+            /// This allows Spacer to still work while preventing overflow on small screens
+            child: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: MediaQuery.of(context).size.height -
+                      MediaQuery.of(context).padding.top -
+                      MediaQuery.of(context).padding.bottom,
+                ),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
 
-                const SizedBox(height: 20),
+                      const SizedBox(height: 20),
 
-                Row(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.6),
+                      Row(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white.withOpacity(0.6),
+                            ),
+                            child: IconButton(
+                              icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ),
+                        ],
                       ),
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-                        onPressed: () => Navigator.pop(context),
+
+                      const SizedBox(height: 20),
+
+                      const Text(
+                        "STEP 5 OF 8",
+                        style: TextStyle(
+                          color: Colors.purple,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
 
-                const SizedBox(height: 20),
+                      const SizedBox(height: 8),
 
-                const Text(
-                  "STEP 5 OF 8",
-                  style: TextStyle(
-                    color: Colors.purple,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-
-                LinearProgressIndicator(
-                  value: 5 / 8,
-                  backgroundColor: Colors.purple.shade100,
-                  color: Colors.purple,
-                ),
-
-                const SizedBox(height: 40),
-
-                const Text(
-                  "What describes you",
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const Text(
-                  "the most?",
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 30),
-
-                option("Men", Icons.male),
-                option("Women", Icons.female),
-                option("Gay", Icons.group),
-                option("Other", Icons.person),
-
-                const Spacer(),
-
-                Container(
-                  width: double.infinity,
-                  height: 55,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFFFF4E8A),
-                        Color(0xFF9B51E0),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: ElevatedButton(
-                    onPressed: goNext,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                    ),
-                    child: const Text(
-                      "Continue",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                      LinearProgressIndicator(
+                        value: 5 / 8,
+                        backgroundColor: Colors.purple.shade100,
+                        color: Colors.purple,
                       ),
-                    ),
+
+                      const SizedBox(height: 40),
+
+                      const Text(
+                        "What describes you",
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      const Text(
+                        "the most?",
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      option("Men", Icons.male),
+                      option("Women", Icons.female),
+                      option("Gay", Icons.group),
+                      option("Other", Icons.person),
+
+                      const Spacer(),
+
+                      Container(
+                        width: double.infinity,
+                        height: 55,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFFFF4E8A),
+                              Color(0xFF9B51E0),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: ElevatedButton(
+                          onPressed: goNext,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
+                          ),
+                          child: const Text(
+                            "Continue",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+                    ],
                   ),
                 ),
-
-                const SizedBox(height: 20),
-              ],
+              ),
             ),
           ),
         ),

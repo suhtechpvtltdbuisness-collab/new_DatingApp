@@ -130,132 +130,134 @@ class _OTPScreenState extends State<OTPScreen> {
         ),
 
         child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
 
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
 
-                const SizedBox(height: 20),
+                  const SizedBox(height: 20),
 
-                /// Back Button
-                Row(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.6),
+                  /// Back Button
+                  Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.6),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                          onPressed: () => Navigator.pop(context),
+                        ),
                       ),
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-                        onPressed: () => Navigator.pop(context),
+                    ],
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  /// Title
+                  const Text(
+                    "Verify your number",
+                    style: TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  /// Subtitle
+                  Text(
+                    "Enter the 4-digit code sent to +91 ${widget.phoneNumber}",
+                    style: const TextStyle(
+                      color: Colors.black54,
+                      fontSize: 14,
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  /// OTP Boxes
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+                    children: List.generate(
+                      4,
+                      (index) => Container(
+                        width: 65,
+                        height: 65,
+
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: Colors.purple, width: 1.5),
+                          color: Colors.white.withOpacity(0.5),
+                        ),
+
+                        child: TextField(
+                          controller: controllers[index],
+                          focusNode: focusNodes[index],
+
+                          textAlign: TextAlign.center,
+                          keyboardType: TextInputType.number,
+                          maxLength: 1,
+
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
+
+                          decoration: const InputDecoration(
+                            counterText: "",
+                            border: InputBorder.none,
+                          ),
+
+                          onChanged: (value) => onChanged(value, index),
+                        ),
                       ),
                     ),
-                  ],
-                ),
-
-                const SizedBox(height: 30),
-
-                /// Title
-                const Text(
-                  "Verify your number",
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
                   ),
-                ),
 
-                const SizedBox(height: 8),
+                  const SizedBox(height: 40),
 
-                /// Subtitle
-                Text(
-                  "Enter the 4-digit code sent to +91 ${widget.phoneNumber}",
-                  style: const TextStyle(
-                    color: Colors.black54,
-                    fontSize: 14,
-                  ),
-                ),
+                  /// Verify Button
+                  Container(
+                    width: double.infinity,
+                    height: 55,
 
-                const SizedBox(height: 40),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Color(0xFFFF4E8A),
+                          Color(0xFF9B51E0),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
 
-                /// OTP Boxes
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: ElevatedButton(
+                      onPressed: verifyOtp,
 
-                  children: List.generate(
-                    4,
-                    (index) => Container(
-                      width: 65,
-                      height: 65,
-
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: Colors.purple, width: 1.5),
-                        color: Colors.white.withOpacity(0.5),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
                       ),
 
-                      child: TextField(
-                        controller: controllers[index],
-                        focusNode: focusNodes[index],
-
-                        textAlign: TextAlign.center,
-                        keyboardType: TextInputType.number,
-                        maxLength: 1,
-
-                        style: const TextStyle(
-                          fontSize: 22,
+                      child: const Text(
+                        "Verify & Proceed",
+                        style: TextStyle(
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
-
-                        decoration: const InputDecoration(
-                          counterText: "",
-                          border: InputBorder.none,
-                        ),
-
-                        onChanged: (value) => onChanged(value, index),
                       ),
                     ),
                   ),
-                ),
 
-                const Spacer(),
-
-                /// Verify Button
-                Container(
-                  width: double.infinity,
-                  height: 55,
-
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFFFF4E8A),
-                        Color(0xFF9B51E0),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-
-                  child: ElevatedButton(
-                    onPressed: verifyOtp,
-
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                    ),
-
-                    child: const Text(
-                      "Verify & Proceed",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-              ],
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ),
         ),

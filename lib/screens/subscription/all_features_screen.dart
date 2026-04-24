@@ -1,7 +1,49 @@
 import 'package:flutter/material.dart';
 
-class AllFeaturesScreen extends StatelessWidget {
-  const AllFeaturesScreen({super.key});
+import '../chat/chat_list_screen.dart';
+import '../like/liked_you_screen.dart';
+import '../myprofile/my_profile_screen.dart';
+
+class AllFeaturesScreen extends StatefulWidget {
+  final int initialIndex;
+
+  const AllFeaturesScreen({super.key, this.initialIndex = 3});
+
+  @override
+  State<AllFeaturesScreen> createState() => _AllFeaturesScreenState();
+}
+
+class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+  }
+
+  void _onTabTapped(int index) {
+    if (index == _currentIndex) return;
+    setState(() {
+      _currentIndex = index;
+    });
+
+    // Navigate to the corresponding screen based on index
+    // Replace the navigation logic below to match your app's routing:
+    //
+    // if (index == 0) {
+    //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 0)));
+    // } else if (index == 1) {
+    //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 1)));
+    // } else if (index == 2) {
+    //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 2)));
+    // } else if (index == 3) {
+    //   Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen(initialIndex: 3)));
+    // }
+
+    // OR simply pop back to HomeScreen with the selected index:
+    Navigator.pop(context, index);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +189,7 @@ class AllFeaturesScreen extends StatelessWidget {
               ),
             ),
 
-            /// BOTTOM NAV (OPTIONAL)
+            /// BOTTOM NAV
             _bottomNav(),
           ],
         ),
@@ -171,7 +213,7 @@ class AllFeaturesScreen extends StatelessWidget {
     );
   }
 
-  /// BIG CARD
+  /// BIG CARD — Fixed overflow with Expanded + flexible text
   Widget _bigCard({
     required IconData icon,
     required String title,
@@ -191,26 +233,31 @@ class AllFeaturesScreen extends StatelessWidget {
             child: Icon(icon, color: Colors.pink),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              Text(
-                subtitle,
-                style: const TextStyle(color: Colors.black54),
-              ),
-            ],
-          )
+          Expanded(                          // ← Fix: prevents right overflow
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: Colors.black54),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  /// SMALL ITEM
+  /// SMALL ITEM — Fixed overflow with Expanded + flexible text
   Widget _smallItem({
     required IconData icon,
     required String title,
@@ -226,26 +273,31 @@ class AllFeaturesScreen extends StatelessWidget {
             child: Icon(icon, color: Colors.pink),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-              ),
-              Text(
-                subtitle,
-                style: const TextStyle(color: Colors.black54),
-              ),
-            ],
-          )
+          Expanded(                          // ← Fix: prevents right overflow
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 15),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: Colors.black54),
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  /// BOTTOM NAV
+  /// BOTTOM NAV — Now matches HomeScreen with active/inactive states
   Widget _bottomNav() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
@@ -253,40 +305,37 @@ class AllFeaturesScreen extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: const Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.favorite_border),
-              SizedBox(height: 4),
-              Text("Liked you"),
-            ],
+          _buildNavItem(0, Icons.favorite_border, "Liked you"),
+          _buildNavItem(1, Icons.people, "People"),
+          _buildNavItem(2, Icons.chat_bubble_outline, "Chat"),
+          _buildNavItem(3, Icons.person_outline, "Profile"),
+        ],
+      ),
+    );
+  }
+
+  /// NAV ITEM — Active/inactive styling matching HomeScreen exactly
+  Widget _buildNavItem(int index, IconData icon, String label) {
+    final isActive = _currentIndex == index;
+    return GestureDetector(
+      onTap: () => _onTabTapped(index),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: isActive ? Colors.pink : Colors.grey,
           ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.people),
-              SizedBox(height: 4),
-              Text("People"),
-            ],
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.chat_bubble_outline),
-              SizedBox(height: 4),
-              Text("Chat"),
-            ],
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.person, color: Colors.pink),
-              SizedBox(height: 4),
-              Text("Profile"),
-            ],
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: isActive ? Colors.pink : Colors.grey,
+              fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
+            ),
           ),
         ],
       ),

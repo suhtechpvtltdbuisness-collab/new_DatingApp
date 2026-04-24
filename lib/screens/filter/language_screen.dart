@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dating_app/utils/languages.dart';
 
 class LanguageScreen extends StatefulWidget {
   const LanguageScreen({super.key});
@@ -10,28 +11,35 @@ class LanguageScreen extends StatefulWidget {
 class _LanguageScreenState extends State<LanguageScreen> {
 
   bool showOthers = false;
+  final TextEditingController searchController = TextEditingController();
+  String searchQuery = "";
 
-  List<String> languages = [
-    "Afar",
-    "Afrikaans",
-    "Albanian",
-    "American Sign Language",
-    "Amharic",
-    "Arabic",
-    "Aramaic",
-    "Armenian",
-    "Assamese",
-  ];
+  /// Get languages from static class
+  List<String> get allLanguages => Languages.all;
 
   List<String> selectedLanguages = [];
+
+  /// Get filtered languages based on search
+  List<String> get filteredLanguages {
+    if (searchQuery.isEmpty) {
+      return allLanguages;
+    }
+    return allLanguages
+        .where((lang) => lang.toLowerCase().contains(searchQuery.toLowerCase()))
+        .toList();
+  }
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
-
       body: Container(
-
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -42,7 +50,6 @@ class _LanguageScreenState extends State<LanguageScreen> {
             end: Alignment.bottomCenter,
           ),
         ),
-
         child: SafeArea(
           child: Column(
             children: [
@@ -52,21 +59,40 @@ class _LanguageScreenState extends State<LanguageScreen> {
                 padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
-
                     IconButton(
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () {
                         Navigator.pop(context);
                       },
                     ),
-
-                    const Text(
-                      "Languages they know",
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: Text(
+                        "Languages they know",
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    )
+                    ),
+                    if (selectedLanguages.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.pink,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          "${selectedLanguages.length}/3",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -91,112 +117,255 @@ class _LanguageScreenState extends State<LanguageScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: const TextField(
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (value) {
+                      setState(() {
+                        searchQuery = value;
+                      });
+                    },
                     decoration: InputDecoration(
-                      icon: Icon(Icons.search),
+                      prefixIcon: const Icon(Icons.search, color: Colors.pink),
                       hintText: "Search for a language",
+                      hintStyle: TextStyle(color: Colors.grey.shade400),
                       border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                     ),
                   ),
                 ),
               ),
 
-              const SizedBox(height: 15),
+              const SizedBox(height: 10),
+
+              /// SELECTED LANGUAGES (Chips)
+              if (selectedLanguages.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: SizedBox(
+                    height: 40,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: selectedLanguages.length,
+                      itemBuilder: (context, index) {
+                        return Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.pink,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                selectedLanguages[index],
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    selectedLanguages.remove(
+                                      selectedLanguages[index],
+                                    );
+                                  });
+                                },
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+
+              const SizedBox(height: 10),
+
+              /// LANGUAGE COUNT
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  children: [
+                    Text(
+                      searchQuery.isEmpty
+                          ? "${allLanguages.length} languages"
+                          : "${filteredLanguages.length} results",
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 10),
 
               /// LANGUAGE LIST
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  itemCount: languages.length,
-                  itemBuilder: (context, index) {
-
-                    String lang = languages[index];
-                    bool selected = selectedLanguages.contains(lang);
-
-                    return GestureDetector(
-                      onTap: () {
-
-                        setState(() {
-
-                          if (selected) {
-                            selectedLanguages.remove(lang);
-                          } else {
-                            if (selectedLanguages.length < 3) {
-                              selectedLanguages.add(lang);
-                            }
-                          }
-
-                        });
-                      },
-
-                      child: Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 16),
-
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(
-                            color: selected
-                                ? Colors.pink
-                                : Colors.grey.shade300,
-                            width: 2,
-                          ),
-                        ),
-
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: filteredLanguages.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-
-                            Text(lang),
-
                             Icon(
-                              selected
-                                  ? Icons.check_circle
-                                  : Icons.circle_outlined,
-                              color: selected
-                                  ? Colors.pink
-                                  : Colors.grey,
-                            )
+                              Icons.search_off,
+                              size: 60,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              "No languages found",
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 16,
+                              ),
+                            ),
                           ],
                         ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        itemCount: filteredLanguages.length,
+                        itemBuilder: (context, index) {
+                          String lang = filteredLanguages[index];
+                          bool selected = selectedLanguages.contains(lang);
+                          bool canSelect = selectedLanguages.length < 3;
+
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                if (selected) {
+                                  selectedLanguages.remove(lang);
+                                } else if (canSelect) {
+                                  selectedLanguages.add(lang);
+                                }
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              margin: const EdgeInsets.only(bottom: 10),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 16,
+                              ),
+                              decoration: BoxDecoration(
+                                color: selected
+                                    ? Colors.pink.shade50
+                                    : Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(
+                                  color: selected
+                                      ? Colors.pink
+                                      : Colors.grey.shade200,
+                                  width: selected ? 2 : 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.03),
+                                    blurRadius: 5,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      lang,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: selected
+                                            ? FontWeight.w600
+                                            : FontWeight.normal,
+                                        color: selected
+                                            ? Colors.pink
+                                            : Colors.black87,
+                                      ),
+                                    ),
+                                  ),
+                                  if (selected)
+                                    const Icon(
+                                      Icons.check_circle,
+                                      color: Colors.pink,
+                                      size: 22,
+                                    )
+                                  else
+                                    Icon(
+                                      Icons.circle_outlined,
+                                      color: Colors.grey.shade400,
+                                      size: 22,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
               ),
 
               /// BOTTOM SWITCH
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 20, vertical: 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Show other people if I run out",
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        Text(
-                          "Expand your search area if needed",
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
                     ),
-
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Show other people if I run out",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            "Expand your search area if needed",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     Switch(
                       value: showOthers,
                       activeColor: Colors.pink,
@@ -209,8 +378,6 @@ class _LanguageScreenState extends State<LanguageScreen> {
                   ],
                 ),
               ),
-
-              const SizedBox(height: 10),
             ],
           ),
         ),

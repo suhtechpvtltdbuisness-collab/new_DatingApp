@@ -23,7 +23,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: [
-                  const Icon(Icons.arrow_back),
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(Icons.arrow_back),
+                  ),
                   const SizedBox(width: 10),
                   const Text(
                     "Subscription",
@@ -316,7 +319,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       onTap: () => setState(() => selectedIndex = index),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         decoration: BoxDecoration(
           color: selected ? const Color(0xFFFF4D8D) : Colors.transparent,
           borderRadius: BorderRadius.circular(30),
@@ -325,54 +328,67 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
           ),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (isBest)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 6),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.pink.shade700,
-                      borderRadius: BorderRadius.circular(10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (isBest)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.pink.shade700,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Text(
+                        "BEST VALUE",
+                        style: TextStyle(color: Colors.white, fontSize: 10),
+                      ),
                     ),
-                    child: const Text(
-                      "BEST VALUE",
-                      style: TextStyle(color: Colors.white, fontSize: 10),
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: selected ? Colors.white : Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
                   ),
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: selected ? Colors.white : Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: selected ? Colors.white70 : Colors.grey,
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    price,
+                    style: TextStyle(
+                      color: selected ? Colors.white : Colors.black,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                   ),
                 ),
                 Text(
-                  subtitle,
+                  "PER WEEK",
                   style: TextStyle(
+                    fontSize: 10,
                     color: selected ? Colors.white70 : Colors.grey,
                   ),
-                ),
-              ],
-            ),
-            Column(
-              children: [
-                Text(
-                  price,
-                  style: TextStyle(
-                    color: selected ? Colors.white : Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                  ),
-                ),
-                const Text(
-                  "PER WEEK",
-                  style: TextStyle(fontSize: 10, color: Colors.grey),
                 )
               ],
             ),

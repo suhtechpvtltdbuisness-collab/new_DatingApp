@@ -118,64 +118,92 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
               ),
             ),
             child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_ios_new),
-                    ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      child: Padding(
+                        padding: const EdgeInsets.all(24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            IconButton(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.arrow_back_ios_new),
+                            ),
 
-                    const SizedBox(height: 20),
+                            const SizedBox(height: 20),
 
-                    const Text(
-                      "Set Password",
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
+                            const Text(
+                              "Set Password",
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+
+                            const SizedBox(height: 10),
+
+                            const Text("Create a secure password"),
+
+                            const SizedBox(height: 40),
+
+                            const Text("Password"),
+                            const SizedBox(height: 10),
+                            inputField(
+                              hint: "Enter password",
+                              controller: passwordController,
+                              obscure: obscure1,
+                              toggle: () => setState(() => obscure1 = !obscure1),
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            const Text("Confirm Password"),
+                            const SizedBox(height: 10),
+                            inputField(
+                              hint: "Confirm password",
+                              controller: confirmController,
+                              obscure: obscure2,
+                              toggle: () => setState(() => obscure2 = !obscure2),
+                            ),
+
+                            SizedBox(height: MediaQuery.of(context).viewInsets.bottom > 0 ? 20 : 40),
+
+                            Container(
+                              width: double.infinity,
+                              height: 55,
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFFFF4E8A),
+                                    Color(0xFF9B51E0),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: ElevatedButton(
+                                onPressed: continueOnboarding,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                ),
+                                child: const Text(
+                                  "Continue",
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-
-                    const SizedBox(height: 10),
-
-                    const Text("Create a secure password"),
-
-                    const SizedBox(height: 40),
-
-                    const Text("Password"),
-                    const SizedBox(height: 10),
-                    inputField(
-                      hint: "Enter password",
-                      controller: passwordController,
-                      obscure: obscure1,
-                      toggle: () => setState(() => obscure1 = !obscure1),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    const Text("Confirm Password"),
-                    const SizedBox(height: 10),
-                    inputField(
-                      hint: "Confirm password",
-                      controller: confirmController,
-                      obscure: obscure2,
-                      toggle: () => setState(() => obscure2 = !obscure2),
-                    ),
-
-                    const Spacer(),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 55,
-                      child: ElevatedButton(
-                        onPressed: continueOnboarding,
-                        child: const Text("Continue"),
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ),

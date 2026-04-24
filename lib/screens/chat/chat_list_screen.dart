@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'chat_screen.dart';
 
 class ChatListScreen extends StatelessWidget {
-  const ChatListScreen({super.key});
+  final Function(int)? onTabTapped;
+
+  const ChatListScreen({super.key, this.onTabTapped});
 
   @override
   Widget build(BuildContext context) {
@@ -13,17 +15,25 @@ class ChatListScreen extends StatelessWidget {
           children: [
 
             /// Header
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "Chats",
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Chats",
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                ),
+                  GestureDetector(
+                    onTap: () {
+                      onTabTapped?.call(1); // Go to People tab
+                    },
+                    child: const Icon(Icons.people_outline, size: 28),
+                  ),
+                ],
               ),
             ),
 
@@ -192,58 +202,6 @@ class ChatListScreen extends StatelessWidget {
                 ],
               ),
             ),
-
-            /// Bottom Navigation
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(20),
-                ),
-              ),
-              child: const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.favorite_border),
-                      SizedBox(height: 4),
-                      Text("Liked you"),
-                    ],
-                  ),
-
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.people, color: Colors.pink),
-                      SizedBox(height: 4),
-                      Text("People"),
-                    ],
-                  ),
-
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.chat_bubble_outline),
-                      SizedBox(height: 4),
-                      Text("Chat"),
-                    ],
-                  ),
-
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.person_outline),
-                      SizedBox(height: 4),
-                      Text("Profile"),
-                    ],
-                  ),
-                ],
-              ),
-            )
           ],
         ),
       ),

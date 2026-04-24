@@ -1,7 +1,212 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 
-class EditProfileScreen extends StatelessWidget {
+class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
+
+  @override
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
+}
+
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  final ImagePicker _picker = ImagePicker();
+
+  // List of uploaded images - now stores actual file paths
+  final List<dynamic> _uploadedImages = [
+    "assets/images/editprofilegirl1.png",
+    "assets/images/editprofilegirl1.png",
+    "assets/images/editprofilegirl1.png",
+    "assets/images/editprofilegirl1.png",
+    "assets/images/editprofilegirl1.png",
+  ];
+
+  // List of interests
+  final List<String> _interests = [
+    "Music",
+    "Fitness",
+    "Travel",
+    "Art",
+    "Cooking",
+  ];
+
+  // Available interests to add
+  final List<String> _availableInterests = [
+    "Reading",
+    "Gaming",
+    "Photography",
+    "Dancing",
+    "Cooking",
+    "Travel",
+    "Music",
+    "Fitness",
+    "Art",
+    "Movies",
+    "Shopping",
+    "Yoga",
+  ];
+
+  // Method to pick image from gallery/camera
+  Future<void> _pickImage() async {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: Colors.pink),
+              title: const Text("Choose from Gallery"),
+              onTap: () async {
+                Navigator.pop(context);
+                await _addImage(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: Colors.pink),
+              title: const Text("Take a Photo"),
+              onTap: () async {
+                Navigator.pop(context);
+                await _addImage(ImageSource.camera);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addImage(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(source: source);
+      if (image != null) {
+        setState(() {
+          // Store the actual image file path
+          _uploadedImages.add(image.path);
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Photo added successfully!"),
+              backgroundColor: Colors.pink,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error adding photo: $e"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  // Method to delete image
+  void _deleteImage(int index) {
+    setState(() {
+      _uploadedImages.removeAt(index);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Photo removed"),
+        backgroundColor: Colors.pink,
+        duration: Duration(seconds: 1),
+      ),
+    );
+  }
+
+  // Method to add interest
+  void _addInterest() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Add Interest",
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 2.5,
+                ),
+                itemCount: _availableInterests.length,
+                itemBuilder: (context, index) {
+                  final interest = _availableInterests[index];
+                  final isSelected = _interests.contains(interest);
+                  return GestureDetector(
+                    onTap: () {
+                      if (!isSelected) {
+                        setState(() {
+                          _interests.add(interest);
+                        });
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("$interest added!"),
+                            backgroundColor: Colors.pink,
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      }
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: isSelected ? Colors.pink : Colors.grey.shade300,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        color: isSelected ? Colors.pink.shade50 : Colors.white,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        interest,
+                        style: TextStyle(
+                          color: isSelected ? Colors.pink : Colors.black,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Method to remove interest
+  void _removeInterest(String interest) {
+    setState(() {
+      _interests.remove(interest);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("$interest removed"),
+        backgroundColor: Colors.pink,
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -88,7 +293,7 @@ class EditProfileScreen extends StatelessWidget {
 
                       const SizedBox(height: 20),
 
-                      /// GRID (FIXED HEIGHT)
+                      /// GRID (FIXED HEIGHT) - DYNAMIC
                       GridView.count(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
@@ -96,19 +301,21 @@ class EditProfileScreen extends StatelessWidget {
                         crossAxisSpacing: 10,
                         mainAxisSpacing: 10,
                         children: [
-                          _imageCard("assets/images/editprofilegirl1.png"),
-                          _imageCard("assets/images/editprofilegirl1.png"),
-                          _imageCard("assets/images/editprofilegirl1.png"),
-                          _imageCard("assets/images/editprofilegirl1.png"),
-                          _imageCard("assets/images/editprofilegirl1.png"),
-
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: const Center(
-                              child: Icon(Icons.add, size: 30),
+                          // Uploaded images
+                          ...List.generate(_uploadedImages.length, (index) {
+                            return _imageCard(_uploadedImages[index], index);
+                          }),
+                          // Add button
+                          GestureDetector(
+                            onTap: _pickImage,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Center(
+                                child: Icon(Icons.add, size: 30, color: Colors.pink),
+                              ),
                             ),
                           ),
                         ],
@@ -176,7 +383,7 @@ class EditProfileScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        /// INTERESTS
+                        /// INTERESTS - DYNAMIC
                         const Text(
                           "Interests",
                           style: TextStyle(
@@ -195,12 +402,10 @@ class EditProfileScreen extends StatelessWidget {
                           spacing: 10,
                           runSpacing: 10,
                           children: [
-                            _chip("Music"),
-                            _chip("Fitness"),
-                            _chip("Travel"),
-                            _chip("Art"),
-                            _chip("Cooking"),
-                            _addChip(),
+                            ...List.generate(_interests.length, (index) {
+                              return _chip(_interests[index], () => _removeInterest(_interests[index]));
+                            }),
+                            _addChip(() => _addInterest()),
                           ],
                         ),
 
@@ -477,32 +682,52 @@ class EditProfileScreen extends StatelessWidget {
     );
   }
 
-  /// IMAGE CARD
-  Widget _imageCard(String path) {
+  /// IMAGE CARD - WITH DELETE FUNCTIONALITY
+  Widget _imageCard(dynamic imagePath, int index) {
+    // Check if it's an asset or a file path
+    final bool isAsset = imagePath.toString().startsWith('assets/');
+    
     return Stack(
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: Image.asset(
-            path,
-            fit: BoxFit.cover,
-            width: double.infinity,
-            height: double.infinity,
-          ),
+          child: isAsset
+              ? Image.asset(
+                  imagePath,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                )
+              : Image.file(
+                  File(imagePath),
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  errorBuilder: (context, error, stackTrace) {
+                    // Fallback if file doesn't exist
+                    return Container(
+                      color: Colors.grey.shade300,
+                      child: const Icon(Icons.broken_image, color: Colors.grey),
+                    );
+                  },
+                ),
         ),
 
-        /// CLOSE BUTTON
+        /// CLOSE BUTTON - FUNCTIONAL
         Positioned(
           top: 6,
           right: 6,
-          child: Container(
-            decoration: const BoxDecoration(
-              color: Colors.black54,
-              shape: BoxShape.circle,
-            ),
-            child: const Padding(
-              padding: EdgeInsets.all(4),
-              child: Icon(Icons.close, size: 14, color: Colors.white),
+          child: GestureDetector(
+            onTap: () => _deleteImage(index),
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: const Padding(
+                padding: EdgeInsets.all(4),
+                child: Icon(Icons.close, size: 14, color: Colors.white),
+              ),
             ),
           ),
         ),
@@ -510,40 +735,46 @@ class EditProfileScreen extends StatelessWidget {
     );
   }
 
-  /// PINK CHIP
-  Widget _chip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.pink),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(text, style: const TextStyle(color: Colors.pink)),
-          const SizedBox(width: 6),
-          const Icon(Icons.close, size: 14, color: Colors.pink),
-        ],
+  /// PINK CHIP - WITH REMOVE FUNCTIONALITY
+  Widget _chip(String text, VoidCallback onRemove) {
+    return GestureDetector(
+      onTap: onRemove,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.pink),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(text, style: const TextStyle(color: Colors.pink)),
+            const SizedBox(width: 6),
+            const Icon(Icons.close, size: 14, color: Colors.pink),
+          ],
+        ),
       ),
     );
   }
 
-  /// ADD CHIP
-  Widget _addChip() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.pink),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text("Add more", style: TextStyle(color: Colors.pink)),
-          SizedBox(width: 6),
-          Icon(Icons.add, size: 16, color: Colors.pink),
-        ],
+  /// ADD CHIP - WITH ONTAP
+  Widget _addChip(VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.pink),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text("Add more", style: TextStyle(color: Colors.pink)),
+            SizedBox(width: 6),
+            Icon(Icons.add, size: 16, color: Colors.pink),
+          ],
+        ),
       ),
     );
   }

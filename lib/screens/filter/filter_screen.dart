@@ -77,41 +77,44 @@ class _FilterScreenState extends State<FilterScreen> {
                 const SizedBox(height: 20),
 
                 /// FILTER TABS
-                Row(
-                  children: [
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
 
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.pink,
-                        borderRadius: BorderRadius.circular(25),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 18, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.pink,
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: const Text(
+                          "Basic filters",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500),
+                        ),
                       ),
-                      child: const Text(
-                        "Basic filters",
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500),
-                      ),
-                    ),
 
-                    const SizedBox(width: 10),
+                      const SizedBox(width: 10),
 
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 18, vertical: 8),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.pink),
-                        borderRadius: BorderRadius.circular(25),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 18, vertical: 8),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.pink),
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: const Text(
+                          "Advanced filters",
+                          style: TextStyle(
+                              color: Colors.pink,
+                              fontWeight: FontWeight.w500),
+                        ),
                       ),
-                      child: const Text(
-                        "Advanced filters",
-                        style: TextStyle(
-                            color: Colors.pink,
-                            fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
 
                 const SizedBox(height: 25),
@@ -173,9 +176,11 @@ class _FilterScreenState extends State<FilterScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
 
-                          const Text(
-                            "See people 2 years either side if I run out",
-                            style: TextStyle(fontSize: 12),
+                          Flexible(
+                            child: Text(
+                              "See people 2 years either side if I run out",
+                              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                            ),
                           ),
 
                           Switch(
@@ -227,9 +232,11 @@ class _FilterScreenState extends State<FilterScreen> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
 
-                          const Text(
-                            "See people slightly further away if I run out",
-                            style: TextStyle(fontSize: 12),
+                          Flexible(
+                            child: Text(
+                              "See people slightly further away if I run out",
+                              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                            ),
                           ),
 
                           Switch(
@@ -265,15 +272,25 @@ class _FilterScreenState extends State<FilterScreen> {
                 const SizedBox(height: 15),
 
                 Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: interests
                       .map(
                         (e) => Chip(
-                          label: Text(e),
+                          label: Text(
+                            e,
+                            style: const TextStyle(fontSize: 13),
+                          ),
                           deleteIcon: const Icon(Icons.close, size: 16),
-                          onDeleted: () {},
+                          onDeleted: () {
+                            setState(() {
+                              interests.remove(e);
+                            });
+                          },
                           backgroundColor: Colors.pink.shade50,
+                          deleteIconColor: Colors.pink,
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                       )
                       .toList(),
@@ -289,7 +306,7 @@ class _FilterScreenState extends State<FilterScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                  onPressed: () {},
+                  onPressed: _showAddInterestDialog,
                   child: const Text("Add more +"),
                 ),
 
@@ -478,6 +495,69 @@ class _FilterScreenState extends State<FilterScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  /// ADD INTEREST DIALOG
+  void _showAddInterestDialog() {
+    final TextEditingController controller = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            "Add Interest",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            decoration: InputDecoration(
+              hintText: "Enter interest",
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.pink, width: 2),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.pink,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              onPressed: () {
+                final String interest = controller.text.trim();
+                if (interest.isNotEmpty && !interests.contains(interest)) {
+                  setState(() {
+                    interests.add(interest);
+                  });
+                }
+                Navigator.pop(context);
+              },
+              child: const Text("Add"),
+            ),
+          ],
+        );
+      },
     );
   }
 }

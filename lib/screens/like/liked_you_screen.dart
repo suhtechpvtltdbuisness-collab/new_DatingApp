@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../subscription/subscription_screen.dart';
 
 class LikedYouScreen extends StatelessWidget {
-  const LikedYouScreen({super.key});
+  final Function(int)? onTabTapped;
+
+  const LikedYouScreen({super.key, this.onTabTapped});
 
   @override
   Widget build(BuildContext context) {
@@ -13,11 +15,22 @@ class LikedYouScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             /// TITLE
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              child: Text(
-                "Liked You",
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Liked You",
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      onTabTapped?.call(1); // Go to People tab
+                    },
+                    child: const Icon(Icons.people_outline, size: 28),
+                  ),
+                ],
               ),
             ),
 
@@ -133,9 +146,6 @@ class LikedYouScreen extends StatelessWidget {
             ),
 
             const Spacer(),
-
-            /// BOTTOM NAV
-            _buildBottomNav(context),
           ],
         ),
       ),
@@ -194,50 +204,6 @@ class LikedYouScreen extends StatelessWidget {
       child: Text(
         text,
         style: TextStyle(color: active ? Colors.white : Colors.black),
-      ),
-    );
-  }
-
-  /// BOTTOM NAV
-  Widget _buildBottomNav(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: const [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.favorite, color: Colors.pink),
-              SizedBox(height: 4),
-              Text("Liked you"),
-            ],
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [Icon(Icons.people), SizedBox(height: 4), Text("People")],
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.chat_bubble_outline),
-              SizedBox(height: 4),
-              Text("Chat"),
-            ],
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.person_outline),
-              SizedBox(height: 4),
-              Text("Profile"),
-            ],
-          ),
-        ],
       ),
     );
   }

@@ -60,7 +60,6 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
       final response = await _authService.verifyEmail(widget.email, otp);
 
       if (response.success) {
-        /// ✅ NAVIGATE TO VERIFIED EMAIL SCREEN
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -128,6 +127,8 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
         onChanged: (value) {
           if (value.isNotEmpty && index < 3) {
             FocusScope.of(context).nextFocus();
+          } else if (value.isEmpty && index > 0) {
+            FocusScope.of(context).previousFocus();
           }
         },
       ),
@@ -145,8 +146,10 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+
     return Scaffold(
-      resizeToAvoidBottomInset: true,
+      resizeToAvoidBottomInset: false,
       body: Container(
         height: double.infinity,
         decoration: const BoxDecoration(
@@ -160,13 +163,9 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
           ),
         ),
         child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              24,
-              24,
-              24,
-              MediaQuery.of(context).viewInsets.bottom + 20,
-            ),
+          child: SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: EdgeInsets.fromLTRB(24, 24, 24, bottomInset + 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -218,7 +217,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
                   ),
                 ),
 
-                const Spacer(),
+                const SizedBox(height: 40),
 
                 /// VERIFY BUTTON
                 Container(
@@ -245,7 +244,8 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : const Text(
@@ -274,9 +274,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
                           TextSpan(
                             text: "Send again",
                             style: TextStyle(
-                              color: seconds == 0
-                                  ? Colors.purple
-                                  : Colors.grey,
+                              color: seconds == 0 ? Colors.purple : Colors.grey,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

@@ -94,28 +94,35 @@ class AuthService {
     required String gender,
     required String profile,
     required String interestedIn,
-    required String email,
-    required String password,
+    String? email,
+    String? password,
     required List<String> coordinates,
   }) async {
     try {
       _logger.i('Registering user: $email');
 
+      final data = {
+        "name": name,
+        "phoneNumber": phoneNumber,
+        "dob": dob,
+        "gender": gender,
+        "profile": profile,
+        "interestedIn": interestedIn,
+        "location": {
+          "coordinates": coordinates,
+        },
+      };
+
+      if (email != null && email.isNotEmpty) {
+        data["email"] = email;
+      }
+      if (password != null && password.isNotEmpty) {
+        data["password"] = password;
+      }
+
       final response = await _apiClient.post<void>(
         ApiEndpoints.signup,
-        data: {
-          "name": name,
-          "phoneNumber": phoneNumber,
-          "dob": dob,
-          "gender": gender,
-          "profile": profile,
-          "interestedIn": interestedIn,
-          "email": email,
-          "password": password,
-          "location": {
-            "coordinates": coordinates,
-          },
-        },
+        data: data,
         fromJsonT: (_) {},
       );
 

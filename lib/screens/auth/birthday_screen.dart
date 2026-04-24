@@ -43,9 +43,10 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
     required List items,
     required int selectedIndex,
     required Function(int) onChanged,
+    required double width,
   }) {
     return SizedBox(
-      width: 100,
+      width: width,
       height: 160,
       child: ListWheelScrollView.useDelegate(
         itemExtent: 42,
@@ -69,6 +70,8 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
                       isSelected ? FontWeight.bold : FontWeight.normal,
                   color: isSelected ? Colors.black : Colors.grey,
                 ),
+                overflow: TextOverflow.visible,
+                softWrap: true,
               ),
             );
           },
@@ -97,7 +100,7 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
               /// Highlight
               Container(
                 height: 42,
-                margin: const EdgeInsets.symmetric(horizontal: 20),
+                margin: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(30),
                   border: Border.all(color: Colors.purple),
@@ -122,6 +125,7 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
                         selectedMonth = index;
                       });
                     },
+                    width: 130,
                   ),
 
                   wheelPicker(
@@ -132,6 +136,7 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
                         selectedDay = index;
                       });
                     },
+                    width: 70,
                   ),
 
                   wheelPicker(
@@ -142,6 +147,7 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
                         selectedYear = 1965 + index;
                       });
                     },
+                    width: 80,
                   ),
                 ],
               ),
@@ -174,7 +180,7 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
             ),
           ),
 
-          const Spacer(),
+          const SizedBox(height: 30),
 
           const Text(
             "By tapping continue, you confirm this is\n"

@@ -60,8 +60,8 @@ class RegistrationController extends GetxController {
         gender: gender.value,
         profile: profile.value,
         interestedIn: interestedIn.value,
-        email: email.value,
-        password: password.value,
+        email: email.value.isNotEmpty ? email.value : null,
+        password: password.value.isNotEmpty ? password.value : null,
         coordinates: location,
       );
 

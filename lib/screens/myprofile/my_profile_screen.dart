@@ -8,7 +8,9 @@ import 'Notifications_Screen.dart';
 import 'Help_Support_Screen.dart';
 
 class MyProfileScreen extends StatefulWidget {
-  const MyProfileScreen({super.key});
+  final Function(int)? onTabTapped;
+
+  const MyProfileScreen({super.key, this.onTabTapped});
 
   @override
   State<MyProfileScreen> createState() => _MyProfileScreenState();
@@ -349,9 +351,23 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 const SizedBox(height: 10),
 
                 /// TITLE
-                const Text(
-                  "My Profile",
-                  style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "My Profile",
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          widget.onTabTapped?.call(1); // Go to People tab
+                        },
+                        child: const Icon(Icons.people_outline, size: 28),
+                      ),
+                    ],
+                  ),
                 ),
 
                 const SizedBox(height: 20),
@@ -903,30 +919,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
             ),
           ),
         ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 3, // Profile selected
-        selectedItemColor: Colors.pink,
-        unselectedItemColor: Colors.black54,
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          // handle navigation here
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.favorite_border),
-            label: "Liked you",
-          ),
-          BottomNavigationBarItem(icon: Icon(Icons.people), label: "People"),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            label: "Chat",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            label: "Profile",
-          ),
-        ],
       ),
     );
   }

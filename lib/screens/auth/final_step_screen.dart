@@ -1,11 +1,42 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'location_screen.dart';
+import 'package:get/get.dart';
+import 'package:dating_app/controllers/registration_controller.dart';
 
-class FinalStepScreen extends StatelessWidget {
+class FinalStepScreen extends StatefulWidget {
   final File? image;
 
   const FinalStepScreen({super.key, this.image});
+
+  @override
+  State<FinalStepScreen> createState() => _FinalStepScreenState();
+}
+
+class _FinalStepScreenState extends State<FinalStepScreen> {
+  final RegistrationController registrationController = Get.find<RegistrationController>();
+  bool isLoading = false;
+
+  void _startExploring() async {
+    setState(() => isLoading = true);
+
+    final response = await registrationController.registerUser();
+
+    setState(() => isLoading = false);
+
+    if (response.success) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const LocationScreen(),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(response.error ?? response.message ?? 'Registration failed')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,8 +75,8 @@ class FinalStepScreen extends StatelessWidget {
                   ),
 
                   child: ClipOval(
-                    child: image != null
-                        ? Image.file(image!, fit: BoxFit.cover)
+                    child: widget.image != null
+                        ? Image.file(widget.image!, fit: BoxFit.cover)
                         : Image.network(
                             "https://i.pravatar.cc/300",
                             fit: BoxFit.cover,
@@ -85,28 +116,28 @@ class FinalStepScreen extends StatelessWidget {
                   ),
 
                   child: ElevatedButton(
-                    onPressed: () {
-                      /// Navigate to Home Screen
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LocationScreen(),
-                        ),
-                      );
-                    },
-
+                    onPressed: isLoading ? null : _startExploring,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.transparent,
                       shadowColor: Colors.transparent,
                     ),
 
-                    child: const Text(
-                      "Start Exploring  >",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Text(
+                            "Start Exploring  >",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
 
