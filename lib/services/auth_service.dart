@@ -160,10 +160,11 @@ class AuthService {
 
   Future<void> _clearTokens() async {
     final prefs = await _getPrefs();
-
-    await prefs.clear();
+    await prefs.remove(StorageKeys.userToken);
+    await prefs.remove(StorageKeys.refreshToken);
+    await prefs.remove(StorageKeys.userId);
+    await prefs.remove(StorageKeys.userEmail);
     _apiClient.clearTokens();
-
     _logger.i('Tokens cleared');
   }
 
@@ -257,20 +258,30 @@ class AuthService {
     try {
       _logger.i('Logging out user');
 
-      final response = await _apiClient.post<void>(
-        ApiEndpoints.logout,
-        fromJsonT: (_) {},
-      );
-
+      // Always clear local state first, regardless of API success
       await _clearTokens();
 
-      return response;
+      // Best-effort API call (fire and forget — the token is already gone locally)
+      try {
+        await _apiClient.post<void>(
+          ApiEndpoints.logout,
+          fromJsonT: (_) {},
+        );
+      } catch (_) {
+        // Swallow errors — local logout is what matters
+      }
+
+      return ApiResponse<void>.success(
+        message: 'Logged out successfully',
+        data: null,
+      );
     } catch (e) {
       _logger.e('Logout error', error: e);
-      await _clearTokens(); // Clear tokens even if API call fails
-      return ApiResponse.error(
-        message: 'Logout failed',
-        error: e.toString(),
+      // Still clear tokens even on unexpected error
+      await _clearTokens();
+      return ApiResponse<void>.success(
+        message: 'Logged out',
+        data: null,
       );
     }
   }

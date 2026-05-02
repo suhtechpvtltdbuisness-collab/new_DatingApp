@@ -1,7 +1,6 @@
 import 'package:get/get.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/models/api_models.dart';
-import 'package:dating_app/models/api_models.dart';
 
 class RegistrationController extends GetxController {
   final AuthService _authService = AuthService();
@@ -69,7 +68,7 @@ class RegistrationController extends GetxController {
         // Clear data after successful registration
         clearData();
       } else {
-        errorMessage.value = response.error ?? response.message ?? 'Registration failed';
+        errorMessage.value = response.error ?? response.message;
       }
 
       return response;

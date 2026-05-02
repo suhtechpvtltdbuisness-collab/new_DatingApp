@@ -104,6 +104,7 @@ class MatchScreen extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (_) => ChatScreen(
+                        chatId: 'new', // placeholder — will be replaced with real chatId from match response
                         name: userName,
                         image: image2,
                       ),

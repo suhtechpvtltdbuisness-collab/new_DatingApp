@@ -33,7 +33,7 @@ class _FinalStepScreenState extends State<FinalStepScreen> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response.error ?? response.message ?? 'Registration failed')),
+        SnackBar(content: Text(response.error ?? response.message)),
       );
     }
   }

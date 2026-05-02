@@ -68,7 +68,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.message ?? "OTP verification failed")),
+          SnackBar(content: Text(response.message)),
         );
       }
     } catch (e) {
@@ -94,7 +94,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.message ?? "Failed to resend OTP")),
+          SnackBar(content: Text(response.message)),
         );
       }
     } catch (e) {

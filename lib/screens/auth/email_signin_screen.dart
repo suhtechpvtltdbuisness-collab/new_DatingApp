@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dating_app/app/app_routes.dart';
-import 'package:dating_app/models/api_models.dart';
-import 'package:dating_app/services/auth_service.dart';
+import 'package:dating_app/controllers/auth_controller.dart';
 import 'package:dating_app/utils/validators.dart';
 import 'package:dating_app/screens/auth/email_signup_screen.dart';
 import 'package:get/get.dart';
@@ -16,10 +15,10 @@ class EmailSigninScreen extends StatefulWidget {
 class _EmailSigninScreenState extends State<EmailSigninScreen> {
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final AuthService _authService = AuthService();
+  // Use AuthController (GetX) so isLoggedIn / userId observables stay in sync
+  final AuthController _authController = Get.find<AuthController>();
 
   bool showEmailForm = false;
-  bool isLoading = false;
 
   @override
   void dispose() {
@@ -46,23 +45,22 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
       return;
     }
 
-    setState(() {
-      isLoading = true;
-    });
-
-    final response = await _authService.login(
-      LoginRequest(email: email, password: password),
+    final success = await _authController.login(
+      email: email,
+      password: password,
     );
 
-    setState(() {
-      isLoading = false;
-    });
+    if (!mounted) return;
 
-    if (response.success && response.data != null) {
+    if (success) {
       AppRoutes.toHome();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response.message ?? 'Login failed.')),
+        SnackBar(
+          content: Text(_authController.errorMessage.value.isNotEmpty
+              ? _authController.errorMessage.value
+              : 'Login failed. Please check your credentials.'),
+        ),
       );
     }
   }
@@ -176,12 +174,14 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: ElevatedButton(
-                      onPressed: isLoading ? null : _loginWithEmail,
+                      onPressed: _authController.isLoading.value
+                          ? null
+                          : _loginWithEmail,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
                       ),
-                      child: isLoading
+                      child: Obx(() => _authController.isLoading.value
                           ? const SizedBox(
                               height: 22,
                               width: 22,
@@ -196,7 +196,7 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
-                            ),
+                            )),
                     ),
                   ),
                   const SizedBox(height: 18),

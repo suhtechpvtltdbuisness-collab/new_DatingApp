@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'FAQs_Screen.dart';
 import 'Community_Guidelines_Screen.dart';
+import 'contact_support_screen.dart';
 
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
@@ -80,7 +81,18 @@ class HelpSupportScreen extends StatelessWidget {
                   },
                 ),
 
-                buildTile("Contact support"),
+                buildTile(
+                  "Contact support",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ContactSupportScreen(),
+                      ),
+                    );
+                  },
+                ),
+
 
                 buildTile("Report a problem"),
 

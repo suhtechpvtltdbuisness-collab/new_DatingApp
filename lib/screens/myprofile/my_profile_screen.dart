@@ -6,6 +6,7 @@ import 'Take_Break_Screen.dart';
 import 'Dating_Tips_Screen.dart';
 import 'Notifications_Screen.dart';
 import 'Help_Support_Screen.dart';
+import 'hide_my_profile_screen.dart';
 
 class MyProfileScreen extends StatefulWidget {
   final Function(int)? onTabTapped;
@@ -747,6 +748,14 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                       _buildTile(
                         Icons.visibility_off_outlined,
                         "Hide My Profile",
+                         onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HideMyProfileScreen(),
+                            ),
+                          );
+                        },
                       ),
 
                       _buildTile(

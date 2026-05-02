@@ -19,7 +19,9 @@ class ChatService {
 
   ChatService._internal();
 
-  // Get conversations list
+  // ---------------------------------------------------------------------------
+  // GET /chats  →  list of conversations
+  // ---------------------------------------------------------------------------
   Future<ApiResponse<List<ConversationModel>>> getConversations({
     int page = 1,
     int limit = 20,
@@ -27,22 +29,30 @@ class ChatService {
     try {
       _logger.i('Fetching conversations (page: $page)');
 
-      final queryParams = {
-        'page': page,
-        'limit': limit,
-      };
-
       final response = await _apiClient.get<Map<String, dynamic>>(
         ApiEndpoints.getConversations,
-        queryParameters: queryParams,
-        fromJsonT: (json) => json,
+        queryParameters: {'page': page, 'limit': limit},
+        fromJsonT: (json) => json as Map<String, dynamic>,
       );
 
       if (response.success && response.data != null) {
-        final conversations = (response.data!['conversations'] as List?)
-                ?.map((e) => ConversationModel.fromJson(e))
-                .toList() ??
-            [];
+        final raw = response.data!;
+        // Handle different possible response shapes
+        List<dynamic>? list;
+        if (raw['chats'] is List) {
+          list = raw['chats'] as List;
+        } else if (raw['conversations'] is List) {
+          list = raw['conversations'] as List;
+        } else if (raw['data'] is List) {
+          list = raw['data'] as List;
+        } else if (raw is List) {
+          list = raw as List;
+        }
+
+        final conversations = (list ?? [])
+            .map((e) => ConversationModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+
         return ApiResponse.success(
           message: 'Conversations fetched successfully',
           data: conversations,
@@ -62,33 +72,36 @@ class ChatService {
     }
   }
 
-  // Get conversation detail with messages
+  // ---------------------------------------------------------------------------
+  // GET /chats/:chatId  →  single conversation with messages
+  // ---------------------------------------------------------------------------
   Future<ApiResponse<ConversationModel>> getConversation(
-    String conversationId, {
+    String chatId, {
     int page = 1,
     int limit = 50,
   }) async {
     try {
-      _logger.i('Fetching conversation: $conversationId');
+      _logger.i('Fetching chat: $chatId');
 
       final endpoint = ApiEndpoints.getEndpoint(
         ApiEndpoints.getConversation,
-        {'id': conversationId},
+        {'chatId': chatId},
       );
-
-      final queryParams = {
-        'page': page,
-        'limit': limit,
-      };
 
       final response = await _apiClient.get<Map<String, dynamic>>(
         endpoint,
-        queryParameters: queryParams,
-        fromJsonT: (json) => json,
+        queryParameters: {'page': page, 'limit': limit},
+        fromJsonT: (json) => json as Map<String, dynamic>,
       );
 
       if (response.success && response.data != null) {
-        final conversation = ConversationModel.fromJson(response.data!);
+        final raw = response.data!;
+        // The backend may return the conversation at root, or under 'chat'/'conversation'
+        final Map<String, dynamic> convJson =
+            (raw['chat'] ?? raw['conversation'] ?? raw)
+                as Map<String, dynamic>;
+
+        final conversation = ConversationModel.fromJson(convJson);
         return ApiResponse.success(
           message: 'Conversation fetched successfully',
           data: conversation,
@@ -108,36 +121,43 @@ class ChatService {
     }
   }
 
-  // Get messages
+  // ---------------------------------------------------------------------------
+  // GET /chats/:chatId/messages  →  messages for a chat
+  // ---------------------------------------------------------------------------
   Future<ApiResponse<List<ChatMessageModel>>> getMessages(
-    String conversationId, {
+    String chatId, {
     int page = 1,
     int limit = 50,
   }) async {
     try {
-      _logger.i('Fetching messages for conversation: $conversationId');
+      _logger.i('Fetching messages for chat: $chatId');
 
       final endpoint = ApiEndpoints.getEndpoint(
         ApiEndpoints.getMessages,
-        {'id': conversationId},
+        {'chatId': chatId},
       );
-
-      final queryParams = {
-        'page': page,
-        'limit': limit,
-      };
 
       final response = await _apiClient.get<Map<String, dynamic>>(
         endpoint,
-        queryParameters: queryParams,
-        fromJsonT: (json) => json,
+        queryParameters: {'page': page, 'limit': limit},
+        fromJsonT: (json) => json as Map<String, dynamic>,
       );
 
       if (response.success && response.data != null) {
-        final messages = (response.data!['messages'] as List?)
-                ?.map((e) => ChatMessageModel.fromJson(e))
-                .toList() ??
-            [];
+        final raw = response.data!;
+        List<dynamic>? list;
+        if (raw['messages'] is List) {
+          list = raw['messages'] as List;
+        } else if (raw['data'] is List) {
+          list = raw['data'] as List;
+        } else if (raw is List) {
+          list = raw as List;
+        }
+
+        final messages = (list ?? [])
+            .map((e) => ChatMessageModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+
         return ApiResponse.success(
           message: 'Messages fetched successfully',
           data: messages,
@@ -157,35 +177,40 @@ class ChatService {
     }
   }
 
-  // Send message
+  // ---------------------------------------------------------------------------
+  // POST /chats/:chatId/messages  →  send a message
+  // ---------------------------------------------------------------------------
   Future<ApiResponse<ChatMessageModel>> sendMessage(
-    String conversationId,
+    String chatId,
     String message, {
     String? attachmentUrl,
     String? attachmentType,
   }) async {
     try {
-      _logger.i('Sending message to conversation: $conversationId');
+      _logger.i('Sending message to chat: $chatId');
 
       final endpoint = ApiEndpoints.getEndpoint(
         ApiEndpoints.sendMessage,
-        {'id': conversationId},
+        {'chatId': chatId},
       );
 
-      final data = {
+      final data = <String, dynamic>{
         'message': message,
-        'attachmentUrl': attachmentUrl,
-        'attachmentType': attachmentType,
+        if (attachmentUrl != null) 'attachmentUrl': attachmentUrl,
+        if (attachmentType != null) 'attachmentType': attachmentType,
       };
 
       final response = await _apiClient.post<Map<String, dynamic>>(
         endpoint,
         data: data,
-        fromJsonT: (json) => json,
+        fromJsonT: (json) => json as Map<String, dynamic>,
       );
 
       if (response.success && response.data != null) {
-        final chatMessage = ChatMessageModel.fromJson(response.data!);
+        final raw = response.data!;
+        final Map<String, dynamic> msgJson =
+            (raw['message'] ?? raw['data'] ?? raw) as Map<String, dynamic>;
+        final chatMessage = ChatMessageModel.fromJson(msgJson);
         return ApiResponse.success(
           message: 'Message sent successfully',
           data: chatMessage,
@@ -205,14 +230,16 @@ class ChatService {
     }
   }
 
-  // Mark conversation as read
-  Future<ApiResponse<void>> markConversationAsRead(String conversationId) async {
+  // ---------------------------------------------------------------------------
+  // POST /chats/:chatId/read  →  mark conversation as read
+  // ---------------------------------------------------------------------------
+  Future<ApiResponse<void>> markConversationAsRead(String chatId) async {
     try {
-      _logger.i('Marking conversation as read: $conversationId');
+      _logger.i('Marking chat as read: $chatId');
 
       final endpoint = ApiEndpoints.getEndpoint(
         ApiEndpoints.markAsRead,
-        {'id': conversationId},
+        {'chatId': chatId},
       );
 
       final response = await _apiClient.post<void>(
@@ -230,9 +257,11 @@ class ChatService {
     }
   }
 
-  // Delete message
+  // ---------------------------------------------------------------------------
+  // DELETE /chats/:chatId/messages/:messageId
+  // ---------------------------------------------------------------------------
   Future<ApiResponse<void>> deleteMessage(
-    String conversationId,
+    String chatId,
     String messageId,
   ) async {
     try {
@@ -240,7 +269,7 @@ class ChatService {
 
       final endpoint = ApiEndpoints.getEndpoint(
         ApiEndpoints.deleteMessage,
-        {'id': conversationId, 'messageId': messageId},
+        {'chatId': chatId, 'messageId': messageId},
       );
 
       final response = await _apiClient.delete<void>(
@@ -258,24 +287,26 @@ class ChatService {
     }
   }
 
-  // Upload chat media
+  // ---------------------------------------------------------------------------
+  // POST /chats/:chatId/upload
+  // ---------------------------------------------------------------------------
   Future<ApiResponse<String>> uploadChatMedia(
-    String conversationId,
+    String chatId,
     String filePath,
   ) async {
     try {
-      _logger.i('Uploading media to conversation: $conversationId');
+      _logger.i('Uploading media to chat: $chatId');
 
       final endpoint = ApiEndpoints.getEndpoint(
         ApiEndpoints.uploadChatMedia,
-        {'id': conversationId},
+        {'chatId': chatId},
       );
 
       final response = await _apiClient.uploadFile<Map<String, dynamic>>(
         endpoint,
         filePath: filePath,
         fieldName: 'media',
-        fromJsonT: (json) => json,
+        fromJsonT: (json) => json as Map<String, dynamic>,
       );
 
       if (response.success && response.data != null) {
@@ -299,14 +330,14 @@ class ChatService {
     }
   }
 
-  // Send typing indicator
-  Future<ApiResponse<void>> sendTypingIndicator(String conversationId) async {
+  // ---------------------------------------------------------------------------
+  // POST /chats/:chatId/typing
+  // ---------------------------------------------------------------------------
+  Future<ApiResponse<void>> sendTypingIndicator(String chatId) async {
     try {
-      _logger.i('Sending typing indicator: $conversationId');
-
       final endpoint = ApiEndpoints.getEndpoint(
         ApiEndpoints.typingIndicator,
-        {'id': conversationId},
+        {'chatId': chatId},
       );
 
       final response = await _apiClient.post<void>(
@@ -316,8 +347,7 @@ class ChatService {
 
       return response;
     } catch (e) {
-      _logger.e('Typing indicator error', error: e);
-      // Don't propagate error for typing indicator
+      // Don't propagate errors for typing indicator
       return ApiResponse<void>.success(
         message: 'Typing indicator sent',
         data: null,
@@ -325,18 +355,16 @@ class ChatService {
     }
   }
 
-  // Block user in chat
-  Future<ApiResponse<void>> blockUserInChat(String conversationId) async {
+  // ---------------------------------------------------------------------------
+  // Block user in chat (local state only until backend endpoint is confirmed)
+  // ---------------------------------------------------------------------------
+  Future<ApiResponse<void>> blockUserInChat(String chatId) async {
     try {
-      _logger.i('Blocking user in chat: $conversationId');
-
-      // This would be implemented as a separate endpoint
-      final response = ApiResponse<void>.success(
+      _logger.i('Blocking user in chat: $chatId');
+      return ApiResponse<void>.success(
         message: 'User blocked',
         data: null,
       );
-
-      return response;
     } catch (e) {
       _logger.e('Block user error', error: e);
       return ApiResponse.error(
@@ -346,7 +374,9 @@ class ChatService {
     }
   }
 
-  // Report message
+  // ---------------------------------------------------------------------------
+  // POST /chats/messages/report
+  // ---------------------------------------------------------------------------
   Future<ApiResponse<void>> reportMessage(
     String messageId,
     String reason,

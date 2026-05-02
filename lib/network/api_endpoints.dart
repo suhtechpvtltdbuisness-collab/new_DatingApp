@@ -55,15 +55,15 @@ class ApiEndpoints {
   // CHAT
   // ===============================
 
-  static const String getConversations = '/conversations';
-  static const String getConversation = '/conversations/:id';
-  static const String getMessages = '/conversations/:conversationId/messages';
-  static const String sendMessage = '/messages';
-  static const String markAsRead = '/conversations/:conversationId/read';
-  static const String deleteMessage = '/messages/:id';
-  static const String uploadChatMedia = '/messages/upload';
-  static const String typingIndicator = '/typing';
-  static const String reportMessage = '/messages/report';
+  static const String getConversations = '/chats';
+  static const String getConversation = '/chats/:chatId';
+  static const String getMessages = '/chats/:chatId/messages';
+  static const String sendMessage = '/chats/:chatId/messages';
+  static const String markAsRead = '/chats/:chatId/read';
+  static const String deleteMessage = '/chats/:chatId/messages/:messageId';
+  static const String uploadChatMedia = '/chats/:chatId/upload';
+  static const String typingIndicator = '/chats/:chatId/typing';
+  static const String reportMessage = '/chats/messages/report';
 
   // ===============================
   // BLOCKING

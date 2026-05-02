@@ -49,7 +49,7 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.message ?? "Failed to send OTP")),
+          SnackBar(content: Text(response.message)),
         );
       }
     } catch (e) {

@@ -213,6 +213,7 @@ class ProfileDetailsContent extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => ChatScreen(
+                      chatId: 'new', // placeholder until a real match chat is created
                       name: "Akshat",
                       image: "assets/images/profile.png",
                     ),

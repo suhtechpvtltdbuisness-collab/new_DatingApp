@@ -17,6 +17,114 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
     {'id': '5', 'name': 'Rahul', 'avatar': 'R'},
   ];
 
+  // Method to show unblock confirmation dialog
+  void _showUnblockDialog(BuildContext context, String userId, String userName) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(30),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                /// IMAGE
+                Container(
+                  height: 100,
+                  width: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.pink.shade50,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.lock_open,
+                    size: 50,
+                    color: Colors.pink.shade400,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                Text(
+                  "Unblock $userName?",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+
+                const SizedBox(height: 10),
+
+                const Text(
+                  "You will be able to see their profile and send them messages again.",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+
+                const SizedBox(height: 20),
+
+                /// Cancel
+                Container(
+                  width: double.infinity,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(color: Colors.pink),
+                  ),
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text(
+                      "Cancel",
+                      style: TextStyle(
+                        color: Colors.pink,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                /// Unblock
+                Container(
+                  width: double.infinity,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: Colors.pink,
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _unblockUser(userId, userName);
+                    },
+                    child: const Text(
+                      "Unblock",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 10),
+
+                const Text(
+                  "Note: You can block them again anytime.",
+                  style: TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   // Method to unblock a user
   void _unblockUser(String userId, String userName) {
     setState(() {
@@ -83,7 +191,8 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                           return UserCard(
                             name: user['name'],
                             avatar: user['avatar'],
-                            onUnblock: () => _unblockUser(
+                            onUnblock: () => _showUnblockDialog(
+                              context,
                               user['id'],
                               user['name'],
                             ),

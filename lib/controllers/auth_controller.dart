@@ -1,5 +1,6 @@
 import 'package:dating_app/models/api_models.dart';
 import 'package:dating_app/services/auth_service.dart';
+import 'package:dating_app/controllers/chat_controller.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 
@@ -130,25 +131,30 @@ class AuthController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
-      final response = await _authService.logout();
+      // Always clear local state first
+      await _authService.logout();
 
-      if (response.success) {
-        _logger.i('Logout successful');
-        isLoggedIn.value = false;
-        userId.value = '';
-        userEmail.value = '';
-        successMessage.value = 'Logged out successfully';
+      isLoggedIn.value = false;
+      userId.value = '';
+      userEmail.value = '';
+      successMessage.value = 'Logged out successfully';
 
-        return true;
-      } else {
-        errorMessage.value = response.error ?? response.message;
-        _logger.w('Logout failed: ${response.error}');
-        return false;
+      // Clear chat state so stale data isn't shown on next login
+      try {
+        Get.find<ChatController>().clearCurrentConversation();
+      } catch (_) {
+        // ChatController may not be initialised yet — ignore
       }
+
+      return true;
     } catch (e) {
-      errorMessage.value = 'An unexpected error occurred';
+      // Even on unexpected error, clear local state
+      isLoggedIn.value = false;
+      userId.value = '';
+      userEmail.value = '';
+      errorMessage.value = '';
       _logger.e('Logout error', error: e);
-      return false;
+      return true; // Local logout always succeeds
     } finally {
       isLoading.value = false;
     }

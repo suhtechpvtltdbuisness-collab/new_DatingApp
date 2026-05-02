@@ -1,10 +1,25 @@
 import 'package:flutter/material.dart';
 import '../subscription/subscription_screen.dart';
 
-class LikedYouScreen extends StatelessWidget {
+class LikedYouScreen extends StatefulWidget {
   final Function(int)? onTabTapped;
 
   const LikedYouScreen({super.key, this.onTabTapped});
+
+  @override
+  State<LikedYouScreen> createState() => _LikedYouScreenState();
+}
+
+class _LikedYouScreenState extends State<LikedYouScreen> {
+  int _selectedFilter = 0; // 0 = All, 1 = New, 2 = Nearby
+
+  void _onFilterSelected(int index) {
+    setState(() {
+      _selectedFilter = index;
+    });
+    // TODO: Add filtering logic here based on selected filter
+    // You can filter the profile list based on: All, New, or Nearby
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,12 +39,12 @@ class LikedYouScreen extends StatelessWidget {
                     "Liked You",
                     style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                   ),
-                  GestureDetector(
-                    onTap: () {
-                      onTabTapped?.call(1); // Go to People tab
-                    },
-                    child: const Icon(Icons.people_outline, size: 28),
-                  ),
+                  // GestureDetector(
+                  //   onTap: () {
+                  //     onTabTapped?.call(1); // Go to People tab
+                  //   },
+                  //   child: const Icon(Icons.people_outline, size: 28),
+                  // ),
                 ],
               ),
             ),
@@ -75,9 +90,9 @@ class LikedYouScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  _buildChip("All 42", true),
-                  _buildChip("New 12", false),
-                  _buildChip("Nearby 8", false),
+                  _buildChip("All 42", _selectedFilter == 0, () => _onFilterSelected(0)),
+                  _buildChip("New 12", _selectedFilter == 1, () => _onFilterSelected(1)),
+                  _buildChip("Nearby 8", _selectedFilter == 2, () => _onFilterSelected(2)),
                 ],
               ),
             ),
@@ -193,17 +208,20 @@ class LikedYouScreen extends StatelessWidget {
   }
 
   /// CHIP
-  Widget _buildChip(String text, bool active) {
-    return Container(
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: active ? Colors.pink : Colors.white,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(color: active ? Colors.white : Colors.black),
+  Widget _buildChip(String text, bool active, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(right: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: active ? Colors.pink : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(color: active ? Colors.white : Colors.black),
+        ),
       ),
     );
   }
