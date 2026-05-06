@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:dating_app/utils/languages.dart';
+import 'package:dating_app/utils/theme.dart';
 
 class LanguageScreen extends StatefulWidget {
   const LanguageScreen({super.key});
@@ -9,7 +10,6 @@ class LanguageScreen extends StatefulWidget {
 }
 
 class _LanguageScreenState extends State<LanguageScreen> {
-
   bool showOthers = false;
   final TextEditingController searchController = TextEditingController();
   String searchQuery = "";
@@ -37,15 +37,11 @@ class _LanguageScreenState extends State<LanguageScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xffF8E0E8),
-              Color(0xffE9D6F3),
-            ],
+            colors: [Color(0xffF8E0E8), Color(0xffE9D6F3)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -53,7 +49,6 @@ class _LanguageScreenState extends State<LanguageScreen> {
         child: SafeArea(
           child: Column(
             children: [
-
               /// HEADER
               Padding(
                 padding: const EdgeInsets.all(20),
@@ -104,10 +99,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                   "Looking for people who know specific languages?\n"
                   "Select up to 3 languages and we'll try and connect you "
                   "with people who know all of them.",
-                  style: TextStyle(
-                    color: Colors.black54,
-                    fontSize: 13,
-                  ),
+                  style: TextStyle(color: Colors.black54, fontSize: 13),
                 ),
               ),
 
@@ -130,16 +122,16 @@ class _LanguageScreenState extends State<LanguageScreen> {
                   ),
                   child: TextField(
                     controller: searchController,
+                    textAlignVertical: TextAlignVertical.center,
+                    cursorColor: Colors.pink,
                     onChanged: (value) {
                       setState(() {
                         searchQuery = value;
                       });
                     },
-                    decoration: InputDecoration(
+                    decoration: AppTheme.borderlessInputDecoration(
                       prefixIcon: const Icon(Icons.search, color: Colors.pink),
                       hintText: "Search for a language",
-                      hintStyle: TextStyle(color: Colors.grey.shade400),
-                      border: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 14,
@@ -374,7 +366,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                           showOthers = v;
                         });
                       },
-                    )
+                    ),
                   ],
                 ),
               ),

@@ -60,10 +60,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
                   const SizedBox(width: 10),
                   const Text(
                     "All Features",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -92,7 +89,9 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 4),
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
                               color: Colors.pink,
                               borderRadius: BorderRadius.circular(20),
@@ -229,14 +228,17 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
             child: Icon(icon, color: Colors.pink),
           ),
           const SizedBox(width: 12),
-          Expanded(                          // ← Fix: prevents right overflow
+          Expanded(
+            // ← Fix: prevents right overflow
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 16),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
@@ -269,14 +271,17 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
             child: Icon(icon, color: Colors.pink),
           ),
           const SizedBox(width: 12),
-          Expanded(                          // ← Fix: prevents right overflow
+          Expanded(
+            // ← Fix: prevents right overflow
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 15),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
                 Text(
@@ -321,10 +326,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            icon,
-            color: isActive ? Colors.pink : Colors.grey,
-          ),
+          Icon(icon, color: isActive ? Colors.pink : Colors.grey),
           const SizedBox(height: 4),
           Text(
             label,

@@ -32,6 +32,9 @@ class AppTheme {
   static const Color dividerColor = Color(0xFFE0E0E0);
   static const Color darkDividerColor = Color(0xFF3F3F3F);
   static const Color disabledColor = Color(0xFFBDBDBD);
+  static const Color inputFillColor = Color(0xFFF9F6FA);
+  static const Color inputBorderColor = Color(0xFFE8DCEA);
+  static const Color inputFocusBorderColor = Color(0xFFE0A4D0);
 
   // Gradients
   static LinearGradient primaryGradient = LinearGradient(
@@ -51,6 +54,45 @@ class AppTheme {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+
+  static OutlineInputBorder _inputBorder(
+    Color color, {
+    double width = 1.2,
+    double radius = 18,
+  }) {
+    return OutlineInputBorder(
+      borderRadius: BorderRadius.circular(radius),
+      borderSide: BorderSide(color: color, width: width),
+    );
+  }
+
+  static InputDecoration borderlessInputDecoration({
+    String? hintText,
+    Widget? prefixIcon,
+    Widget? suffixIcon,
+    String? counterText,
+    EdgeInsetsGeometry contentPadding = EdgeInsets.zero,
+    bool isDense = false,
+  }) {
+    return InputDecoration(
+      hintText: hintText,
+      hintStyle: GoogleFonts.poppins(fontSize: 14, color: textTertiaryColor),
+      prefixIcon: prefixIcon,
+      suffixIcon: suffixIcon,
+      counterText: counterText,
+      isDense: isDense,
+      isCollapsed: false,
+      filled: false,
+      fillColor: Colors.transparent,
+      contentPadding: contentPadding,
+      border: InputBorder.none,
+      enabledBorder: InputBorder.none,
+      focusedBorder: InputBorder.none,
+      disabledBorder: InputBorder.none,
+      errorBorder: InputBorder.none,
+      focusedErrorBorder: InputBorder.none,
+    );
+  }
 
   // Light Theme
   static ThemeData lightTheme = ThemeData(
@@ -133,18 +175,14 @@ class AppTheme {
       ),
     ),
     buttonTheme: ButtonThemeData(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: primaryColor,
         foregroundColor: Colors.white,
         padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         textStyle: GoogleFonts.poppins(
           fontSize: 16,
           fontWeight: FontWeight.w600,
@@ -156,9 +194,7 @@ class AppTheme {
         foregroundColor: primaryColor,
         side: BorderSide(color: primaryColor),
         padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         textStyle: GoogleFonts.poppins(
           fontSize: 16,
           fontWeight: FontWeight.w600,
@@ -177,39 +213,21 @@ class AppTheme {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Color(0xFFF5F5F5),
-      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: dividerColor),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: primaryColor, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: errorColor),
-      ),
-      hintStyle: GoogleFonts.poppins(
-        fontSize: 14,
-        color: textTertiaryColor,
-      ),
-      labelStyle: GoogleFonts.poppins(
-        fontSize: 14,
-        color: textSecondaryColor,
-      ),
+      fillColor: inputFillColor,
+      contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      border: _inputBorder(inputBorderColor),
+      enabledBorder: _inputBorder(inputBorderColor),
+      focusedBorder: _inputBorder(inputFocusBorderColor),
+      errorBorder: _inputBorder(errorColor),
+      focusedErrorBorder: _inputBorder(errorColor),
+      disabledBorder: _inputBorder(dividerColor.withOpacity(0.6)),
+      hintStyle: GoogleFonts.poppins(fontSize: 14, color: textTertiaryColor),
+      labelStyle: GoogleFonts.poppins(fontSize: 14, color: textSecondaryColor),
     ),
     cardTheme: CardThemeData(
       color: surfaceColor,
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
     dividerTheme: DividerThemeData(
       color: dividerColor,
@@ -241,41 +259,34 @@ class AppTheme {
         color: textLightColor,
       ),
     ),
-    textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme).copyWith(
-      displayLarge: GoogleFonts.poppins(
-        fontSize: 32,
-        fontWeight: FontWeight.w700,
-        color: textLightColor,
-      ),
-      bodyMedium: GoogleFonts.poppins(
-        fontSize: 14,
-        fontWeight: FontWeight.w400,
-        color: textLightColor,
-      ),
-    ),
+    textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme)
+        .copyWith(
+          displayLarge: GoogleFonts.poppins(
+            fontSize: 32,
+            fontWeight: FontWeight.w700,
+            color: textLightColor,
+          ),
+          bodyMedium: GoogleFonts.poppins(
+            fontSize: 14,
+            fontWeight: FontWeight.w400,
+            color: textLightColor,
+          ),
+        ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
       fillColor: darkSurfaceColor,
-      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: darkDividerColor),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: darkDividerColor),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: primaryColor, width: 2),
-      ),
+      contentPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      border: _inputBorder(darkDividerColor),
+      enabledBorder: _inputBorder(darkDividerColor),
+      focusedBorder: _inputBorder(inputFocusBorderColor),
+      errorBorder: _inputBorder(errorColor),
+      focusedErrorBorder: _inputBorder(errorColor),
+      disabledBorder: _inputBorder(darkDividerColor.withOpacity(0.6)),
     ),
     cardTheme: CardThemeData(
       color: darkSurfaceColor,
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
     ),
   );
 }

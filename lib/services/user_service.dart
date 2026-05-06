@@ -20,6 +20,85 @@ class UserService {
 
   UserService._internal();
 
+  // ---------------------------------------------------------------------------
+  // GET /profile  →  get the logged-in user's own profile
+  // ---------------------------------------------------------------------------
+  Future<ApiResponse<UserModel>> getMyProfile() async {
+    try {
+      _logger.i('Fetching my profile (GET /profile)');
+
+      final response = await _apiClient.get<Map<String, dynamic>>(
+        ApiEndpoints.getMyProfile,
+        fromJsonT: (json) => json as Map<String, dynamic>,
+      );
+
+      if (response.success && response.data != null) {
+        final raw = response.data!;
+        // Handle backends that wrap the user under 'user', 'data', or 'profile'
+        final Map<String, dynamic> userJson =
+            (raw['user'] ?? raw['profile'] ?? raw['data'] ?? raw)
+                as Map<String, dynamic>;
+        final user = UserModel.fromJson(userJson);
+        return ApiResponse.success(
+          message: 'Profile fetched successfully',
+          data: user,
+        );
+      } else {
+        return ApiResponse.error(
+          message: response.message,
+          error: response.error ?? 'Failed to fetch profile',
+        );
+      }
+    } catch (e) {
+      _logger.e('Get my profile error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to fetch profile',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // PUT /profile  →  update the logged-in user's own profile
+  // Accepts a Map so callers can send only the fields they want to change.
+  // ---------------------------------------------------------------------------
+  Future<ApiResponse<UserModel>> updateMyProfile(
+    Map<String, dynamic> updateData,
+  ) async {
+    try {
+      _logger.i('Updating my profile (PUT /profile)');
+
+      final response = await _apiClient.put<Map<String, dynamic>>(
+        ApiEndpoints.updateMyProfile,
+        data: updateData,
+        fromJsonT: (json) => json as Map<String, dynamic>,
+      );
+
+      if (response.success && response.data != null) {
+        final raw = response.data!;
+        final Map<String, dynamic> userJson =
+            (raw['user'] ?? raw['profile'] ?? raw['data'] ?? raw)
+                as Map<String, dynamic>;
+        final user = UserModel.fromJson(userJson);
+        return ApiResponse.success(
+          message: 'Profile updated successfully',
+          data: user,
+        );
+      } else {
+        return ApiResponse.error(
+          message: response.message,
+          error: response.error ?? 'Failed to update profile',
+        );
+      }
+    } catch (e) {
+      _logger.e('Update my profile error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to update profile',
+        error: e.toString(),
+      );
+    }
+  }
+
   // Get user profile
   Future<ApiResponse<UserModel>> getUserProfile(String userId) async {
     try {

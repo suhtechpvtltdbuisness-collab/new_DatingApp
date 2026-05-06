@@ -103,49 +103,53 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFF9B6AAA), width: 1.5),
+        borderSide: const BorderSide(color: Color(0xFF9B6AAA), width: 1.2),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE63946), width: 1.2),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     );
   }
 
   Widget _sectionLabel(String label) => Padding(
-        padding: const EdgeInsets.only(left: 4, bottom: 8),
-        child: Text(
-          label.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF7A5A6E),
-            letterSpacing: 0.8,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(left: 4, bottom: 8),
+    child: Text(
+      label.toUpperCase(),
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF7A5A6E),
+        letterSpacing: 0.8,
+      ),
+    ),
+  );
 
   Widget _card(List<Widget> children) => Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.82),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: children,
-        ),
-      );
+    margin: const EdgeInsets.only(bottom: 16),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    decoration: BoxDecoration(
+      color: Colors.white.withOpacity(0.82),
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    ),
+  );
 
   Widget _fieldLabel(String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFF7A5A6E),
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Text(
+      text,
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF7A5A6E),
+      ),
+    ),
+  );
 
   Widget _fieldGap() => const SizedBox(height: 14);
 
@@ -157,8 +161,10 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
   }) {
     return DropdownButtonFormField<String>(
       value: value,
-      hint: Text(hint,
-          style: const TextStyle(color: Colors.black38, fontSize: 14)),
+      hint: Text(
+        hint,
+        style: const TextStyle(color: Colors.black38, fontSize: 14),
+      ),
       decoration: _inputDecoration('').copyWith(hintText: null),
       icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF9B6AAA)),
       style: const TextStyle(color: Color(0xFF2D1A2A), fontSize: 14),
@@ -173,124 +179,130 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
   }
 
   Widget _buildAccountDetails() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionLabel('Details — Account'),
-          _card([
-            _fieldLabel('Account email on file'),
-            TextFormField(
-              controller: _accountEmailController,
-              decoration: _inputDecoration('Registered email'),
-              keyboardType: TextInputType.emailAddress,
-            ),
-            _fieldGap(),
-            _fieldLabel('Unable to access'),
-            _buildDropdown(
-              value: _accountIssue,
-              items: _accountIssues,
-              hint: 'Select issue',
-              onChanged: (v) => setState(() => _accountIssue = v),
-            ),
-          ]),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _sectionLabel('Details — Account'),
+      _card([
+        _fieldLabel('Account email on file'),
+        TextFormField(
+          controller: _accountEmailController,
+          textAlignVertical: TextAlignVertical.center,
+          decoration: _inputDecoration('Registered email'),
+          keyboardType: TextInputType.emailAddress,
+        ),
+        _fieldGap(),
+        _fieldLabel('Unable to access'),
+        _buildDropdown(
+          value: _accountIssue,
+          items: _accountIssues,
+          hint: 'Select issue',
+          onChanged: (v) => setState(() => _accountIssue = v),
+        ),
+      ]),
+    ],
+  );
 
   Widget _buildBillingDetails() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionLabel('Details — Billing'),
-          _card([
-            _fieldLabel('Transaction / Invoice ID'),
-            TextFormField(
-              controller: _txnIdController,
-              decoration: _inputDecoration('TXN-XXXXXXXX'),
-            ),
-            _fieldGap(),
-            _fieldLabel('Amount in dispute'),
-            TextFormField(
-              controller: _amountController,
-              decoration: _inputDecoration('e.g. ₹499'),
-              keyboardType: TextInputType.number,
-            ),
-            _fieldGap(),
-            _fieldLabel('Payment method'),
-            _buildDropdown(
-              value: _paymentMethod,
-              items: _paymentMethods,
-              hint: 'Select method',
-              onChanged: (v) => setState(() => _paymentMethod = v),
-            ),
-          ]),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _sectionLabel('Details — Billing'),
+      _card([
+        _fieldLabel('Transaction / Invoice ID'),
+        TextFormField(
+          controller: _txnIdController,
+          textAlignVertical: TextAlignVertical.center,
+          decoration: _inputDecoration('TXN-XXXXXXXX'),
+        ),
+        _fieldGap(),
+        _fieldLabel('Amount in dispute'),
+        TextFormField(
+          controller: _amountController,
+          decoration: _inputDecoration('e.g. ₹499'),
+          keyboardType: TextInputType.number,
+        ),
+        _fieldGap(),
+        _fieldLabel('Payment method'),
+        _buildDropdown(
+          value: _paymentMethod,
+          items: _paymentMethods,
+          hint: 'Select method',
+          onChanged: (v) => setState(() => _paymentMethod = v),
+        ),
+      ]),
+    ],
+  );
 
   Widget _buildTechnicalDetails() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionLabel('Details — Technical'),
-          _card([
-            _fieldLabel('Platform'),
-            _buildDropdown(
-              value: _platform,
-              items: _platforms,
-              hint: 'Select platform',
-              onChanged: (v) => setState(() => _platform = v),
-            ),
-            _fieldGap(),
-            _fieldLabel('App version'),
-            TextFormField(
-              controller: _appVersionController,
-              decoration: _inputDecoration('e.g. 3.4.1'),
-            ),
-            _fieldGap(),
-            _fieldLabel('Steps to reproduce'),
-            TextFormField(
-              controller: _stepsController,
-              decoration:
-                  _inputDecoration('1. Open app\n2. Tap on ...\n3. ...'),
-              maxLines: 4,
-            ),
-          ]),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _sectionLabel('Details — Technical'),
+      _card([
+        _fieldLabel('Platform'),
+        _buildDropdown(
+          value: _platform,
+          items: _platforms,
+          hint: 'Select platform',
+          onChanged: (v) => setState(() => _platform = v),
+        ),
+        _fieldGap(),
+        _fieldLabel('App version'),
+        TextFormField(
+          controller: _appVersionController,
+          textAlignVertical: TextAlignVertical.center,
+          decoration: _inputDecoration('e.g. 3.4.1'),
+        ),
+        _fieldGap(),
+        _fieldLabel('Steps to reproduce'),
+        TextFormField(
+          controller: _stepsController,
+          textAlignVertical: TextAlignVertical.top,
+          decoration: _inputDecoration('1. Open app\n2. Tap on ...\n3. ...'),
+          maxLines: 4,
+        ),
+      ]),
+    ],
+  );
 
   Widget _buildContentDetails() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionLabel('Details — Content'),
-          _card([
-            _fieldLabel('Content URL or post ID'),
-            TextFormField(
-              controller: _contentUrlController,
-              decoration: _inputDecoration('Paste link or ID'),
-            ),
-            _fieldGap(),
-            _fieldLabel('Reason for report'),
-            _buildDropdown(
-              value: _reportReason,
-              items: _reportReasons,
-              hint: 'Select reason',
-              onChanged: (v) => setState(() => _reportReason = v),
-            ),
-          ]),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _sectionLabel('Details — Content'),
+      _card([
+        _fieldLabel('Content URL or post ID'),
+        TextFormField(
+          controller: _contentUrlController,
+          textAlignVertical: TextAlignVertical.center,
+          decoration: _inputDecoration('Paste link or ID'),
+        ),
+        _fieldGap(),
+        _fieldLabel('Reason for report'),
+        _buildDropdown(
+          value: _reportReason,
+          items: _reportReasons,
+          hint: 'Select reason',
+          onChanged: (v) => setState(() => _reportReason = v),
+        ),
+      ]),
+    ],
+  );
 
   Widget _buildOtherDetails() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _sectionLabel('Details — Other'),
-          _card([
-            _fieldLabel('Additional context'),
-            TextFormField(
-              controller: _additionalContextController,
-              decoration:
-                  _inputDecoration('Any other details that might help us...'),
-              maxLines: 4,
-            ),
-          ]),
-        ],
-      );
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _sectionLabel('Details — Other'),
+      _card([
+        _fieldLabel('Additional context'),
+        TextFormField(
+          controller: _additionalContextController,
+          textAlignVertical: TextAlignVertical.top,
+          decoration: _inputDecoration(
+            'Any other details that might help us...',
+          ),
+          maxLines: 4,
+        ),
+      ]),
+    ],
+  );
 
   Widget _buildDynamicSection() {
     switch (_selectedIssueType) {
@@ -362,6 +374,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                   _fieldLabel('Name'),
                   TextFormField(
                     controller: _nameController,
+                    textAlignVertical: TextAlignVertical.center,
                     decoration: _inputDecoration('Your full name'),
                     validator: (v) =>
                         (v == null || v.isEmpty) ? 'Required' : null,
@@ -370,6 +383,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                   _fieldLabel('Email'),
                   TextFormField(
                     controller: _emailController,
+                    textAlignVertical: TextAlignVertical.center,
                     decoration: _inputDecoration('you@example.com'),
                     keyboardType: TextInputType.emailAddress,
                     validator: (v) =>
@@ -379,6 +393,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                   _fieldLabel('User ID'),
                   TextFormField(
                     controller: _userIdController,
+                    textAlignVertical: TextAlignVertical.center,
                     decoration: _inputDecoration('e.g. USR-00123'),
                   ),
                 ]),
@@ -397,8 +412,8 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                   _fieldLabel('Subject'),
                   TextFormField(
                     controller: _subjectController,
-                    decoration:
-                        _inputDecoration('Brief summary of your issue'),
+                    textAlignVertical: TextAlignVertical.center,
+                    decoration: _inputDecoration('Brief summary of your issue'),
                     validator: (v) =>
                         (v == null || v.isEmpty) ? 'Required' : null,
                   ),
@@ -406,8 +421,10 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                   _fieldLabel('Description'),
                   TextFormField(
                     controller: _descriptionController,
-                    decoration:
-                        _inputDecoration('Describe your issue in detail...'),
+                    textAlignVertical: TextAlignVertical.top,
+                    decoration: _inputDecoration(
+                      'Describe your issue in detail...',
+                    ),
                     maxLines: 5,
                     validator: (v) =>
                         (v == null || v.isEmpty) ? 'Required' : null,
@@ -456,13 +473,21 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          const Text('Tap to upload files',
-                              style: TextStyle(
-                                  fontSize: 13, color: Color(0xFF7A5A6E))),
+                          const Text(
+                            'Tap to upload files',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF7A5A6E),
+                            ),
+                          ),
                           const SizedBox(height: 2),
-                          const Text('PNG, JPG, PDF up to 10 MB',
-                              style: TextStyle(
-                                  fontSize: 11, color: Colors.black38)),
+                          const Text(
+                            'PNG, JPG, PDF up to 10 MB',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.black38,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -473,18 +498,24 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                       spacing: 8,
                       runSpacing: 6,
                       children: _attachedFiles
-                          .map((f) => Chip(
-                                label: Text(f,
-                                    style: const TextStyle(
-                                        fontSize: 12,
-                                        color: Color(0xFF6B3F7A))),
-                                backgroundColor:
-                                    const Color(0xFF9B6AAA).withOpacity(0.15),
-                                deleteIconColor: const Color(0xFF9B6AAA),
-                                side: BorderSide.none,
-                                onDeleted: () =>
-                                    setState(() => _attachedFiles.remove(f)),
-                              ))
+                          .map(
+                            (f) => Chip(
+                              label: Text(
+                                f,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  color: Color(0xFF6B3F7A),
+                                ),
+                              ),
+                              backgroundColor: const Color(
+                                0xFF9B6AAA,
+                              ).withOpacity(0.15),
+                              deleteIconColor: const Color(0xFF9B6AAA),
+                              side: BorderSide.none,
+                              onDeleted: () =>
+                                  setState(() => _attachedFiles.remove(f)),
+                            ),
+                          )
                           .toList(),
                     ),
                   ],
@@ -503,7 +534,8 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                               setState(() => _consentGiven = v ?? false),
                           activeColor: const Color(0xFF9B6AAA),
                           shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4)),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
                           side: const BorderSide(color: Color(0xFF9B6AAA)),
                         ),
                       ),
@@ -514,9 +546,10 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                           child: RichText(
                             text: const TextSpan(
                               style: TextStyle(
-                                  fontSize: 12.5,
-                                  color: Color(0xFF5A3A5A),
-                                  height: 1.5),
+                                fontSize: 12.5,
+                                color: Color(0xFF5A3A5A),
+                                height: 1.5,
+                              ),
                               children: [
                                 TextSpan(text: 'I agree to the '),
                                 TextSpan(
@@ -529,8 +562,9 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                                   style: TextStyle(color: Color(0xFF7B4A9B)),
                                 ),
                                 TextSpan(
-                                    text:
-                                        '. I consent to my data being processed to resolve this request.'),
+                                  text:
+                                      '. I consent to my data being processed to resolve this request.',
+                                ),
                               ],
                             ),
                           ),

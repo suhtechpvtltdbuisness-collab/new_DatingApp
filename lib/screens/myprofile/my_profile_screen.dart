@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:dating_app/controllers/user_controller.dart';
 import 'Edit_Profile_Screen.dart';
 import 'Safety_Toolkit_Screen.dart';
 import 'Blocked_Users_Screen.dart';
@@ -18,7 +20,10 @@ class MyProfileScreen extends StatefulWidget {
 }
 
 class _MyProfileScreenState extends State<MyProfileScreen> {
-  bool isBreakEnabled = false; // ✅ STATE VARIABLE
+  bool isBreakEnabled = false;
+
+  // Access the UserController (registered in app bindings)
+  final UserController _userController = Get.find<UserController>();
 
   void _showLogoutDialog(BuildContext context) {
     showDialog(
@@ -359,13 +364,10 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                     children: [
                       const Text(
                         "My Profile",
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                      ),
-                      GestureDetector(
-                        onTap: () {
-                          widget.onTabTapped?.call(1); // Go to People tab
-                        },
-                        child: const Icon(Icons.people_outline, size: 28),
+                        style: TextStyle(
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ],
                   ),
@@ -374,17 +376,28 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 const SizedBox(height: 20),
 
                 /// PROFILE IMAGE
-                Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Color(0xFFFF92C9), width: 2),
-                  ),
-                  child: const CircleAvatar(
-                    radius: 45,
-                    backgroundImage: AssetImage("assets/images/profile.png"),
-                  ),
-                ),
+                Obx(() {
+                  final user = _userController.currentUser.value;
+                  final imageUrl = user != null && user.photoUrls.isNotEmpty
+                      ? user.photoUrls.first
+                      : '';
+                  return Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFFF92C9),
+                        width: 2,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 45,
+                      backgroundImage: imageUrl.startsWith('http')
+                          ? NetworkImage(imageUrl) as ImageProvider
+                          : const AssetImage('assets/images/profile.png'),
+                    ),
+                  );
+                }),
 
                 const SizedBox(height: 10),
 
@@ -411,15 +424,30 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                 const SizedBox(height: 10),
 
                 /// NAME
-                const Text(
-                  "Priya, 26",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
+                Obx(() {
+                  final user = _userController.currentUser.value;
+                  final name = user != null
+                      ? '${user.firstName}, ${user.age}'
+                      : 'Loading...';
+                  return Text(
+                    name,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  );
+                }),
 
-                const Text(
-                  "Product Designer • New York",
-                  style: TextStyle(color: Colors.grey),
-                ),
+                Obx(() {
+                  final user = _userController.currentUser.value;
+                  final location = user != null
+                      ? [user.city, user.country].whereType<String>().join(', ')
+                      : '';
+                  return Text(
+                    location.isNotEmpty ? location : 'Location not set',
+                    style: const TextStyle(color: Colors.grey),
+                  );
+                }),
 
                 const SizedBox(height: 20),
 
@@ -748,7 +776,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                       _buildTile(
                         Icons.visibility_off_outlined,
                         "Hide My Profile",
-                         onTap: () {
+                        onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(

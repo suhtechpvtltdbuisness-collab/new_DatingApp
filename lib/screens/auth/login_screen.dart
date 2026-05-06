@@ -20,10 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Login'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Login'), elevation: 0),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -43,6 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
+                textAlignVertical: TextAlignVertical.center,
                 decoration: const InputDecoration(
                   labelText: 'Email',
                   prefixIcon: Icon(Icons.email),
@@ -55,6 +53,7 @@ class _LoginScreenState extends State<LoginScreen> {
               TextFormField(
                 controller: _passwordController,
                 obscureText: true,
+                textAlignVertical: TextAlignVertical.center,
                 decoration: const InputDecoration(
                   labelText: 'Password',
                   prefixIcon: Icon(Icons.lock),
@@ -99,19 +98,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                     password: _passwordController.text,
                                   )
                                   .then((success) {
-                                if (success) {
-                                  AppRoutes.toHome();
-                                }
-                              });
+                                    if (success) {
+                                      AppRoutes.toHome();
+                                    }
+                                  });
                             }
                           },
                     child: authController.isLoading.value
                         ? const SizedBox(
                             height: 24,
                             width: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text('Login'),
                   ),

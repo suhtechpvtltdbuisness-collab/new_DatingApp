@@ -10,7 +10,6 @@ class FilterScreen extends StatefulWidget {
 }
 
 class _FilterScreenState extends State<FilterScreen> {
-
   RangeValues ageRange = const RangeValues(25, 30);
   double distance = 80;
 
@@ -20,28 +19,16 @@ class _FilterScreenState extends State<FilterScreen> {
 
   String selectedGender = "Men";
 
-  List<String> interests = [
-    "Music",
-    "Fitness",
-    "Travel",
-    "Art",
-    "Cooking"
-  ];
+  List<String> interests = ["Music", "Fitness", "Travel", "Art", "Cooking"];
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-
       body: Container(
-
         /// Gradient background
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0xffF8E0E8),
-              Color(0xffE9D6F3),
-            ],
+            colors: [Color(0xffF8E0E8), Color(0xffE9D6F3)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -54,11 +41,9 @@ class _FilterScreenState extends State<FilterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 /// HEADER
                 Row(
                   children: [
-
                     IconButton(
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () => Navigator.pop(context),
@@ -81,10 +66,11 @@ class _FilterScreenState extends State<FilterScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 8),
+                          horizontal: 18,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.pink,
                           borderRadius: BorderRadius.circular(25),
@@ -92,8 +78,9 @@ class _FilterScreenState extends State<FilterScreen> {
                         child: const Text(
                           "Basic filters",
                           style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500),
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
 
@@ -101,7 +88,9 @@ class _FilterScreenState extends State<FilterScreen> {
 
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 8),
+                          horizontal: 18,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           border: Border.all(color: Colors.pink),
                           borderRadius: BorderRadius.circular(25),
@@ -109,8 +98,9 @@ class _FilterScreenState extends State<FilterScreen> {
                         child: const Text(
                           "Advanced filters",
                           style: TextStyle(
-                              color: Colors.pink,
-                              fontWeight: FontWeight.w500),
+                            color: Colors.pink,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                     ],
@@ -134,7 +124,7 @@ class _FilterScreenState extends State<FilterScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(selectedGender),
-                        const Icon(Icons.arrow_forward_ios, size: 16)
+                        const Icon(Icons.arrow_forward_ios, size: 16),
                       ],
                     ),
                   ),
@@ -154,7 +144,6 @@ class _FilterScreenState extends State<FilterScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
                       Text(
                         "Between ${ageRange.start.round()} and ${ageRange.end.round()}",
                       ),
@@ -175,11 +164,13 @@ class _FilterScreenState extends State<FilterScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-
                           Flexible(
                             child: Text(
                               "See people 2 years either side if I run out",
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade700,
+                              ),
                             ),
                           ),
 
@@ -191,9 +182,9 @@ class _FilterScreenState extends State<FilterScreen> {
                                 ageToggle = val;
                               });
                             },
-                          )
+                          ),
                         ],
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -212,7 +203,6 @@ class _FilterScreenState extends State<FilterScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-
                       Text("Up to ${distance.round()} kilometres away"),
 
                       Slider(
@@ -231,11 +221,13 @@ class _FilterScreenState extends State<FilterScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-
                           Flexible(
                             child: Text(
                               "See people slightly further away if I run out",
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey.shade700,
+                              ),
                             ),
                           ),
 
@@ -247,9 +239,9 @@ class _FilterScreenState extends State<FilterScreen> {
                                 distanceToggle = val;
                               });
                             },
-                          )
+                          ),
                         ],
-                      )
+                      ),
                     ],
                   ),
                 ),
@@ -277,10 +269,7 @@ class _FilterScreenState extends State<FilterScreen> {
                   children: interests
                       .map(
                         (e) => Chip(
-                          label: Text(
-                            e,
-                            style: const TextStyle(fontSize: 13),
-                          ),
+                          label: Text(e, style: const TextStyle(fontSize: 13)),
                           deleteIcon: const Icon(Icons.close, size: 16),
                           onDeleted: () {
                             setState(() {
@@ -290,7 +279,8 @@ class _FilterScreenState extends State<FilterScreen> {
                           backgroundColor: Colors.pink.shade50,
                           deleteIconColor: Colors.pink,
                           padding: const EdgeInsets.symmetric(horizontal: 4),
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
                         ),
                       )
                       .toList(),
@@ -316,7 +306,6 @@ class _FilterScreenState extends State<FilterScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-
                     const Row(
                       children: [
                         Icon(Icons.verified, color: Colors.pink),
@@ -336,7 +325,7 @@ class _FilterScreenState extends State<FilterScreen> {
                           verifiedOnly = val;
                         });
                       },
-                    )
+                    ),
                   ],
                 ),
 
@@ -364,7 +353,7 @@ class _FilterScreenState extends State<FilterScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text("Select languages"),
-                        Icon(Icons.arrow_forward_ios, size: 16)
+                        Icon(Icons.arrow_forward_ios, size: 16),
                       ],
                     ),
                   ),
@@ -387,11 +376,7 @@ class _FilterScreenState extends State<FilterScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 5,
-            offset: Offset(0, 3),
-          )
+          BoxShadow(color: Colors.black12, blurRadius: 5, offset: Offset(0, 3)),
         ],
       ),
       child: child,
@@ -400,27 +385,22 @@ class _FilterScreenState extends State<FilterScreen> {
 
   /// GENDER BOTTOM SHEET
   void _showGenderSheet() {
-
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) {
-
         return BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 5, sigmaY: 5),
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(30),
-              ),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
             ),
 
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-
                 Container(
                   width: 40,
                   height: 4,
@@ -435,10 +415,7 @@ class _FilterScreenState extends State<FilterScreen> {
                   alignment: Alignment.centerLeft,
                   child: Text(
                     "Who would you like to date?",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                 ),
 
@@ -456,12 +433,10 @@ class _FilterScreenState extends State<FilterScreen> {
   }
 
   Widget _genderOption(String gender) {
-
     bool selected = selectedGender == gender;
 
     return GestureDetector(
       onTap: () {
-
         setState(() {
           selectedGender = gender;
         });
@@ -485,7 +460,6 @@ class _FilterScreenState extends State<FilterScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-
             Text(gender),
 
             Icon(
@@ -517,24 +491,28 @@ class _FilterScreenState extends State<FilterScreen> {
             controller: controller,
             autofocus: true,
             textCapitalization: TextCapitalization.words,
+            textAlignVertical: TextAlignVertical.center,
+            cursorColor: Colors.pink,
             decoration: InputDecoration(
               hintText: "Enter interest",
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.pink.shade100, width: 1.2),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.pink.shade100, width: 1.2),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.pink, width: 2),
+                borderSide: const BorderSide(color: Colors.pink, width: 1.2),
               ),
             ),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
-                "Cancel",
-                style: TextStyle(color: Colors.grey),
-              ),
+              child: const Text("Cancel", style: TextStyle(color: Colors.grey)),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(

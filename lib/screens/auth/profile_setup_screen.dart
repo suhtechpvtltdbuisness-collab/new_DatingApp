@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dating_app/controllers/registration_controller.dart';
+import 'package:dating_app/utils/theme.dart';
 import 'birthday_screen.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
@@ -11,9 +12,9 @@ class ProfileSetupScreen extends StatefulWidget {
 }
 
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
-
   final TextEditingController nameController = TextEditingController();
-  final RegistrationController registrationController = Get.find<RegistrationController>();
+  final RegistrationController registrationController =
+      Get.find<RegistrationController>();
 
   @override
   void dispose() {
@@ -23,9 +24,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
   void continueNext() {
     if (nameController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please enter your name")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Please enter your name")));
       return;
     }
 
@@ -34,9 +35,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const BirthdayScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const BirthdayScreen()),
     );
   }
 
@@ -48,10 +47,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF3E7FF),
-              Color(0xFFFFE3EC),
-            ],
+            colors: [Color(0xFFF3E7FF), Color(0xFFFFE3EC)],
           ),
         ),
         child: SafeArea(
@@ -60,7 +56,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 const SizedBox(height: 20),
 
                 Row(
@@ -100,10 +95,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
                 const Text(
                   "What's your name?",
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
                 ),
 
                 const SizedBox(height: 30),
@@ -117,9 +109,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   ),
                   child: TextField(
                     controller: nameController,
-                    decoration: const InputDecoration(
+                    textAlignVertical: TextAlignVertical.center,
+                    cursorColor: Colors.purple,
+                    decoration: AppTheme.borderlessInputDecoration(
                       hintText: "Your Name",
-                      border: InputBorder.none,
                     ),
                   ),
                 ),
@@ -128,10 +121,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
                 const Text(
                   "This is how you'll appear on your profile.\nYou can't change it later.",
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.black54,
-                  ),
+                  style: TextStyle(fontSize: 13, color: Colors.black54),
                 ),
 
                 const Spacer(),
@@ -141,10 +131,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   height: 55,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [
-                        Color(0xFFFF4E8A),
-                        Color(0xFF9B51E0),
-                      ],
+                      colors: [Color(0xFFFF4E8A), Color(0xFF9B51E0)],
                     ),
                     borderRadius: BorderRadius.circular(30),
                   ),

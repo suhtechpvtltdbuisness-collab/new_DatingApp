@@ -366,4 +366,195 @@ class ChatController extends GetxController {
     currentConversation.value = null;
     messages.clear();
   }
+
+  // ---------------------------------------------------------------------------
+  // DELETE /chats/:chatId  →  delete an entire chat and remove from list
+  // ---------------------------------------------------------------------------
+  Future<bool> deleteChat(String chatId) async {
+    try {
+      isSending.value = true;
+      errorMessage.value = '';
+
+      await _chatService.deleteChat(chatId);
+
+      // Remove from local list regardless of API outcome (best-effort)
+      conversations.removeWhere((c) => c.id == chatId);
+      if (currentConversation.value?.id == chatId) {
+        clearCurrentConversation();
+      }
+      successMessage.value = 'Conversation deleted';
+      _logger.i('Chat deleted: $chatId');
+      return true;
+    } catch (e) {
+      errorMessage.value = 'Failed to delete conversation';
+      _logger.e('Delete chat error', error: e);
+      return false;
+    } finally {
+      isSending.value = false;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // POST /chats  →  create / start a new chat with a user
+  // Returns the new ConversationModel so the caller can navigate into it.
+  // ---------------------------------------------------------------------------
+  Future<ConversationModel?> createChat({
+    required String recipientId,
+    String? initialMessage,
+  }) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final response = await _chatService.createChat(
+        recipientId: recipientId,
+        initialMessage: initialMessage,
+      );
+
+      if (response.success && response.data != null) {
+        final conv = response.data!;
+        // Add to top of conversations list if not already there
+        final existingIdx = conversations.indexWhere((c) => c.id == conv.id);
+        if (existingIdx == -1) {
+          conversations.insert(0, conv);
+        } else {
+          conversations[existingIdx] = conv;
+        }
+        successMessage.value = 'Chat started';
+        _logger.i('Chat created: ${conv.id}');
+        return conv;
+      } else {
+        errorMessage.value = response.error ?? response.message;
+        return null;
+      }
+    } catch (e) {
+      errorMessage.value = 'Failed to start chat';
+      _logger.e('Create chat error', error: e);
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // PUT /chats/:chatId  →  update chat metadata (mute, archive, nickname…)
+  // ---------------------------------------------------------------------------
+  Future<bool> updateChat(
+    String chatId,
+    Map<String, dynamic> updateData,
+  ) async {
+    try {
+      isSending.value = true;
+      errorMessage.value = '';
+
+      final response = await _chatService.updateChat(chatId, updateData);
+
+      if (response.success && response.data != null) {
+        // Refresh the entry in the conversations list
+        final idx = conversations.indexWhere((c) => c.id == chatId);
+        if (idx != -1) {
+          conversations[idx] = response.data!;
+        }
+        // Also refresh currentConversation if open
+        if (currentConversation.value?.id == chatId) {
+          currentConversation.value = response.data!;
+        }
+        successMessage.value = 'Chat updated';
+        return true;
+      } else {
+        errorMessage.value = response.error ?? response.message;
+        return false;
+      }
+    } catch (e) {
+      errorMessage.value = 'Failed to update chat';
+      _logger.e('Update chat error', error: e);
+      return false;
+    } finally {
+      isSending.value = false;
+    }
+  }
+
+  // Observable list for chat users (all users ever chatted with)
+  final chatUsers = <Map<String, dynamic>>[].obs;
+
+  // ---------------------------------------------------------------------------
+  // GET /chat-users  →  all users the current user has ever chatted with
+  // ---------------------------------------------------------------------------
+  Future<bool> getChatUsers() async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final response = await _chatService.getChatUsers();
+
+      if (response.success && response.data != null) {
+        chatUsers.value = response.data!;
+        _logger.i('Loaded ${chatUsers.length} chat users');
+        return true;
+      } else {
+        errorMessage.value = response.error ?? response.message;
+        return false;
+      }
+    } catch (e) {
+      errorMessage.value = 'Failed to load chat users';
+      _logger.e('Get chat users error', error: e);
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // GET /chats/recipient/:recipientId  →  all chats with a specific user
+  // ---------------------------------------------------------------------------
+  Future<List<ConversationModel>> getChatByRecipient(
+    String recipientId,
+  ) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final response = await _chatService.getChatByRecipient(recipientId);
+
+      if (response.success && response.data != null) {
+        _logger.i('Loaded ${response.data!.length} chats for recipient: $recipientId');
+        return response.data!;
+      } else {
+        errorMessage.value = response.error ?? response.message;
+        return [];
+      }
+    } catch (e) {
+      errorMessage.value = 'Failed to load chats for recipient';
+      _logger.e('Get chat by recipient error', error: e);
+      return [];
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // GET /chat-history/:userId  →  full chat history for a user
+  // ---------------------------------------------------------------------------
+  Future<List<ConversationModel>> getChatHistory(String userId) async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final response = await _chatService.getChatHistory(userId);
+
+      if (response.success && response.data != null) {
+        _logger.i('Loaded ${response.data!.length} history entries for user: $userId');
+        return response.data!;
+      } else {
+        errorMessage.value = response.error ?? response.message;
+        return [];
+      }
+    } catch (e) {
+      errorMessage.value = 'Failed to load chat history';
+      _logger.e('Get chat history error', error: e);
+      return [];
+    } finally {
+      isLoading.value = false;
+    }
+  }
 }

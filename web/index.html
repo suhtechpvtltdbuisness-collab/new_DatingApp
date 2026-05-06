@@ -31,6 +31,35 @@
 
   <title>dating_app</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    input,
+    textarea,
+    select {
+      outline: none !important;
+      box-shadow: none !important;
+      background: transparent !important;
+      border: none !important;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none !important;
+      box-shadow: none !important;
+    }
+
+    input:-webkit-autofill,
+    input:-webkit-autofill:hover,
+    input:-webkit-autofill:focus,
+    textarea:-webkit-autofill,
+    textarea:-webkit-autofill:hover,
+    textarea:-webkit-autofill:focus {
+      -webkit-text-fill-color: inherit !important;
+      caret-color: inherit !important;
+      transition: background-color 9999s ease-out 0s;
+      box-shadow: 0 0 0 1000px transparent inset !important;
+    }
+  </style>
 </head>
 <body>
   <!--

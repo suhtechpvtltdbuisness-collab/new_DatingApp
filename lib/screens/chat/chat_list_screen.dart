@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:dating_app/utils/theme.dart';
 
 import '../../controllers/chat_controller.dart';
 import '../../models/chat_model.dart';
@@ -40,14 +41,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 children: [
                   const Text(
                     'Chats',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () => widget.onTabTapped?.call(1),
-                    child: const Icon(Icons.people_outline, size: 28),
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   ),
                 ],
               ),
@@ -62,11 +56,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(25),
                 ),
-                child: const TextField(
-                  decoration: InputDecoration(
-                    icon: Icon(Icons.search),
+                child: TextField(
+                  textAlignVertical: TextAlignVertical.center,
+                  cursorColor: Colors.pink,
+                  decoration: AppTheme.borderlessInputDecoration(
+                    prefixIcon: const Icon(Icons.search),
                     hintText: 'Search matches or chats',
-                    border: InputBorder.none,
                   ),
                 ),
               ),
@@ -84,10 +79,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     'Your matches',
                     style: TextStyle(fontWeight: FontWeight.bold),
                   ),
-                  Text(
-                    'See all',
-                    style: TextStyle(color: Colors.pink),
-                  ),
+                  Text('See all', style: TextStyle(color: Colors.pink)),
                 ],
               ),
             ),
@@ -104,8 +96,14 @@ class _ChatListScreenState extends State<ChatListScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   children: [
                     // Show up to 3 avatars from conversations
-                    ...convs.take(3).map((conv) =>
-                        _matchAvatar(conv.otherUserImage, conv.otherUserName)),
+                    ...convs
+                        .take(3)
+                        .map(
+                          (conv) => _matchAvatar(
+                            conv.otherUserImage,
+                            conv.otherUserName,
+                          ),
+                        ),
 
                     /// Likes bubble
                     Column(
@@ -121,8 +119,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
                             child: Text(
                               '50+',
                               style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold),
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
@@ -155,8 +154,11 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         color: Colors.pink,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.lightbulb,
-                          color: Colors.white, size: 20),
+                      child: const Icon(
+                        Icons.lightbulb,
+                        color: Colors.white,
+                        size: 20,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     const Expanded(
@@ -166,9 +168,10 @@ class _ChatListScreenState extends State<ChatListScreen> {
                           Text(
                             'YOUR OPENING MOVES',
                             style: TextStyle(
-                                color: Colors.pink,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold),
+                              color: Colors.pink,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           Text(
                             "What's the best piece of advice you've received?",
@@ -201,13 +204,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.chat_bubble_outline,
-                            size: 60, color: Colors.pink),
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 60,
+                          color: Colors.pink,
+                        ),
                         SizedBox(height: 12),
                         Text(
                           'No conversations yet',
-                          style:
-                              TextStyle(color: Colors.grey, fontSize: 16),
+                          style: TextStyle(color: Colors.grey, fontSize: 16),
                         ),
                         SizedBox(height: 6),
                         Text(
@@ -251,7 +256,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
             backgroundImage: imageUrl.startsWith('http')
                 ? NetworkImage(imageUrl)
                 : const AssetImage('assets/images/profile.png')
-                    as ImageProvider,
+                      as ImageProvider,
           ),
           const SizedBox(height: 5),
           Text(
@@ -291,7 +296,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
             backgroundImage: conv.otherUserImage.startsWith('http')
                 ? NetworkImage(conv.otherUserImage)
                 : const AssetImage('assets/images/profile.png')
-                    as ImageProvider,
+                      as ImageProvider,
           ),
           if (conv.isOnline)
             Positioned(

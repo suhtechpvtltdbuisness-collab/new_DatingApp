@@ -1,7 +1,11 @@
-import 'package:flutter/material.dart';
-import 'package:swipable_stack/swipable_stack.dart';
-import 'package:get/get.dart';
+import 'dart:math' as math;
+
 import 'package:dating_app/controllers/swipe_controller.dart';
+import 'package:dating_app/models/swipe_models.dart';
+import 'package:dating_app/models/user_model.dart';
+import 'package:dating_app/utils/constants.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 class SwipeScreen extends StatefulWidget {
   const SwipeScreen({super.key});
@@ -10,26 +14,154 @@ class SwipeScreen extends StatefulWidget {
   State<SwipeScreen> createState() => _SwipeScreenState();
 }
 
-class _SwipeScreenState extends State<SwipeScreen> {
-  final SwipableStackController _controller = SwipableStackController();
+class _SwipeScreenState extends State<SwipeScreen>
+    with SingleTickerProviderStateMixin {
   final SwipeController swipeController = Get.find<SwipeController>();
+
+  late final AnimationController _swipeAnimationController;
+
+  Offset _dragOffset = Offset.zero;
+  Animation<Offset>? _offsetAnimation;
+  bool _isAnimatingSwipe = false;
 
   @override
   void initState() {
     super.initState();
-    // Load profiles if not already loaded
-    if (swipeController.profiles.isEmpty) {
-      swipeController.loadProfiles();
+    _swipeAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+    );
+
+    if (swipeController.profiles.isEmpty && !swipeController.isLoading.value) {
+      swipeController.loadProfiles(refresh: true);
     }
   }
 
-  /// Helper method to load more profiles when running out
-  Future<void> _moveToNextProfile(int currentIndex) async {
-    // Check if we need to load more profiles
-    if (currentIndex + 1 >= swipeController.profiles.length) {
-      debugPrint("📥 Loading more profiles...");
-      await swipeController.loadMoreProfiles();
+  @override
+  void dispose() {
+    _swipeAnimationController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handlePanEnd(BoxConstraints constraints, UserModel profile) async {
+    final threshold = constraints.maxWidth * AppConstants.swipeThreshold;
+    final shouldCommit = _dragOffset.dx.abs() >= threshold &&
+        _dragOffset.dx.abs() > _dragOffset.dy.abs();
+
+    if (!shouldCommit) {
+      await _runCardAnimation(
+        target: Offset.zero,
+        markAsSwipe: false,
+      );
+      return;
     }
+
+    final direction =
+        _dragOffset.dx >= 0 ? SwipeAction.like : SwipeAction.dislike;
+    final exitX = _dragOffset.dx >= 0
+        ? constraints.maxWidth * 1.35
+        : -constraints.maxWidth * 1.35;
+    final exitOffset = Offset(exitX, _dragOffset.dy * 0.3);
+
+    await _runCardAnimation(
+      target: exitOffset,
+      markAsSwipe: true,
+    );
+
+    final result = await swipeController.submitSwipe(
+      profile: profile,
+      action: direction,
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (!result.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.message.isEmpty ? 'Swipe failed. Please try again.' : result.message),
+          action: SnackBarAction(
+            label: 'Retry',
+            onPressed: () {
+              swipeController.clearMessages();
+            },
+          ),
+        ),
+      );
+    } else if (direction == SwipeAction.like && result.isMatch) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MatchScreen(
+            userName: profile.fullName,
+            image1: 'assets/images/profile.png',
+            image2: profile.profileImage.isNotEmpty
+                ? profile.profileImage
+                : 'assets/images/profile.png',
+          ),
+        ),
+      );
+    }
+
+    _swipeAnimationController.reset();
+    if (mounted) {
+      setState(() {
+        _dragOffset = Offset.zero;
+        _offsetAnimation = null;
+        _isAnimatingSwipe = false;
+      });
+    }
+  }
+
+  Future<void> _animateCardTo(Offset target) async {
+    _offsetAnimation = Tween<Offset>(
+      begin: _dragOffset,
+      end: target,
+    ).animate(
+      CurvedAnimation(
+        parent: _swipeAnimationController,
+        curve: Curves.easeOutCubic,
+      ),
+    );
+
+    _swipeAnimationController
+      ..reset()
+      ..addListener(_animationListener);
+
+    await _swipeAnimationController.forward();
+    _swipeAnimationController.removeListener(_animationListener);
+    _dragOffset = target;
+  }
+
+  Future<void> _runCardAnimation({
+    required Offset target,
+    required bool markAsSwipe,
+  }) async {
+    if (mounted) {
+      setState(() {
+        _isAnimatingSwipe = true;
+      });
+    }
+
+    await _animateCardTo(target);
+
+    if (mounted && !markAsSwipe) {
+      setState(() {
+        _isAnimatingSwipe = false;
+      });
+    }
+  }
+
+  void _animationListener() {
+    final animatedOffset = _offsetAnimation?.value;
+    if (animatedOffset == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _dragOffset = animatedOffset;
+    });
   }
 
   @override
@@ -38,115 +170,80 @@ class _SwipeScreenState extends State<SwipeScreen> {
       backgroundColor: const Color(0xFFEED1DA),
       body: SafeArea(
         child: Obx(() {
-          if (swipeController.isLoading.value && swipeController.profiles.isEmpty) {
+          final profiles = swipeController.profiles.toList(growable: false);
+
+          if (swipeController.isLoading.value && profiles.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          if (swipeController.profiles.isEmpty) {
-            return const Center(
-              child: Text(
-                'No more profiles to show',
-                style: const TextStyle(fontSize: 18, color: Colors.grey),
-              ),
+          if (profiles.isEmpty) {
+            return _EmptyDeckState(
+              message: swipeController.errorMessage.value.isEmpty
+                  ? 'No more profiles to show'
+                  : swipeController.errorMessage.value,
+              onRetry: () => swipeController.loadProfiles(refresh: true),
             );
           }
 
           return Padding(
-            padding: const EdgeInsets.all(20),
-            child: SwipableStack(
-              controller: _controller,
-              itemCount: swipeController.profiles.length,
-              onSwipeCompleted: (index, swipeDirection) async {
-                final profile = swipeController.profiles[index];
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final topProfile = profiles.first;
+                final swipeThreshold =
+                    constraints.maxWidth * AppConstants.swipeThreshold;
+                final dragProgress =
+                    (_dragOffset.dx.abs() / swipeThreshold).clamp(0.0, 1.0);
 
-                if (swipeDirection == SwipeDirection.left) {
-                  // ❌ LEFT SWIPE = PASS (Skip profile, show next)
-                  debugPrint("⬅️ Swiped Left - Passing profile: ${profile.fullName}");
-                  await swipeController.passProfile(profile);
-                  await _moveToNextProfile(index);
-                } else if (swipeDirection == SwipeDirection.right) {
-                  // ❤️ RIGHT SWIPE = LIKE (Like profile, check for match)
-                  debugPrint("➡️ Swiped Right - Liking profile: ${profile.fullName}");
-                  final success = await swipeController.likeProfile(profile);
-                  
-                  if (success) {
-                    // Check if it's a match
-                    if (swipeController.successMessage.value.contains("match")) {
-                      debugPrint("🎉 MATCH FOUND with ${profile.fullName}!");
-                      // Show match screen for 2 seconds then go back
-                      if (mounted) {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => MatchScreen(
-                              userName: profile.fullName,
-                              image1: "assets/images/profile.png",
-                              image2: profile.photoUrls.isNotEmpty 
-                                  ? profile.photoUrls.first 
-                                  : "assets/images/profile.png",
-                            ),
-                          ),
-                        );
-                      }
-                    } else {
-                      debugPrint("👍 Liked ${profile.fullName} (no match yet)");
-                    }
-                    await _moveToNextProfile(index);
-                  } else {
-                    debugPrint("❌ Failed to like profile");
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("Failed to like profile. Try again.")),
-                    );
-                  }
-                }
-              },
-              builder: (context, properties) {
-                final profile = swipeController.profiles[properties.index];
+                return Column(
+                  children: [
+                    Expanded(
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: List.generate(
+                          math.min(profiles.length, 3),
+                          (index) {
+                            final profile = profiles[index];
+                            final isTopCard = index == 0;
 
-                return ClipRRect(
-                  borderRadius: BorderRadius.circular(25),
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: profile.photoUrls.isNotEmpty
-                            ? Image.network(
-                                profile.photoUrls.first,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
-                                    Image.asset("assets/images/profile.png", fit: BoxFit.cover),
-                              )
-                            : Image.asset(
-                                "assets/images/profile.png",
-                                fit: BoxFit.cover,
-                              ),
+                            return _DeckLayer(
+                              profile: profile,
+                              depth: index,
+                              dragProgress: dragProgress,
+                              dragOffset: isTopCard ? _dragOffset : Offset.zero,
+                              isTopCard: isTopCard,
+                              onPanUpdate: isTopCard &&
+                                      !_isAnimatingSwipe &&
+                                      swipeController.canSwipe(profile.id)
+                                  ? (details) {
+                                      setState(() {
+                                        _dragOffset += details.delta;
+                                      });
+                                    }
+                                  : null,
+                              onPanEnd: isTopCard &&
+                                      !_isAnimatingSwipe &&
+                                      swipeController.canSwipe(profile.id)
+                                  ? (_) => _handlePanEnd(constraints, topProfile)
+                                  : null,
+                            );
+                          },
+                        ).reversed.toList(),
                       ),
-                      // Gradient
-                      Positioned.fill(
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [Colors.transparent, Colors.black54],
-                              begin: Alignment.center,
-                              end: Alignment.bottomCenter,
-                            ),
-                          ),
-                        ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      swipeController.isLoadingMore.value
+                          ? 'Loading more profiles...'
+                          : swipeController.errorMessage.value,
+                      style: TextStyle(
+                        color: swipeController.errorMessage.value.isEmpty
+                            ? Colors.transparent
+                            : Colors.redAccent,
+                        fontWeight: FontWeight.w600,
                       ),
-                      // Name and age
-                      Positioned(
-                        bottom: 30,
-                        left: 20,
-                        child: Text(
-                          "${profile.fullName}, ${profile.age}",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 );
               },
             ),
@@ -157,17 +254,276 @@ class _SwipeScreenState extends State<SwipeScreen> {
   }
 }
 
-class MatchScreen extends StatelessWidget {
-  final String userName;
-  final String image1;
-  final String image2;
+class _DeckLayer extends StatelessWidget {
+  const _DeckLayer({
+    required this.profile,
+    required this.depth,
+    required this.dragProgress,
+    required this.dragOffset,
+    required this.isTopCard,
+    this.onPanUpdate,
+    this.onPanEnd,
+  });
 
+  final UserModel profile;
+  final int depth;
+  final double dragProgress;
+  final Offset dragOffset;
+  final bool isTopCard;
+  final GestureDragUpdateCallback? onPanUpdate;
+  final GestureDragEndCallback? onPanEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final depthOffset = depth * 14.0;
+    final baseScale = 1 - (depth * 0.04);
+    final animatedScale = isTopCard
+        ? 1.0
+        : (baseScale + (dragProgress * 0.03)).clamp(0.88, 1.0);
+
+    Widget card = Transform.translate(
+      offset: isTopCard ? dragOffset : Offset(0, depthOffset - (dragProgress * 10)),
+      child: Transform.rotate(
+        angle: isTopCard ? dragOffset.dx / 900 : 0,
+        child: Transform.scale(
+          scale: animatedScale,
+          alignment: Alignment.topCenter,
+          child: _SwipeProfileCard(
+            profile: profile,
+            likeOpacity: isTopCard && dragOffset.dx > 0
+                ? (dragOffset.dx.abs() / 120).clamp(0.0, 1.0)
+                : 0,
+            nopeOpacity: isTopCard && dragOffset.dx < 0
+                ? (dragOffset.dx.abs() / 120).clamp(0.0, 1.0)
+                : 0,
+          ),
+        ),
+      ),
+    );
+
+    if (!isTopCard) {
+      return Positioned.fill(
+        top: depthOffset,
+        child: card,
+      );
+    }
+
+    return Positioned.fill(
+      child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onPanUpdate: onPanUpdate,
+        onPanEnd: onPanEnd,
+        child: card,
+      ),
+    );
+  }
+}
+
+class _SwipeProfileCard extends StatelessWidget {
+  const _SwipeProfileCard({
+    required this.profile,
+    required this.likeOpacity,
+    required this.nopeOpacity,
+  });
+
+  final UserModel profile;
+  final double likeOpacity;
+  final double nopeOpacity;
+
+  @override
+  Widget build(BuildContext context) {
+    final image = profile.profileImage;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (image.isNotEmpty)
+            Image.network(
+              image,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) =>
+                  Image.asset('assets/images/profile.png', fit: BoxFit.cover),
+            )
+          else
+            Image.asset('assets/images/profile.png', fit: BoxFit.cover),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.08),
+                    Colors.black.withValues(alpha: 0.18),
+                    Colors.black.withValues(alpha: 0.72),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 28,
+            left: 24,
+            child: Opacity(
+              opacity: likeOpacity,
+              child: _SwipeBadge(
+                label: 'LIKE',
+                color: const Color(0xFF32D296),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 28,
+            right: 24,
+            child: Opacity(
+              opacity: nopeOpacity,
+              child: _SwipeBadge(
+                label: 'NOPE',
+                color: const Color(0xFFFF6B6B),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 24,
+            right: 24,
+            bottom: 24,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '${profile.fullName}, ${profile.age}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                if ((profile.city ?? '').isNotEmpty || (profile.country ?? '').isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      [profile.city, profile.country]
+                          .whereType<String>()
+                          .where((value) => value.isNotEmpty)
+                          .join(', '),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                if ((profile.bio ?? '').isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      profile.bio!,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        height: 1.35,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SwipeBadge extends StatelessWidget {
+  const _SwipeBadge({
+    required this.label,
+    required this.color,
+  });
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Transform.rotate(
+      angle: label == 'LIKE' ? -0.15 : 0.15,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color, width: 3),
+          color: Colors.black.withValues(alpha: 0.18),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: color,
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+            letterSpacing: 1.5,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyDeckState extends StatelessWidget {
+  const _EmptyDeckState({
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.favorite_border, size: 56, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 17,
+                color: Colors.black54,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: onRetry,
+              child: const Text('Try again'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MatchScreen extends StatelessWidget {
   const MatchScreen({
     super.key,
     required this.userName,
     required this.image1,
     required this.image2,
   });
+
+  final String userName;
+  final String image1;
+  final String image2;
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +534,6 @@ class MatchScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const SizedBox(height: 20),
-            // Profile Cards
             Stack(
               alignment: Alignment.center,
               children: [
@@ -190,7 +545,7 @@ class MatchScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(20),
                       image: DecorationImage(
-                        image: AssetImage(image1),
+                        image: _imageProvider(image1),
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -206,7 +561,7 @@ class MatchScreen extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(20),
                         image: DecorationImage(
-                          image: AssetImage(image2),
+                          image: _imageProvider(image2),
                           fit: BoxFit.cover,
                         ),
                       ),
@@ -220,11 +575,10 @@ class MatchScreen extends StatelessWidget {
                     backgroundColor: Colors.white,
                     child: Icon(Icons.favorite, color: Colors.pink),
                   ),
-                )
+                ),
               ],
             ),
             const SizedBox(height: 40),
-            // Match Text
             Text(
               "It's a match, $userName!",
               style: const TextStyle(
@@ -235,11 +589,10 @@ class MatchScreen extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const Text(
-              "Start a conversation now with each other",
-              style: const TextStyle(color: Colors.grey),
+              'Start a conversation now with each other',
+              style: TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 40),
-            // Say Hello Button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40),
               child: ElevatedButton(
@@ -250,17 +603,14 @@ class MatchScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30),
                   ),
                 ),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+                onPressed: () => Navigator.pop(context),
                 child: const Text(
-                  "Say hello",
-                  style: const TextStyle(fontSize: 16),
+                  'Say hello',
+                  style: TextStyle(fontSize: 16),
                 ),
               ),
             ),
             const SizedBox(height: 15),
-            // Keep Swiping
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40),
               child: OutlinedButton(
@@ -271,12 +621,10 @@ class MatchScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(30),
                   ),
                 ),
-                onPressed: () {
-                  Navigator.pop(context);
-                },
+                onPressed: () => Navigator.pop(context),
                 child: const Text(
-                  "Keep swiping",
-                  style: const TextStyle(color: Colors.pink),
+                  'Keep swiping',
+                  style: TextStyle(color: Colors.pink),
                 ),
               ),
             ),
@@ -284,5 +632,12 @@ class MatchScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  ImageProvider _imageProvider(String imagePath) {
+    if (imagePath.startsWith('http')) {
+      return NetworkImage(imagePath);
+    }
+    return AssetImage(imagePath);
   }
 }

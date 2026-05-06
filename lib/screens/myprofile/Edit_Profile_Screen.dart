@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:get/get.dart';
+import 'package:dating_app/controllers/user_controller.dart';
+import 'package:dating_app/utils/theme.dart';
 import 'dart:io';
 
 class EditProfileScreen extends StatefulWidget {
@@ -12,7 +15,6 @@ class EditProfileScreen extends StatefulWidget {
 class _EditProfileScreenState extends State<EditProfileScreen> {
   final ImagePicker _picker = ImagePicker();
 
-  // List of uploaded images - now stores actual file paths
   final List<dynamic> _uploadedImages = [
     "assets/images/editprofilegirl1.png",
     "assets/images/editprofilegirl1.png",
@@ -21,7 +23,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     "assets/images/editprofilegirl1.png",
   ];
 
-  // List of interests
   final List<String> _interests = [
     "Music",
     "Fitness",
@@ -30,7 +31,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     "Cooking",
   ];
 
-  // Available interests to add
   final List<String> _availableInterests = [
     "Reading",
     "Gaming",
@@ -46,7 +46,113 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     "Yoga",
   ];
 
-  // Method to pick image from gallery/camera
+  // ── Courses & Communities ──
+  final List<String> _courses = ["Feminism", "Human rights"];
+  final List<String> _availableCourses = [
+    "Feminism",
+    "Human rights",
+    "Climate change",
+    "Mental health",
+    "Education",
+    "Animal rights",
+    "LGBTQ+",
+    "Sustainability",
+    "Social justice",
+  ];
+
+  // ── Qualities ──
+  final List<String> _qualities = [
+    "Empathy",
+    "Optimism",
+    "Emotional intelligence",
+  ];
+  final List<String> _availableQualities = [
+    "Empathy",
+    "Optimism",
+    "Emotional intelligence",
+    "Honesty",
+    "Humor",
+    "Loyalty",
+    "Kindness",
+    "Ambition",
+    "Creativity",
+    "Patience",
+  ];
+  // ── Controllers for editable fields ──
+  late final TextEditingController _bioController;
+  late final TextEditingController _firstNameController;
+  late final TextEditingController _lastNameController;
+  late final TextEditingController _cityController;
+  bool _isSaving = false;
+
+  final UserController _userController = Get.find<UserController>();
+
+  @override
+  void initState() {
+    super.initState();
+    final user = _userController.currentUser.value;
+
+    _bioController = TextEditingController(text: user?.bio ?? '');
+    _firstNameController = TextEditingController(text: user?.firstName ?? '');
+    _lastNameController = TextEditingController(text: user?.lastName ?? '');
+    _cityController = TextEditingController(text: user?.city ?? '');
+
+    // Pre-fill interests from API data if available
+    if (user != null && user.interests.isNotEmpty) {
+      _interests
+        ..clear()
+        ..addAll(user.interests);
+    }
+
+    // Pre-fill photos from API data if available
+    if (user != null && user.photoUrls.isNotEmpty) {
+      _uploadedImages
+        ..clear()
+        ..addAll(user.photoUrls);
+    }
+  }
+
+  @override
+  void dispose() {
+    _bioController.dispose();
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _cityController.dispose();
+    super.dispose();
+  }
+
+  // ── Save profile to backend ──
+  Future<void> _saveProfile() async {
+    if (_isSaving) return;
+    setState(() => _isSaving = true);
+
+    final updateData = <String, dynamic>{
+      'bio': _bioController.text.trim(),
+      'firstName': _firstNameController.text.trim(),
+      'lastName': _lastNameController.text.trim(),
+      'city': _cityController.text.trim(),
+      'interests': _interests,
+    };
+
+    final success = await _userController.updateMyProfile(updateData);
+
+    if (mounted) {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            success
+                ? 'Profile updated successfully!'
+                : 'Failed to update profile.',
+          ),
+          backgroundColor: success ? Colors.pink : Colors.red,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+      if (success) Navigator.pop(context);
+    }
+  }
+
   Future<void> _pickImage() async {
     showModalBottomSheet(
       context: context,
@@ -82,7 +188,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final XFile? image = await _picker.pickImage(source: source);
       if (image != null) {
         setState(() {
-          // Store the actual image file path
           _uploadedImages.add(image.path);
         });
         if (mounted) {
@@ -106,7 +211,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  // Method to delete image
   void _deleteImage(int index) {
     setState(() {
       _uploadedImages.removeAt(index);
@@ -120,7 +224,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  // Method to add interest
   void _addInterest() {
     showModalBottomSheet(
       context: context,
@@ -133,10 +236,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           children: [
             const Text(
               "Add Interest",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 20),
             Expanded(
@@ -170,7 +270,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     child: Container(
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: isSelected ? Colors.pink : Colors.grey.shade300,
+                          color: isSelected
+                              ? Colors.pink
+                              : Colors.grey.shade300,
                         ),
                         borderRadius: BorderRadius.circular(20),
                         color: isSelected ? Colors.pink.shade50 : Colors.white,
@@ -180,7 +282,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         interest,
                         style: TextStyle(
                           color: isSelected ? Colors.pink : Colors.black,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                     ),
@@ -194,7 +298,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  // Method to remove interest
   void _removeInterest(String interest) {
     setState(() {
       _interests.remove(interest);
@@ -202,6 +305,204 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("$interest removed"),
+        backgroundColor: Colors.pink,
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+
+  // ── Add Course ──
+  void _addCourse() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Add Course or Community",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 2.5,
+                ),
+                itemCount: _availableCourses.length,
+                itemBuilder: (context, index) {
+                  final item = _availableCourses[index];
+                  final isSelected = _courses.contains(item);
+                  final maxReached = _courses.length >= 3;
+                  return GestureDetector(
+                    onTap: () {
+                      if (!isSelected && !maxReached) {
+                        setState(() {
+                          _courses.add(item);
+                        });
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("$item added!"),
+                            backgroundColor: Colors.pink,
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      } else if (maxReached && !isSelected) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Max 3 causes allowed"),
+                            backgroundColor: Colors.red,
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      }
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: isSelected
+                              ? Colors.pink
+                              : Colors.grey.shade300,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        color: isSelected ? Colors.pink.shade50 : Colors.white,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        item,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isSelected ? Colors.pink : Colors.black,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _removeCourse(String item) {
+    setState(() {
+      _courses.remove(item);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("$item removed"),
+        backgroundColor: Colors.pink,
+        duration: const Duration(seconds: 1),
+      ),
+    );
+  }
+
+  // ── Add Quality ──
+  void _addQuality() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(20),
+        height: MediaQuery.of(context).size.height * 0.6,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Add Quality",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: GridView.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  crossAxisSpacing: 10,
+                  mainAxisSpacing: 10,
+                  childAspectRatio: 2.5,
+                ),
+                itemCount: _availableQualities.length,
+                itemBuilder: (context, index) {
+                  final item = _availableQualities[index];
+                  final isSelected = _qualities.contains(item);
+                  final maxReached = _qualities.length >= 3;
+                  return GestureDetector(
+                    onTap: () {
+                      if (!isSelected && !maxReached) {
+                        setState(() {
+                          _qualities.add(item);
+                        });
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("$item added!"),
+                            backgroundColor: Colors.pink,
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      } else if (maxReached && !isSelected) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Max 3 qualities allowed"),
+                            backgroundColor: Colors.red,
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      }
+                    },
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: isSelected
+                              ? Colors.pink
+                              : Colors.grey.shade300,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        color: isSelected ? Colors.pink.shade50 : Colors.white,
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        item,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: isSelected ? Colors.pink : Colors.black,
+                          fontWeight: isSelected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _removeQuality(String item) {
+    setState(() {
+      _qualities.remove(item);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text("$item removed"),
         backgroundColor: Colors.pink,
         duration: const Duration(seconds: 1),
       ),
@@ -219,19 +520,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             end: Alignment.bottomCenter,
           ),
         ),
-
         child: SafeArea(
           child: SingleChildScrollView(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                /// ================= TOP SECTION =================
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      /// TOP BAR
                       Row(
                         children: [
                           IconButton(
@@ -245,12 +543,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                          const Spacer(),
+                          _isSaving
+                              ? const Padding(
+                                  padding: EdgeInsets.only(right: 16),
+                                  child: SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.pink,
+                                    ),
+                                  ),
+                                )
+                              : TextButton(
+                                  onPressed: _saveProfile,
+                                  child: const Text(
+                                    'Save',
+                                    style: TextStyle(
+                                      color: Colors.pink,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
                         ],
                       ),
 
                       const SizedBox(height: 20),
 
-                      /// PROFILE STRENGTH
                       const Text("Profile strength"),
 
                       const SizedBox(height: 10),
@@ -275,7 +596,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                       const SizedBox(height: 25),
 
-                      /// PHOTOS TITLE
                       const Text(
                         "Photos and videos",
                         style: TextStyle(
@@ -293,7 +613,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                       const SizedBox(height: 20),
 
-                      /// GRID (FIXED HEIGHT) - DYNAMIC
                       GridView.count(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
@@ -301,11 +620,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         crossAxisSpacing: 10,
                         mainAxisSpacing: 10,
                         children: [
-                          // Uploaded images
                           ...List.generate(_uploadedImages.length, (index) {
                             return _imageCard(_uploadedImages[index], index);
                           }),
-                          // Add button
                           GestureDetector(
                             onTap: _pickImage,
                             child: Container(
@@ -314,7 +631,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: const Center(
-                                child: Icon(Icons.add, size: 30, color: Colors.pink),
+                                child: Icon(
+                                  Icons.add,
+                                  size: 30,
+                                  color: Colors.pink,
+                                ),
                               ),
                             ),
                           ),
@@ -330,7 +651,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                       const SizedBox(height: 15),
 
-                      /// VERIFICATION
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
@@ -369,7 +689,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                 ),
 
-                /// ================= WHITE SECTION =================
                 Container(
                   width: double.infinity,
                   decoration: const BoxDecoration(
@@ -383,7 +702,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        /// INTERESTS - DYNAMIC
                         const Text(
                           "Interests",
                           style: TextStyle(
@@ -403,7 +721,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           runSpacing: 10,
                           children: [
                             ...List.generate(_interests.length, (index) {
-                              return _chip(_interests[index], () => _removeInterest(_interests[index]));
+                              return _chip(
+                                _interests[index],
+                                () => _removeInterest(_interests[index]),
+                              );
                             }),
                             _addChip(() => _addInterest()),
                           ],
@@ -411,26 +732,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                         const SizedBox(height: 20),
 
-                        _sectionCard(
+                        // ── Courses & Communities — now dynamic ──
+                        _dynamicSectionCard(
                           title: "My courses and communities",
                           subtitle: "Add upto 3 causes close to your heart",
-                          children: [
-                            _greyChip("Feminism"),
-                            _greyChip("Human rights"),
-                          ],
+                          items: _courses,
+                          onAdd: _addCourse,
+                          onRemove: _removeCourse,
                         ),
 
                         const SizedBox(height: 20),
 
-                        _sectionCard(
+                        // ── Qualities — now dynamic ──
+                        _dynamicSectionCard(
                           title: "Qualities I value",
                           subtitle:
                               "Choose up to 3 qualities you value in a person",
-                          children: [
-                            _greyChip("Empathy"),
-                            _greyChip("Optimism"),
-                            _greyChip("Emotional intelligence"),
-                          ],
+                          items: _qualities,
+                          onAdd: _addQuality,
+                          onRemove: _removeQuality,
                         ),
 
                         const SizedBox(height: 20),
@@ -460,7 +780,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             children: [
                               Expanded(
                                 child: Text(
-                                  "What’s the best piece of advice you’ve ever received?",
+                                  "What's the best piece of advice you've ever received?",
                                 ),
                               ),
                               Icon(Icons.chevron_right),
@@ -482,21 +802,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                         const SizedBox(height: 10),
 
-                        /// BIO INPUT
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: Colors.grey.shade100,
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: const Text(
-                            "I spend my time creating things & planning a life bigger than comfort zones.",
+                          child: TextField(
+                            controller: _bioController,
+                            maxLines: 4,
+                            maxLength: 300,
+                            textAlignVertical: TextAlignVertical.top,
+                            cursorColor: Colors.pink,
+                            decoration: AppTheme.borderlessInputDecoration(
+                              hintText: 'Write something about yourself...',
+                              contentPadding: EdgeInsets.zero,
+                              counterText: '',
+                            ),
                           ),
                         ),
 
                         const SizedBox(height: 25),
 
-                        /// ================= ABOUT YOU =================
                         const Text(
                           "About you",
                           style: TextStyle(
@@ -520,7 +847,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                         const SizedBox(height: 25),
 
-                        /// ================= MORE ABOUT YOU =================
                         const Text(
                           "More about you",
                           style: TextStyle(
@@ -549,12 +875,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         _aboutTile(
                           Icons.local_bar,
                           "Drinking",
-                          "No, I don’t drink",
+                          "No, I don't drink",
                         ),
                         _aboutTile(
                           Icons.smoking_rooms,
                           "Smoking",
-                          "No, I don’t smoke",
+                          "No, I don't smoke",
                         ),
                         _aboutTile(
                           Icons.favorite,
@@ -565,14 +891,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         _aboutTile(
                           Icons.child_friendly,
                           "Have Kids",
-                          "Don’t have kids",
+                          "Don't have kids",
                         ),
                         _aboutTile(Icons.temple_hindu, "Religion", "Hindu"),
                         _aboutTile(Icons.gavel, "Politics", "Apolitical"),
 
                         const SizedBox(height: 25),
 
-                        /// ================= PRONOUNS =================
                         const Text(
                           "Pronouns",
                           style: TextStyle(
@@ -610,7 +935,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                         const SizedBox(height: 25),
 
-                        /// ================= LANGUAGES =================
                         const Text(
                           "Languages",
                           style: TextStyle(
@@ -647,46 +971,97 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
               ],
             ),
-            
           ),
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
-  currentIndex: 3, // Profile selected
-  selectedItemColor: Colors.pink,
-  unselectedItemColor: Colors.black54,
-  type: BottomNavigationBarType.fixed,
-  onTap: (index) {
-    // handle navigation here
-  },
-  items: const [
-    BottomNavigationBarItem(
-      icon: Icon(Icons.favorite_border),
-      label: "Liked you",
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.people),
-      label: "People",
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.chat_bubble_outline),
-      label: "Chat",
-    ),
-    BottomNavigationBarItem(
-      icon: Icon(Icons.person_outline),
-      label: "Profile",
-    ),
-  ],
-),
-      
+        currentIndex: 3,
+        selectedItemColor: Colors.pink,
+        unselectedItemColor: Colors.black54,
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) {},
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_border),
+            label: "Liked you",
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: "People"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_outline),
+            label: "Chat",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            label: "Profile",
+          ),
+        ],
+      ),
     );
   }
 
-  /// IMAGE CARD - WITH DELETE FUNCTIONALITY
+  /// Dynamic section card with add + remove chip support
+  Widget _dynamicSectionCard({
+    required String title,
+    required String subtitle,
+    required List<String> items,
+    required VoidCallback onAdd,
+    required void Function(String) onRemove,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 4),
+        Text(subtitle, style: const TextStyle(color: Colors.grey)),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              ...items.map(
+                (item) => _removableGreyChip(item, () => onRemove(item)),
+              ),
+              _addChip(onAdd),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Grey chip with a remove (×) button
+  Widget _removableGreyChip(String text, VoidCallback onRemove) {
+    return GestureDetector(
+      onTap: onRemove,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(text),
+            const SizedBox(width: 6),
+            const Icon(Icons.close, size: 14, color: Colors.black54),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _imageCard(dynamic imagePath, int index) {
-    // Check if it's an asset or a file path
     final bool isAsset = imagePath.toString().startsWith('assets/');
-    
     return Stack(
       children: [
         ClipRRect(
@@ -703,17 +1078,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   fit: BoxFit.cover,
                   width: double.infinity,
                   height: double.infinity,
-                  errorBuilder: (context, error, stackTrace) {
-                    // Fallback if file doesn't exist
-                    return Container(
-                      color: Colors.grey.shade300,
-                      child: const Icon(Icons.broken_image, color: Colors.grey),
-                    );
-                  },
+                  errorBuilder: (context, error, stackTrace) => Container(
+                    color: Colors.grey.shade300,
+                    child: const Icon(Icons.broken_image, color: Colors.grey),
+                  ),
                 ),
         ),
-
-        /// CLOSE BUTTON - FUNCTIONAL
         Positioned(
           top: 6,
           right: 6,
@@ -735,7 +1105,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  /// PINK CHIP - WITH REMOVE FUNCTIONALITY
   Widget _chip(String text, VoidCallback onRemove) {
     return GestureDetector(
       onTap: onRemove,
@@ -757,7 +1126,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  /// ADD CHIP - WITH ONTAP
   Widget _addChip(VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
@@ -779,7 +1147,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  /// GREY CHIP
   Widget _greyChip(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
@@ -791,7 +1158,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  /// SECTION CARD
   Widget _sectionCard({
     required String title,
     required String subtitle,
@@ -819,7 +1185,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  /// ABOUT TILE (Reusable row)
   Widget _aboutTile(IconData icon, String title, String value) {
     return Column(
       children: [
@@ -850,7 +1215,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  /// LANGUAGE CHIP
   Widget _langChip(String text) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),

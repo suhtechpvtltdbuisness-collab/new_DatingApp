@@ -30,10 +30,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Sign Up'),
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('Sign Up'), elevation: 0),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -53,6 +50,7 @@ class _SignupScreenState extends State<SignupScreen> {
               TextFormField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
+                textAlignVertical: TextAlignVertical.center,
                 decoration: const InputDecoration(
                   labelText: 'Email',
                   prefixIcon: Icon(Icons.email),
@@ -64,6 +62,7 @@ class _SignupScreenState extends State<SignupScreen> {
               // Name
               TextFormField(
                 controller: _nameController,
+                textAlignVertical: TextAlignVertical.center,
                 decoration: const InputDecoration(
                   labelText: 'Full Name',
                   prefixIcon: Icon(Icons.person),
@@ -76,6 +75,7 @@ class _SignupScreenState extends State<SignupScreen> {
               TextFormField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
+                textAlignVertical: TextAlignVertical.center,
                 decoration: const InputDecoration(
                   labelText: 'Phone Number',
                   prefixIcon: Icon(Icons.phone),
@@ -112,7 +112,10 @@ class _SignupScreenState extends State<SignupScreen> {
                     .map(
                       (gender) => DropdownMenuItem(
                         value: gender.name,
-                        child: Text(gender.name[0].toUpperCase() + gender.name.substring(1)),
+                        child: Text(
+                          gender.name[0].toUpperCase() +
+                              gender.name.substring(1),
+                        ),
                       ),
                     )
                     .toList(),
@@ -137,7 +140,10 @@ class _SignupScreenState extends State<SignupScreen> {
                     .map(
                       (gender) => DropdownMenuItem(
                         value: gender.name,
-                        child: Text(gender.name[0].toUpperCase() + gender.name.substring(1)),
+                        child: Text(
+                          gender.name[0].toUpperCase() +
+                              gender.name.substring(1),
+                        ),
                       ),
                     )
                     .toList(),
@@ -155,13 +161,15 @@ class _SignupScreenState extends State<SignupScreen> {
               TextFormField(
                 controller: _profileController,
                 maxLines: 3,
+                textAlignVertical: TextAlignVertical.top,
                 decoration: const InputDecoration(
                   labelText: 'Profile Description',
                   prefixIcon: Icon(Icons.description),
                   hintText: 'Tell us about yourself...',
                 ),
-                validator: (value) =>
-                    value?.isEmpty ?? true ? 'Profile description is required' : null,
+                validator: (value) => value?.isEmpty ?? true
+                    ? 'Profile description is required'
+                    : null,
               ),
               const SizedBox(height: 12),
 
@@ -169,6 +177,7 @@ class _SignupScreenState extends State<SignupScreen> {
               TextFormField(
                 controller: _passwordController,
                 obscureText: true,
+                textAlignVertical: TextAlignVertical.center,
                 decoration: const InputDecoration(
                   labelText: 'Password',
                   prefixIcon: Icon(Icons.lock),
@@ -181,6 +190,7 @@ class _SignupScreenState extends State<SignupScreen> {
               TextFormField(
                 controller: _confirmPasswordController,
                 obscureText: true,
+                textAlignVertical: TextAlignVertical.center,
                 decoration: const InputDecoration(
                   labelText: 'Confirm Password',
                   prefixIcon: Icon(Icons.lock),
@@ -223,12 +233,14 @@ class _SignupScreenState extends State<SignupScreen> {
                             if (_formKey.currentState!.validate()) {
                               // For demo, use sample coordinates. In real app, get from location service
                               final coordinates = ['28.4786688', '77.4786688'];
-                              
+
                               authController
                                   .signUp(
                                     name: _nameController.text,
                                     phoneNumber: _phoneController.text,
-                                    dob: _selectedDate!.toIso8601String().split('T')[0],
+                                    dob: _selectedDate!.toIso8601String().split(
+                                      'T',
+                                    )[0],
                                     gender: _selectedGender!,
                                     profile: _profileController.text,
                                     interestedIn: _selectedInterestedIn!,
@@ -237,19 +249,17 @@ class _SignupScreenState extends State<SignupScreen> {
                                     coordinates: coordinates,
                                   )
                                   .then((success) {
-                                if (success) {
-                                  AppRoutes.toHome();
-                                }
-                              });
+                                    if (success) {
+                                      AppRoutes.toHome();
+                                    }
+                                  });
                             }
                           },
                     child: authController.isLoading.value
                         ? const SizedBox(
                             height: 24,
                             width: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text('Sign Up'),
                   ),

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../controllers/chat_controller.dart';
 import '../../models/chat_model.dart';
 import '../../utils/constants.dart';
+import '../../utils/theme.dart';
 import '../home/home_screen.dart';
 import '../profile/profile_screen.dart';
 import 'report_user_screen.dart';
@@ -40,9 +41,27 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // ---- contact-info guard ----
   final List<String> _numberWords = [
-    'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight',
-    'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen',
-    'sixteen', 'seventeen', 'eighteen', 'nineteen', 'twenty',
+    'zero',
+    'one',
+    'two',
+    'three',
+    'four',
+    'five',
+    'six',
+    'seven',
+    'eight',
+    'nine',
+    'ten',
+    'eleven',
+    'twelve',
+    'thirteen',
+    'fourteen',
+    'fifteen',
+    'sixteen',
+    'seventeen',
+    'eighteen',
+    'nineteen',
+    'twenty',
   ];
   int blockedAttempts = 0;
   bool notificationsMuted = false;
@@ -121,8 +140,14 @@ class _ChatScreenState extends State<ChatScreen> {
   String _normalizeText(String text) {
     var normalized = text.toLowerCase();
     const leetMap = {
-      '0': 'o', '1': 'i', '!': 'i', '3': 'e',
-      '4': 'a', '5': 's', '7': 't', '8': 'b',
+      '0': 'o',
+      '1': 'i',
+      '!': 'i',
+      '3': 'e',
+      '4': 'a',
+      '5': 's',
+      '7': 't',
+      '8': 'b',
     };
     for (final entry in leetMap.entries) {
       normalized = normalized.replaceAll(entry.key, entry.value);
@@ -156,13 +181,20 @@ class _ChatScreenState extends State<ChatScreen> {
     if (tokens.isEmpty) return false;
 
     final disguisedTokens = tokens.where((token) {
-      final hasDigitAndLetter =
-          RegExp(r'(?=.*[0-9])(?=.*[a-zA-Z])').hasMatch(token);
+      final hasDigitAndLetter = RegExp(
+        r'(?=.*[0-9])(?=.*[a-zA-Z])',
+      ).hasMatch(token);
       if (!hasDigitAndLetter) return false;
       final rebuilt = token
-          .replaceAll('0', 'o').replaceAll('1', 'i').replaceAll('!', 'i')
-          .replaceAll('3', 'e').replaceAll('4', 'a').replaceAll('5', 's')
-          .replaceAll('7', 't').replaceAll('8', 'b').replaceAll('\$', 's');
+          .replaceAll('0', 'o')
+          .replaceAll('1', 'i')
+          .replaceAll('!', 'i')
+          .replaceAll('3', 'e')
+          .replaceAll('4', 'a')
+          .replaceAll('5', 's')
+          .replaceAll('7', 't')
+          .replaceAll('8', 'b')
+          .replaceAll('\$', 's');
       final cleaned = rebuilt.replaceAll(RegExp(r'[^a-z]'), '');
       return _numberWords.contains(cleaned);
     }).length;
@@ -189,7 +221,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
       case _ChatMenuOption.muteNotifications:
         setState(() => notificationsMuted = !notificationsMuted);
-        _showToast(notificationsMuted ? 'Notifications muted' : 'Notifications unmuted');
+        _showToast(
+          notificationsMuted ? 'Notifications muted' : 'Notifications unmuted',
+        );
         break;
 
       case _ChatMenuOption.unmatch:
@@ -279,11 +313,17 @@ class _ChatScreenState extends State<ChatScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(title,
-            style: const TextStyle(
-                color: Colors.black, fontWeight: FontWeight.bold)),
-        content: Text(message,
-            style: const TextStyle(color: Colors.black87, height: 1.4)),
+        title: Text(
+          title,
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          message,
+          style: const TextStyle(color: Colors.black87, height: 1.4),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -294,8 +334,10 @@ class _ChatScreenState extends State<ChatScreen> {
               Navigator.of(context).pop();
               onConfirm();
             },
-            child: Text(confirmText,
-                style: TextStyle(color: Colors.pink.shade700)),
+            child: Text(
+              confirmText,
+              style: TextStyle(color: Colors.pink.shade700),
+            ),
           ),
         ],
       ),
@@ -311,9 +353,10 @@ class _ChatScreenState extends State<ChatScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Chat Restricted',
-            style: TextStyle(
-                color: Colors.black, fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Chat Restricted',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -325,16 +368,14 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
             const SizedBox(height: 16),
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.pink.shade50,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 'Time $timeString',
-                style:
-                    TextStyle(color: Colors.pink.shade700, fontSize: 12),
+                style: TextStyle(color: Colors.pink.shade700, fontSize: 12),
               ),
             ),
           ],
@@ -342,8 +383,10 @@ class _ChatScreenState extends State<ChatScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text('I Understand',
-                style: TextStyle(color: Colors.pink.shade700)),
+            child: Text(
+              'I Understand',
+              style: TextStyle(color: Colors.pink.shade700),
+            ),
           ),
         ],
       ),
@@ -387,16 +430,20 @@ class _ChatScreenState extends State<ChatScreen> {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(widget.name,
-                      style: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold)),
+                  Text(
+                    widget.name,
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   Text(
                     isOnline ? 'Online' : 'Offline',
                     style: TextStyle(
-                        fontSize: 12,
-                        color: isOnline ? Colors.green : Colors.grey),
+                      fontSize: 12,
+                      color: isOnline ? Colors.green : Colors.grey,
+                    ),
                   ),
                 ],
               );
@@ -418,9 +465,11 @@ class _ChatScreenState extends State<ChatScreen> {
               ),
               PopupMenuItem(
                 value: _ChatMenuOption.muteNotifications,
-                child: Text(notificationsMuted
-                    ? 'Unmute Notifications'
-                    : 'Mute Notifications'),
+                child: Text(
+                  notificationsMuted
+                      ? 'Unmute Notifications'
+                      : 'Mute Notifications',
+                ),
               ),
               const PopupMenuItem(
                 value: _ChatMenuOption.unmatch,
@@ -471,7 +520,9 @@ class _ChatScreenState extends State<ChatScreen> {
               return ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 15, vertical: 10),
+                  horizontal: 15,
+                  vertical: 10,
+                ),
                 itemCount: msgs.length + 2, // +1 header divider +1 typing
                 itemBuilder: (context, index) {
                   // First item: "Today" divider
@@ -481,18 +532,18 @@ class _ChatScreenState extends State<ChatScreen> {
                         Row(
                           children: [
                             Expanded(
-                                child: Divider(
-                                    color: Colors.grey.shade300)),
+                              child: Divider(color: Colors.grey.shade300),
+                            ),
                             const Padding(
-                              padding:
-                                  EdgeInsets.symmetric(horizontal: 10),
-                              child: Text('Today',
-                                  style:
-                                      TextStyle(color: Colors.grey)),
+                              padding: EdgeInsets.symmetric(horizontal: 10),
+                              child: Text(
+                                'Today',
+                                style: TextStyle(color: Colors.grey),
+                              ),
                             ),
                             Expanded(
-                                child: Divider(
-                                    color: Colors.grey.shade300)),
+                              child: Divider(color: Colors.grey.shade300),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 10),
@@ -506,7 +557,8 @@ class _ChatScreenState extends State<ChatScreen> {
                   }
 
                   final msg = msgs[index - 1];
-                  final isMe = msg.senderId == _chatController.currentUserId ||
+                  final isMe =
+                      msg.senderId == _chatController.currentUserId ||
                       msg.senderId == 'user123'; // mock fallback
 
                   return _MessageBubble(
@@ -538,44 +590,52 @@ class _ChatScreenState extends State<ChatScreen> {
                           child: TextField(
                             controller: _inputController,
                             onSubmitted: (_) => _sendMessage(),
-                            decoration: const InputDecoration(
+                            textAlignVertical: TextAlignVertical.center,
+                            cursorColor: Colors.pink,
+                            decoration: AppTheme.borderlessInputDecoration(
                               hintText: 'Type your message..',
-                              border: InputBorder.none,
                             ),
                           ),
                         ),
-                        const Icon(Icons.emoji_emotions_outlined,
-                            color: Colors.grey),
+                        const Icon(
+                          Icons.emoji_emotions_outlined,
+                          color: Colors.grey,
+                        ),
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(width: 8),
-                Obx(() => GestureDetector(
-                      onTap: _chatController.isSending.value
-                          ? null
-                          : _sendMessage,
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: _chatController.isSending.value
-                              ? Colors.pink.shade200
-                              : Colors.pink,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: _chatController.isSending.value
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.send,
-                                color: Colors.white, size: 20),
+                Obx(
+                  () => GestureDetector(
+                    onTap: _chatController.isSending.value
+                        ? null
+                        : _sendMessage,
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _chatController.isSending.value
+                            ? Colors.pink.shade200
+                            : Colors.pink,
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                    )),
+                      child: _chatController.isSending.value
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(
+                              Icons.send,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -604,8 +664,9 @@ class _MessageBubble extends StatelessWidget {
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Column(
-        crossAxisAlignment:
-            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: isMe
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           Container(
             margin: const EdgeInsets.symmetric(vertical: 6),
@@ -620,10 +681,7 @@ class _MessageBubble extends StatelessWidget {
                 bottomRight: Radius.circular(isMe ? 4 : 16),
               ),
             ),
-            child: Text(
-              msg.message,
-              style: const TextStyle(fontSize: 14),
-            ),
+            child: Text(msg.message, style: const TextStyle(fontSize: 14)),
           ),
 
           /// Time + delivery tick
@@ -664,16 +722,12 @@ class _TypingIndicator extends StatelessWidget {
       alignment: Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.only(top: 8, bottom: 10),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(13),
-              blurRadius: 6,
-            ),
+            BoxShadow(color: Colors.black.withAlpha(13), blurRadius: 6),
           ],
         ),
         child: const Row(

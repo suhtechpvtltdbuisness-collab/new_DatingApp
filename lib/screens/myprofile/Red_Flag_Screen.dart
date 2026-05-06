@@ -50,7 +50,7 @@ class RedFlagScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     const Text(
-                      "First Date Advice",
+                      "Red Flags to Watch",
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -65,12 +65,11 @@ class RedFlagScreen extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    tip("Keep it casual & public."),
-                    tip("Arrive on your own."),
-                    tip("Inform a friend beforehand."),
-                    tip("Stay confident, be yourself."),
-                    tip("Avoid checking your phone frequently."),
-                    tip("End the date on a positive note."),
+                    tip('Moves too fast ("I love you" in days).'),
+                    tip('Avoids video calls or real-life meetups.'),
+                    tip('Asks for money, gifts, or favors.'),
+                    tip('Pushes for personal info too soon.'),
+                    tip('Inconsistent stories or profile details.'),
                   ],
                 ),
               ),

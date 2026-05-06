@@ -1,243 +1,253 @@
+import 'dart:collection';
+
+import 'package:dating_app/models/api_models.dart';
 import 'package:dating_app/models/match_model.dart';
-import 'package:dating_app/models/user_model.dart' as models;
+import 'package:dating_app/models/swipe_models.dart';
+import 'package:dating_app/models/user_model.dart';
 import 'package:dating_app/services/swipe_service.dart';
-import 'package:dating_app/data/mock_data.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 
+class SwipeSubmissionResult {
+  final bool success;
+  final bool isMatch;
+  final String message;
+
+  const SwipeSubmissionResult({
+    required this.success,
+    this.isMatch = false,
+    this.message = '',
+  });
+}
+
 /// Swipe Controller
-/// Manages swiping, discovery, and matching state
+/// Keeps the swipe deck responsive while the API completes in the background.
 class SwipeController extends GetxController {
-  final SwipeService _swipeService = SwipeService();
+  SwipeController({SwipeService? swipeService})
+      : _swipeService = swipeService ?? Get.find<SwipeService>();
+
+  final SwipeService _swipeService;
   final Logger _logger = Logger();
 
-  // Observable state variables
   final isLoading = false.obs;
-  final profiles = <models.UserModel>[].obs;
-  final currentProfileIndex = 0.obs;
+  final isLoadingMore = false.obs;
+  final isHistoryLoading = false.obs;
+  final profiles = <UserModel>[].obs;
+  final likedProfiles = <UserModel>[].obs;
+  final dislikedProfiles = <UserModel>[].obs;
   final matches = <MatchModel>[].obs;
   final errorMessage = ''.obs;
   final successMessage = ''.obs;
-  final isProcessing = false.obs;
   final hasMoreProfiles = true.obs;
   final currentPage = 1.obs;
 
-  // Pagination
-  static const int PAGE_SIZE = 10;
+  static const int pageSize = 10;
+  static const int preloadThreshold = 2;
+
+  final Set<String> _pendingSwipeIds = <String>{};
+
+  UnmodifiableSetView<String> get pendingSwipeIds =>
+      UnmodifiableSetView(_pendingSwipeIds);
+
+  UserModel? get currentProfile => profiles.isEmpty ? null : profiles.first;
 
   @override
   void onInit() {
     super.onInit();
-    loadProfiles();
+    loadProfiles(refresh: true);
+    refreshSwipeHistory();
   }
 
-  /// Get current profile being displayed
-  models.UserModel? get currentProfile {
-    if (currentProfileIndex.value < profiles.length) {
-      return profiles[currentProfileIndex.value];
-    }
-    return null;
-  }
+  bool canSwipe(String userId) => !_pendingSwipeIds.contains(userId);
 
-  /// Load profiles for swiping
   Future<bool> loadProfiles({bool refresh = false}) async {
+    if (refresh) {
+      currentPage.value = 1;
+      hasMoreProfiles.value = true;
+    }
+
+    if ((refresh && isLoading.value) || (!refresh && (isLoadingMore.value || !hasMoreProfiles.value))) {
+      return false;
+    }
+
     try {
       if (refresh) {
-        currentPage.value = 1;
-        profiles.clear();
-      }
-
-      isLoading.value = true;
-      errorMessage.value = '';
-
-      // Load mock data for demo
-      if (profiles.isEmpty) {
-        profiles.value = (MockData.sampleProfiles.cast<models.UserModel>());
-        hasMoreProfiles.value = false;
-        currentProfileIndex.value = 0;
-        _logger.i('Loaded ${profiles.length} demo profiles');
-        return true;
+        isLoading.value = true;
+        errorMessage.value = '';
+      } else {
+        isLoadingMore.value = true;
       }
 
       final response = await _swipeService.getSuggestions(
         page: currentPage.value,
-        limit: PAGE_SIZE,
+        limit: pageSize,
       );
 
-      if (response.success && response.data != null) {
-        if (refresh) {
-          profiles.value = response.data!;
-        } else {
-          profiles.addAll(response.data!);
-        }
-
-        hasMoreProfiles.value = response.data!.length == PAGE_SIZE;
-        currentProfileIndex.value = 0;
-
-        _logger.i('Loaded ${response.data!.length} profiles');
-        return true;
-      } else {
+      if (!response.success) {
         errorMessage.value = response.error ?? response.message;
         _logger.w('Load profiles failed: ${response.error}');
         return false;
       }
+
+      final incoming = _dedupeProfiles(response.data ?? const []);
+
+      if (refresh) {
+        profiles.assignAll(incoming);
+      } else {
+        profiles.addAll(incoming);
+      }
+
+      hasMoreProfiles.value = (response.data ?? const []).length >= pageSize;
+      errorMessage.value = '';
+
+      if (incoming.isEmpty && profiles.isEmpty) {
+        successMessage.value = 'No more profiles to show.';
+      }
+
+      return true;
     } catch (e) {
       errorMessage.value = 'Failed to load profiles';
       _logger.e('Load profiles error', error: e);
       return false;
     } finally {
       isLoading.value = false;
+      isLoadingMore.value = false;
     }
   }
 
-  /// Load more profiles for infinite scroll
   Future<bool> loadMoreProfiles() async {
-    if (!hasMoreProfiles.value || isLoading.value) {
+    if (!hasMoreProfiles.value || isLoading.value || isLoadingMore.value) {
       return false;
     }
 
-    try {
-      currentPage.value++;
-      return await loadProfiles();
-    } catch (e) {
-      _logger.e('Load more profiles error', error: e);
+    currentPage.value++;
+    final loaded = await loadProfiles();
+    if (!loaded) {
       currentPage.value--;
-      return false;
     }
+    return loaded;
   }
 
-  /// Like profile (swipe right)
-  Future<bool> likeProfile(models.UserModel profile) async {
-    try {
-      isProcessing.value = true;
-      errorMessage.value = '';
-
-      final response = await _swipeService.likeProfile(profile.id);
-
-      if (response.success && response.data != null) {
-        successMessage.value = '❤️ Liked';
-        _logger.i('Profile liked: ${profile.id}');
-
-        // Move to next profile
-        moveToNextProfile();
-
-        // Check if match
-        if (response.data!.isAccepted) {
-          successMessage.value = "✨ It's a match!";
-          _logger.i('Match found!');
-        }
-
-        return true;
-      } else {
-        errorMessage.value = response.error ?? response.message;
-        _logger.w('Like failed: ${response.error}');
-        return false;
-      }
-    } catch (e) {
-      errorMessage.value = 'Failed to like profile';
-      _logger.e('Like error', error: e);
-      return false;
-    } finally {
-      isProcessing.value = false;
+  Future<SwipeSubmissionResult> submitSwipe({
+    required UserModel profile,
+    required SwipeAction action,
+  }) async {
+    final profileIndex = profiles.indexWhere((item) => item.id == profile.id);
+    if (profileIndex == -1 || _pendingSwipeIds.contains(profile.id)) {
+      return const SwipeSubmissionResult(
+        success: false,
+        message: 'Swipe already processed.',
+      );
     }
-  }
 
-  /// Super like profile
-  Future<bool> superLikeProfile(models.UserModel profile) async {
-    try {
-      isProcessing.value = true;
-      errorMessage.value = '';
+    _pendingSwipeIds.add(profile.id);
+    errorMessage.value = '';
 
-      final response = await _swipeService.superLikeProfile(profile.id);
-
-      if (response.success && response.data != null) {
-        successMessage.value = '⭐ Super liked!';
-        _logger.i('Profile super liked: ${profile.id}');
-
-        // Move to next profile
-        moveToNextProfile();
-
-        // Check if match
-        if (response.data!.isAccepted) {
-          successMessage.value = "✨ It's a match!";
-          _logger.i('Match found!');
-        }
-
-        return true;
-      } else {
-        errorMessage.value = response.error ?? response.message;
-        _logger.w('Super like failed: ${response.error}');
-        return false;
-      }
-    } catch (e) {
-      errorMessage.value = 'Failed to super like profile';
-      _logger.e('Super like error', error: e);
-      return false;
-    } finally {
-      isProcessing.value = false;
-    }
-  }
-
-  /// Pass profile (swipe left)
-  Future<bool> passProfile(models.UserModel profile) async {
-    try {
-      isProcessing.value = true;
-      errorMessage.value = '';
-
-      final response = await _swipeService.passProfile(profile.id);
-
-      if (response.success) {
-        _logger.i('Profile passed: ${profile.id}');
-
-        // Move to next profile
-        moveToNextProfile();
-
-        return true;
-      } else {
-        errorMessage.value = response.error ?? response.message;
-        _logger.w('Pass failed: ${response.error}');
-        return false;
-      }
-    } catch (e) {
-      errorMessage.value = 'Failed to pass profile';
-      _logger.e('Pass error', error: e);
-      return false;
-    } finally {
-      isProcessing.value = false;
-    }
-  }
-
-  /// Move to next profile
-  void moveToNextProfile() {
-    if (currentProfileIndex.value < profiles.length - 1) {
-      currentProfileIndex.value++;
-
-      // Load more profiles if we're near the end
-      if (currentProfileIndex.value >= profiles.length - 3) {
-        loadMoreProfiles();
-      }
-    } else if (hasMoreProfiles.value) {
+    final removedProfile = profiles.removeAt(profileIndex);
+    if (profiles.length <= preloadThreshold) {
       loadMoreProfiles();
     }
-  }
 
-  /// Move to previous profile (for undo)
-  void moveToPreviousProfile() {
-    if (currentProfileIndex.value > 0) {
-      currentProfileIndex.value--;
+    try {
+      final response = action == SwipeAction.like
+          ? await _swipeService.swipeRight(profile.id)
+          : await _swipeService.swipeLeft(profile.id);
+
+      if (!response.success) {
+        _restoreProfile(removedProfile, profileIndex);
+        final message = response.error ?? response.message;
+        errorMessage.value = message;
+        _logger.w('Swipe failed: $message');
+        return SwipeSubmissionResult(
+          success: false,
+          message: message,
+        );
+      }
+
+      if (action == SwipeAction.like) {
+        _prependUniqueProfile(likedProfiles, removedProfile);
+      } else {
+        _prependUniqueProfile(dislikedProfiles, removedProfile);
+      }
+
+      final isMatch = response.data?.isMatch ?? false;
+      final match = response.data?.match;
+      if (isMatch && match != null) {
+        _upsertMatch(match);
+      }
+
+      successMessage.value = isMatch
+          ? "It's a match!"
+          : action == SwipeAction.like
+              ? 'Profile liked.'
+              : 'Profile skipped.';
+
+      return SwipeSubmissionResult(
+        success: true,
+        isMatch: isMatch,
+        message: successMessage.value,
+      );
+    } catch (e) {
+      _restoreProfile(removedProfile, profileIndex);
+      errorMessage.value = 'Failed to process swipe';
+      _logger.e('Submit swipe error', error: e);
+      return const SwipeSubmissionResult(
+        success: false,
+        message: 'Failed to process swipe',
+      );
+    } finally {
+      _pendingSwipeIds.remove(profile.id);
     }
   }
 
-  /// Get matches
+  Future<bool> refreshSwipeHistory() async {
+    try {
+      isHistoryLoading.value = true;
+
+      final results = await Future.wait<Object>([
+        _swipeService.getMatches(page: 1, limit: 50),
+        _swipeService.getLikedProfiles(),
+        _swipeService.getDislikedProfiles(),
+      ]);
+
+      final matchesResponse = results[0] as ApiResponse<List<MatchModel>>;
+      final likesResponse = results[1] as ApiResponse<List<UserModel>>;
+      final dislikesResponse = results[2] as ApiResponse<List<UserModel>>;
+
+      if (matchesResponse.success) {
+        matches.assignAll(matchesResponse.data ?? const <MatchModel>[]);
+      }
+
+      if (likesResponse.success) {
+        likedProfiles.assignAll(_uniqueProfiles(likesResponse.data ?? const <UserModel>[]));
+      }
+
+      if (dislikesResponse.success) {
+        dislikedProfiles.assignAll(_uniqueProfiles(dislikesResponse.data ?? const <UserModel>[]));
+      }
+
+      return matchesResponse.success || likesResponse.success || dislikesResponse.success;
+    } catch (e) {
+      _logger.e('Refresh swipe history error', error: e);
+      return false;
+    } finally {
+      isHistoryLoading.value = false;
+    }
+  }
+
   Future<bool> getMatches({bool refresh = false}) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
 
-      // Load mock matches data for demo
-      matches.value = MockData.getMatches();
-      _logger.i('Loaded ${matches.length} demo matches');
-      return true;
+      final response = await _swipeService.getMatches(page: 1, limit: 50);
+      if (response.success) {
+        matches.assignAll(response.data ?? const []);
+        return true;
+      }
+
+      errorMessage.value = response.error ?? response.message;
+      return false;
     } catch (e) {
       errorMessage.value = 'Failed to load matches';
       _logger.e('Get matches error', error: e);
@@ -247,24 +257,19 @@ class SwipeController extends GetxController {
     }
   }
 
-  /// Get top matches
   Future<bool> getTopMatches() async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
 
       final response = await _swipeService.getTopMatches(limit: 20);
-
-      if (response.success && response.data != null) {
-        profiles.value = response.data!;
-        currentProfileIndex.value = 0;
-        _logger.i('Loaded ${response.data!.length} top matches');
+      if (response.success) {
+        profiles.assignAll(_uniqueProfiles(response.data ?? const []));
         return true;
-      } else {
-        errorMessage.value = response.error ?? response.message;
-        _logger.w('Get top matches failed: ${response.error}');
-        return false;
       }
+
+      errorMessage.value = response.error ?? response.message;
+      return false;
     } catch (e) {
       errorMessage.value = 'Failed to load top matches';
       _logger.e('Get top matches error', error: e);
@@ -274,24 +279,19 @@ class SwipeController extends GetxController {
     }
   }
 
-  /// Get nearby profiles
   Future<bool> getNearbyProfiles({int distance = 50}) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
 
       final response = await _swipeService.getNearbyProfiles(distance: distance);
-
-      if (response.success && response.data != null) {
-        profiles.value = response.data!;
-        currentProfileIndex.value = 0;
-        _logger.i('Loaded ${response.data!.length} nearby profiles');
+      if (response.success) {
+        profiles.assignAll(_uniqueProfiles(response.data ?? const []));
         return true;
-      } else {
-        errorMessage.value = response.error ?? response.message;
-        _logger.w('Get nearby profiles failed: ${response.error}');
-        return false;
       }
+
+      errorMessage.value = response.error ?? response.message;
+      return false;
     } catch (e) {
       errorMessage.value = 'Failed to load nearby profiles';
       _logger.e('Get nearby profiles error', error: e);
@@ -301,88 +301,122 @@ class SwipeController extends GetxController {
     }
   }
 
-  /// Accept match
   Future<bool> acceptMatch(String matchId) async {
     try {
-      isProcessing.value = true;
-      errorMessage.value = '';
-
       final response = await _swipeService.acceptMatch(matchId);
-
-      if (response.success) {
+      if (response.success && response.data != null) {
+        _upsertMatch(response.data!);
         successMessage.value = 'Match accepted! You can now message.';
-        _logger.i('Match accepted');
         return true;
-      } else {
-        errorMessage.value = response.error ?? response.message;
-        _logger.w('Accept match failed: ${response.error}');
-        return false;
       }
+
+      errorMessage.value = response.error ?? response.message;
+      return false;
     } catch (e) {
       errorMessage.value = 'Failed to accept match';
       _logger.e('Accept match error', error: e);
       return false;
-    } finally {
-      isProcessing.value = false;
     }
   }
 
-  /// Reject match
   Future<bool> rejectMatch(String matchId) async {
     try {
-      isProcessing.value = true;
-      errorMessage.value = '';
-
       final response = await _swipeService.rejectMatch(matchId);
-
       if (response.success) {
-        successMessage.value = 'Match rejected';
-        _logger.i('Match rejected');
+        matches.removeWhere((match) => match.id == matchId);
+        successMessage.value = 'Match rejected.';
         return true;
-      } else {
-        errorMessage.value = response.error ?? response.message;
-        _logger.w('Reject match failed: ${response.error}');
-        return false;
       }
+
+      errorMessage.value = response.error ?? response.message;
+      return false;
     } catch (e) {
       errorMessage.value = 'Failed to reject match';
       _logger.e('Reject match error', error: e);
       return false;
-    } finally {
-      isProcessing.value = false;
     }
   }
 
-  /// Unmatch
   Future<bool> unmatch(String matchId) async {
     try {
-      isProcessing.value = true;
-      errorMessage.value = '';
-
       final response = await _swipeService.unmatch(matchId);
-
       if (response.success) {
-        successMessage.value = 'Unmatched';
         matches.removeWhere((match) => match.id == matchId);
-        _logger.i('Unmatched');
+        successMessage.value = 'Unmatched.';
         return true;
-      } else {
-        errorMessage.value = response.error ?? response.message;
-        _logger.w('Unmatch failed: ${response.error}');
-        return false;
       }
+
+      errorMessage.value = response.error ?? response.message;
+      return false;
     } catch (e) {
       errorMessage.value = 'Failed to unmatch';
       _logger.e('Unmatch error', error: e);
       return false;
-    } finally {
-      isProcessing.value = false;
     }
   }
 
-  /// Clear messages
   void clearMessages() {
     errorMessage.value = '';
     successMessage.value = '';
+  }
+
+  List<UserModel> _dedupeProfiles(List<UserModel> incoming) {
+    final excludedIds = <String>{
+      ...profiles.map((profile) => profile.id),
+      ...likedProfiles.map((profile) => profile.id),
+      ...dislikedProfiles.map((profile) => profile.id),
+      ..._pendingSwipeIds,
+    };
+
+    final unique = <UserModel>[];
+    final seenIds = <String>{...excludedIds};
+
+    for (final profile in incoming) {
+      if (profile.id.isEmpty || seenIds.contains(profile.id)) {
+        continue;
+      }
+
+      seenIds.add(profile.id);
+      unique.add(profile);
+    }
+
+    return unique;
+  }
+
+  List<UserModel> _uniqueProfiles(List<UserModel> items) {
+    final seenIds = <String>{};
+    final unique = <UserModel>[];
+
+    for (final profile in items) {
+      if (profile.id.isEmpty || !seenIds.add(profile.id)) {
+        continue;
+      }
+      unique.add(profile);
+    }
+
+    return unique;
+  }
+
+  void _restoreProfile(UserModel profile, int preferredIndex) {
+    if (profiles.any((item) => item.id == profile.id)) {
+      return;
+    }
+
+    final insertIndex = preferredIndex.clamp(0, profiles.length);
+    profiles.insert(insertIndex, profile);
+  }
+
+  void _prependUniqueProfile(RxList<UserModel> list, UserModel profile) {
+    list.removeWhere((item) => item.id == profile.id);
+    list.insert(0, profile);
+  }
+
+  void _upsertMatch(MatchModel match) {
+    final index = matches.indexWhere((item) => item.id == match.id);
+    if (index == -1) {
+      matches.insert(0, match);
+    } else {
+      matches[index] = match;
+    }
   }
 }

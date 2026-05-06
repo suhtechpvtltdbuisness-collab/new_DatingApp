@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
 import 'package:country_code_picker/country_code_picker.dart';
 import 'package:dating_app/screens/auth/otp_screen.dart';
+import 'package:dating_app/utils/theme.dart';
 // 👉 import your email signup screen
 import 'package:dating_app/screens/auth/email_signup_screen.dart';
 
@@ -103,7 +104,10 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                         /// TITLE
                         const Text(
                           "Enter your phone number",
-                          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
 
                         const SizedBox(height: 8),
@@ -111,7 +115,9 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                         /// SUBTEXT
                         Text(
                           "We'll send you a verification code to your phone.",
-                          style: TextStyle(color: Colors.black.withOpacity(0.5)),
+                          style: TextStyle(
+                            color: Colors.black.withOpacity(0.5),
+                          ),
                         ),
 
                         const SizedBox(height: 40),
@@ -134,7 +140,9 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                               flex: 2,
                               child: Container(
                                 height: 55,
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.7),
                                   borderRadius: BorderRadius.circular(30),
@@ -159,7 +167,10 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                                         padding: EdgeInsets.zero,
                                       ),
                                     ),
-                                    const Icon(Icons.keyboard_arrow_down, size: 18),
+                                    const Icon(
+                                      Icons.keyboard_arrow_down,
+                                      size: 18,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -172,7 +183,9 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                               flex: 3,
                               child: Container(
                                 height: 55,
-                                padding: const EdgeInsets.symmetric(horizontal: 18),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.9),
                                   borderRadius: BorderRadius.circular(30),
@@ -180,10 +193,12 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                                 child: TextField(
                                   controller: phoneController,
                                   keyboardType: TextInputType.number,
-                                  decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                    hintText: "000-000-0000",
-                                  ),
+                                  textAlignVertical: TextAlignVertical.center,
+                                  cursorColor: Colors.purple,
+                                  decoration:
+                                      AppTheme.borderlessInputDecoration(
+                                        hintText: "000-000-0000",
+                                      ),
                                   style: const TextStyle(
                                     fontSize: 17,
                                     letterSpacing: 1.1,
@@ -207,7 +222,8 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => const EmailSignupScreen(),
+                                  builder: (context) =>
+                                      const EmailSignupScreen(),
                                 ),
                               );
                             },
@@ -232,7 +248,11 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                           ),
                         ),
 
-                        SizedBox(height: MediaQuery.of(context).viewInsets.bottom > 0 ? 20 : 40),
+                        SizedBox(
+                          height: MediaQuery.of(context).viewInsets.bottom > 0
+                              ? 20
+                              : 40,
+                        ),
 
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -249,7 +269,9 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(color: Colors.purple),
-                                  color: isChecked ? Colors.purple : Colors.transparent,
+                                  color: isChecked
+                                      ? Colors.purple
+                                      : Colors.transparent,
                                 ),
                                 child: isChecked
                                     ? const Icon(

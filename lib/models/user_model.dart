@@ -54,36 +54,81 @@ class UserModel {
   bool isBlocked(String userId) => blockedUsers?.contains(userId) ?? false;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    final resolvedId = (json['id'] ?? json['_id'] ?? json['userId'] ?? '').toString();
+    final fullName = (json['name'] ?? '').toString().trim();
+    final nameParts = fullName.isEmpty
+        ? const <String>[]
+        : fullName.split(RegExp(r'\s+'));
+    final rawPhotos = json['photoUrls'] ?? json['photos'] ?? json['images'] ?? const [];
+    final location = json['location'];
+    final coordinates = location is Map<String, dynamic>
+        ? (location['coordinates'] as List?)
+        : null;
+    final dateOfBirthRaw = json['dateOfBirth'] ?? json['dob'];
+
     return UserModel(
-      id: json['id'] ?? '',
+      id: resolvedId,
       email: json['email'] ?? '',
-      firstName: json['firstName'] ?? '',
-      lastName: json['lastName'] ?? '',
+      firstName: (json['firstName'] ?? (nameParts.isNotEmpty ? nameParts.first : '')).toString(),
+      lastName: (json['lastName'] ??
+              (nameParts.length > 1 ? nameParts.sublist(1).join(' ') : ''))
+          .toString(),
       phoneNumber: json['phoneNumber'],
-      dateOfBirth: json['dateOfBirth'] != null
-          ? DateTime.parse(json['dateOfBirth'])
+      dateOfBirth: dateOfBirthRaw != null
+          ? DateTime.tryParse(dateOfBirthRaw.toString()) ?? DateTime.now()
           : DateTime.now(),
-      gender: Gender.values.byName(json['gender'] ?? 'other'),
-      photoUrls: List<String>.from(json['photoUrls'] ?? []),
+      gender: _parseGender(json['gender']),
+      photoUrls: _parsePhotoUrls(rawPhotos),
       bio: json['bio'],
       interests: List<String>.from(json['interests'] ?? []),
-      latitude: (json['latitude'] ?? 0.0).toDouble(),
-      longitude: (json['longitude'] ?? 0.0).toDouble(),
+      latitude: _toDouble(json['latitude'] ?? (coordinates != null && coordinates.length > 1 ? coordinates[1] : 0.0)),
+      longitude: _toDouble(json['longitude'] ?? (coordinates != null && coordinates.isNotEmpty ? coordinates[0] : 0.0)),
       city: json['city'],
       country: json['country'],
-      relationshipStatus: RelationshipStatus.values
-          .byName(json['relationshipStatus'] ?? 'single'),
+      relationshipStatus: _parseRelationshipStatus(json['relationshipStatus']),
       createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
+          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
       lastActive: json['lastActive'] != null
-          ? DateTime.parse(json['lastActive'])
+          ? DateTime.tryParse(json['lastActive'].toString()) ?? DateTime.now()
           : DateTime.now(),
       isVerified: json['isVerified'] ?? false,
       isOnline: json['isOnline'] ?? false,
       blockedUsers: json['blockedUsers'] != null
           ? List<String>.from(json['blockedUsers'])
           : null,
+    );
+  }
+
+  static double _toDouble(dynamic value) {
+    if (value is num) {
+      return value.toDouble();
+    }
+
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  static List<String> _parsePhotoUrls(dynamic value) {
+    if (value is List) {
+      return value.map((item) => item.toString()).where((item) => item.isNotEmpty).toList();
+    }
+
+    return const [];
+  }
+
+  static Gender _parseGender(dynamic value) {
+    final normalized = value?.toString().toLowerCase();
+    return Gender.values.firstWhere(
+      (gender) => gender.name == normalized,
+      orElse: () => Gender.other,
+    );
+  }
+
+  static RelationshipStatus _parseRelationshipStatus(dynamic value) {
+    final normalized = value?.toString().toLowerCase();
+    return RelationshipStatus.values.firstWhere(
+      (status) => status.name == normalized,
+      orElse: () => RelationshipStatus.single,
     );
   }
 

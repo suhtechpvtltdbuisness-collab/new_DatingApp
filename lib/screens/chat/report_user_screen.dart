@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dating_app/utils/theme.dart';
 
 class ReportUserScreen extends StatefulWidget {
   final String userName;
@@ -36,7 +37,9 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           title: const Text('Report submitted'),
           content: const Text('Would you like to block this user?'),
           actions: [
@@ -67,8 +70,10 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: () => Navigator.of(context).pop(false),
         ),
-        title: Text('Report ${widget.userName}',
-            style: const TextStyle(color: Colors.black)),
+        title: Text(
+          'Report ${widget.userName}',
+          style: const TextStyle(color: Colors.black),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),
@@ -110,6 +115,8 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
               controller: _commentController,
               minLines: 4,
               maxLines: 6,
+              textAlignVertical: TextAlignVertical.top,
+              cursorColor: Colors.pink,
               decoration: InputDecoration(
                 hintText: 'Describe what happened...',
                 filled: true,
@@ -117,6 +124,17 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(
+                    color: AppTheme.inputFocusBorderColor,
+                    width: 1.2,
+                  ),
                 ),
               ),
             ),
@@ -132,7 +150,10 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
                   ),
                 ),
                 onPressed: _submitReport,
-                child: const Text('Submit Report', style: TextStyle(fontSize: 16)),
+                child: const Text(
+                  'Submit Report',
+                  style: TextStyle(fontSize: 16),
+                ),
               ),
             ),
           ],

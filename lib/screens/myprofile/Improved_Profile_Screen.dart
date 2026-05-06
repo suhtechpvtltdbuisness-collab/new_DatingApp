@@ -50,7 +50,7 @@ class ImprovedProfileScreen extends StatelessWidget {
                     ),
                     const SizedBox(width: 4),
                     const Text(
-                      "First Date Advice",
+                      "Improve Your Profile",
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -65,12 +65,11 @@ class ImprovedProfileScreen extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: [
-                    tip("Keep it casual & public."),
-                    tip("Arrive on your own."),
-                    tip("Inform a friend beforehand."),
-                    tip("Stay confident, be yourself."),
-                    tip("Avoid checking your phone frequently."),
-                    tip("End the date on a positive note."),
+                    tip('Use clear photos (face + full body, no heavy filters).'),
+                    tip('Write a short, real bio (interests, vibe, what you want).'),
+                    tip('Be honest about age, job, and intentions.'),
+                    tip('Add prompts to spark conversations.'),
+                    tip('Stay active & responsive.'),
                   ],
                 ),
               ),

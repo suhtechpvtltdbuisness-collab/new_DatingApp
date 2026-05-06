@@ -3,6 +3,7 @@ import 'package:dating_app/app/app_routes.dart';
 import 'package:dating_app/controllers/auth_controller.dart';
 import 'package:dating_app/utils/validators.dart';
 import 'package:dating_app/screens/auth/email_signup_screen.dart';
+import 'package:dating_app/utils/theme.dart';
 import 'package:get/get.dart';
 
 class EmailSigninScreen extends StatefulWidget {
@@ -39,9 +40,9 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
     }
 
     if (password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Password is required.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Password is required.')));
       return;
     }
 
@@ -57,9 +58,11 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_authController.errorMessage.value.isNotEmpty
-              ? _authController.errorMessage.value
-              : 'Login failed. Please check your credentials.'),
+          content: Text(
+            _authController.errorMessage.value.isNotEmpty
+                ? _authController.errorMessage.value
+                : 'Login failed. Please check your credentials.',
+          ),
         ),
       );
     }
@@ -75,10 +78,7 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF3E7FF),
-              Color(0xFFFFE3EC),
-            ],
+            colors: [Color(0xFFF3E7FF), Color(0xFFFFE3EC)],
           ),
         ),
         child: SafeArea(
@@ -99,19 +99,14 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
                 const SizedBox(height: 10),
                 const Text(
                   'Sign in',
-                  style: TextStyle(
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   showEmailForm
                       ? 'Enter your email and password to continue.'
                       : 'Choose how you want to sign in.',
-                  style: TextStyle(
-                    color: Colors.black.withOpacity(0.5),
-                  ),
+                  style: TextStyle(color: Colors.black.withOpacity(0.5)),
                 ),
                 const SizedBox(height: 40),
                 if (!showEmailForm) ...[
@@ -166,10 +161,7 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
                     height: 55,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFFFF4E8A),
-                          Color(0xFF9B51E0),
-                        ],
+                        colors: [Color(0xFFFF4E8A), Color(0xFF9B51E0)],
                       ),
                       borderRadius: BorderRadius.circular(30),
                     ),
@@ -181,22 +173,26 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
                       ),
-                      child: Obx(() => _authController.isLoading.value
-                          ? const SizedBox(
-                              height: 22,
-                              width: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      child: Obx(
+                        () => _authController.isLoading.value
+                            ? const SizedBox(
+                                height: 22,
+                                width: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              )
+                            : const Text(
+                                'Login',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            )
-                          : const Text(
-                              'Login',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            )),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -314,10 +310,9 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
         controller: controller,
         obscureText: obscureText,
         keyboardType: keyboardType,
-        decoration: InputDecoration(
-          border: InputBorder.none,
-          hintText: hintText,
-        ),
+        textAlignVertical: TextAlignVertical.center,
+        cursorColor: Colors.purple,
+        decoration: AppTheme.borderlessInputDecoration(hintText: hintText),
       ),
     );
   }

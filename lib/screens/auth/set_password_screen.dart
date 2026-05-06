@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dating_app/controllers/registration_controller.dart';
+import 'package:dating_app/utils/theme.dart';
 import 'profile_setup_screen.dart';
 
 class SetPasswordScreen extends StatefulWidget {
@@ -15,7 +16,8 @@ class SetPasswordScreen extends StatefulWidget {
 class _SetPasswordScreenState extends State<SetPasswordScreen> {
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController confirmController = TextEditingController();
-  final RegistrationController registrationController = Get.find<RegistrationController>();
+  final RegistrationController registrationController =
+      Get.find<RegistrationController>();
 
   bool obscure1 = true;
   bool obscure2 = true;
@@ -47,9 +49,9 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     }
 
     if (pass != confirm) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Passwords do not match")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Passwords do not match")));
       return;
     }
 
@@ -59,9 +61,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     // Navigate to name screen
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const ProfileSetupScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const ProfileSetupScreen()),
     );
   }
 
@@ -84,10 +84,9 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
             child: TextField(
               controller: controller,
               obscureText: obscure,
-              decoration: InputDecoration(
-                border: InputBorder.none,
-                hintText: hint,
-              ),
+              textAlignVertical: TextAlignVertical.center,
+              cursorColor: Colors.purple,
+              decoration: AppTheme.borderlessInputDecoration(hintText: hint),
             ),
           ),
           GestureDetector(
@@ -96,7 +95,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
               obscure ? Icons.visibility_off : Icons.visibility,
               color: Colors.grey,
             ),
-          )
+          ),
         ],
       ),
     );
@@ -111,10 +110,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [
-                  Color(0xFFF3E7FF),
-                  Color(0xFFFFE3EC),
-                ],
+                colors: [Color(0xFFF3E7FF), Color(0xFFFFE3EC)],
               ),
             ),
             child: SafeArea(
@@ -122,7 +118,9 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                 builder: (context, constraints) {
                   return SingleChildScrollView(
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
                       child: Padding(
                         padding: const EdgeInsets.all(24),
                         child: Column(
@@ -155,7 +153,8 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                               hint: "Enter password",
                               controller: passwordController,
                               obscure: obscure1,
-                              toggle: () => setState(() => obscure1 = !obscure1),
+                              toggle: () =>
+                                  setState(() => obscure1 = !obscure1),
                             ),
 
                             const SizedBox(height: 20),
@@ -166,10 +165,16 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                               hint: "Confirm password",
                               controller: confirmController,
                               obscure: obscure2,
-                              toggle: () => setState(() => obscure2 = !obscure2),
+                              toggle: () =>
+                                  setState(() => obscure2 = !obscure2),
                             ),
 
-                            SizedBox(height: MediaQuery.of(context).viewInsets.bottom > 0 ? 20 : 40),
+                            SizedBox(
+                              height:
+                                  MediaQuery.of(context).viewInsets.bottom > 0
+                                  ? 20
+                                  : 40,
+                            ),
 
                             Container(
                               width: double.infinity,
@@ -209,8 +214,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
           ),
 
           /// 🔄 LOADER
-          if (isLoading)
-            const Center(child: CircularProgressIndicator()),
+          if (isLoading) const Center(child: CircularProgressIndicator()),
         ],
       ),
     );

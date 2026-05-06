@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dating_app/controllers/registration_controller.dart';
+import 'package:dating_app/utils/theme.dart';
 import 'upload_photo_screen.dart';
 
 class ProfileTextScreen extends StatefulWidget {
@@ -12,7 +13,8 @@ class ProfileTextScreen extends StatefulWidget {
 
 class _ProfileTextScreenState extends State<ProfileTextScreen> {
   final TextEditingController profileController = TextEditingController();
-  final RegistrationController registrationController = Get.find<RegistrationController>();
+  final RegistrationController registrationController =
+      Get.find<RegistrationController>();
   int charCount = 0;
 
   @override
@@ -45,9 +47,7 @@ class _ProfileTextScreenState extends State<ProfileTextScreen> {
 
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => const UploadPhotoScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const UploadPhotoScreen()),
     );
   }
 
@@ -59,10 +59,7 @@ class _ProfileTextScreenState extends State<ProfileTextScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF3E7FF),
-              Color(0xFFFFE3EC),
-            ],
+            colors: [Color(0xFFF3E7FF), Color(0xFFFFE3EC)],
           ),
         ),
         child: SafeArea(
@@ -86,7 +83,10 @@ class _ProfileTextScreenState extends State<ProfileTextScreen> {
                                 color: Colors.white.withOpacity(0.6),
                               ),
                               child: IconButton(
-                                icon: const Icon(Icons.arrow_back_ios_new, size: 18),
+                                icon: const Icon(
+                                  Icons.arrow_back_ios_new,
+                                  size: 18,
+                                ),
                                 onPressed: () => Navigator.pop(context),
                               ),
                             ),
@@ -125,9 +125,7 @@ class _ProfileTextScreenState extends State<ProfileTextScreen> {
 
                         const Text(
                           "Write a short bio to introduce yourself",
-                          style: TextStyle(
-                            color: Colors.black54,
-                          ),
+                          style: TextStyle(color: Colors.black54),
                         ),
 
                         const SizedBox(height: 30),
@@ -143,9 +141,10 @@ class _ProfileTextScreenState extends State<ProfileTextScreen> {
                             controller: profileController,
                             maxLines: 4,
                             maxLength: 200,
-                            decoration: const InputDecoration(
+                            textAlignVertical: TextAlignVertical.top,
+                            cursorColor: Colors.purple,
+                            decoration: AppTheme.borderlessInputDecoration(
                               hintText: "Write something about yourself...",
-                              border: InputBorder.none,
                               counterText: "",
                             ),
                           ),
@@ -161,17 +160,18 @@ class _ProfileTextScreenState extends State<ProfileTextScreen> {
                           ),
                         ),
 
-                        SizedBox(height: MediaQuery.of(context).viewInsets.bottom > 0 ? 20 : 40),
+                        SizedBox(
+                          height: MediaQuery.of(context).viewInsets.bottom > 0
+                              ? 20
+                              : 40,
+                        ),
 
                         Container(
                           width: double.infinity,
                           height: 55,
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [
-                                Color(0xFFFF4E8A),
-                                Color(0xFF9B51E0),
-                              ],
+                              colors: [Color(0xFFFF4E8A), Color(0xFF9B51E0)],
                             ),
                             borderRadius: BorderRadius.circular(30),
                           ),

@@ -32,6 +32,10 @@ class ApiEndpoints {
   static const String getUserPreferences = '/users/preferences';
   static const String updateUserPreferences = '/users/preferences';
 
+  // My own profile (no user-id in path)
+  static const String getMyProfile = '/profile';       // GET /profile
+  static const String updateMyProfile = '/profile';    // PUT /profile
+
   // ===============================
   // SWIPE & MATCHES
   // ===============================
@@ -39,6 +43,11 @@ class ApiEndpoints {
   static const String getProfiles = '/profiles';
   static const String getProfileDetail = '/profiles/:id';
   static const String getSuggestions = '/users/suggestions';
+  static const String swipeRight = '/swipes/right/:userId';
+  static const String swipeLeft = '/swipes/left/:userId';
+  static const String getSwipeMatches = '/swipes/matches';
+  static const String getSwipeLikes = '/swipes/likes';
+  static const String getSwipeDislikes = '/swipes/dislikes';
   static const String likeProfile = '/profiles/like';
   static const String superLikeProfile = '/profiles/super-like';
   static const String passProfile = '/profiles/pass';
@@ -57,6 +66,9 @@ class ApiEndpoints {
 
   static const String getConversations = '/chats';
   static const String getConversation = '/chats/:chatId';
+  static const String createChat = '/chats';             // POST /chats
+  static const String updateChat = '/chats/:chatId';    // PUT  /chats/:chatId
+  static const String deleteChat = '/chats/:chatId';    // DELETE /chats/:chatId
   static const String getMessages = '/chats/:chatId/messages';
   static const String sendMessage = '/chats/:chatId/messages';
   static const String markAsRead = '/chats/:chatId/read';
@@ -64,6 +76,9 @@ class ApiEndpoints {
   static const String uploadChatMedia = '/chats/:chatId/upload';
   static const String typingIndicator = '/chats/:chatId/typing';
   static const String reportMessage = '/chats/messages/report';
+  static const String getChatUsers = '/chat-users';               // GET /chat-users
+  static const String getChatByRecipient = '/chats/recipient/:recipientId'; // GET /chats/recipient/:recipientId
+  static const String chatHistory = '/chat-history/:userId';      // GET /chat-history/:userId
 
   // ===============================
   // BLOCKING

@@ -44,7 +44,7 @@ class SafetyToolkitScreen extends StatelessWidget {
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    "Dos & don’ts while dating",
+                    "Dos & don'ts while dating",
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -60,11 +60,35 @@ class SafetyToolkitScreen extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: const [
-                    ListCard(),
-                    ListCard(),
-                    ListCard(),
-                    ListCard(),
-                    ListCard(),
+                    ListCard(
+                      title: 'Keep Chats on the App',
+                      description:
+                          'Avoid moving to other platforms too quickly.',
+                    ),
+                    ListCard(
+                      title: 'Never Share Personal Info',
+                      description:
+                          "Don't share your address, financial details, or passwords.",
+                    ),
+                    ListCard(
+                      title: 'Meet in Public First',
+                      description:
+                          "Choose a busy, well-lit place. Tell a friend where you're going.",
+                    ),
+                    ListCard(
+                      title: 'Trust Your Instincts',
+                      description: 'If something feels off, it probably is.',
+                    ),
+                    ListCard(
+                      title: 'Block & Report',
+                      description:
+                          'Easily block or report anyone who makes you uncomfortable.',
+                    ),
+                    ListCard(
+                      title: 'Protect Your Privacy',
+                      description:
+                          'Control who sees your photos and details in settings.',
+                    ),
                   ],
                 ),
               ),
@@ -77,7 +101,14 @@ class SafetyToolkitScreen extends StatelessWidget {
 }
 
 class ListCard extends StatelessWidget {
-  const ListCard({super.key});
+  final String title;
+  final String description;
+
+  const ListCard({
+    super.key,
+    required this.title,
+    required this.description,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -90,18 +121,18 @@ class ListCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
+        children: [
           Text(
-            "List item",
-            style: TextStyle(
+            title,
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 15,
             ),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
-            "Supporting line text lorem ipsum dolor sit amet, consectetur.",
-            style: TextStyle(fontSize: 13),
+            description,
+            style: const TextStyle(fontSize: 13),
           ),
         ],
       ),

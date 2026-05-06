@@ -30,19 +30,33 @@ class MatchModel {
   bool get isPending => status == MatchStatus.pending;
 
   factory MatchModel.fromJson(Map<String, dynamic> json) {
+    final user = json['user'];
+    final matchedUser = json['matchedUser'];
+    final targetUser = matchedUser is Map<String, dynamic>
+        ? matchedUser
+        : user is Map<String, dynamic>
+            ? user
+            : null;
+    final resolvedStatus = _parseStatus(json['status']);
+
     return MatchModel(
-      id: json['id'] ?? '',
-      userId: json['userId'] ?? '',
-      targetUserId: json['targetUserId'] ?? '',
-      status: MatchStatus.values.byName(json['status'] ?? 'pending'),
+      id: (json['id'] ?? json['_id'] ?? targetUser?['_id'] ?? targetUser?['id'] ?? '').toString(),
+      userId: (json['userId'] ?? json['fromUserId'] ?? '').toString(),
+      targetUserId: (json['targetUserId'] ??
+              json['toUserId'] ??
+              targetUser?['_id'] ??
+              targetUser?['id'] ??
+              '')
+          .toString(),
+      status: resolvedStatus,
       createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
+          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
           : DateTime.now(),
       acceptedAt: json['acceptedAt'] != null
-          ? DateTime.parse(json['acceptedAt'])
+          ? DateTime.tryParse(json['acceptedAt'].toString())
           : null,
       expiresAt:
-          json['expiresAt'] != null ? DateTime.parse(json['expiresAt']) : null,
+          json['expiresAt'] != null ? DateTime.tryParse(json['expiresAt'].toString()) : null,
       isNew: json['isNew'] ?? true,
       likeCount: json['likeCount'] ?? 0,
       superLikeCount: json['superLikeCount'] ?? 0,
@@ -87,6 +101,19 @@ class MatchModel {
       isNew: isNew ?? this.isNew,
       likeCount: likeCount ?? this.likeCount,
       superLikeCount: superLikeCount ?? this.superLikeCount,
+    );
+  }
+
+  static MatchStatus _parseStatus(dynamic value) {
+    final normalized = value?.toString().toLowerCase();
+
+    if (normalized == null || normalized.isEmpty) {
+      return MatchStatus.accepted;
+    }
+
+    return MatchStatus.values.firstWhere(
+      (status) => status.name == normalized,
+      orElse: () => MatchStatus.accepted,
     );
   }
 }

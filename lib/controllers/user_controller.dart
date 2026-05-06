@@ -30,28 +30,82 @@ class UserController extends GetxController {
     _loadUserData();
   }
 
-  /// Load user data
+  /// Load user data — real API with mock fallback
   Future<void> _loadUserData() async {
     try {
-      // Load mock user data for demo
-      currentUser.value = MockData.currentUser;
-      userPreferences.value = UserPreferencesModel(
-        id: 'pref_demo',
-        userId: MockData.currentUser.id,
-        minAge: 18,
-        maxAge: 35,
-        maxDistance: 50,
-        preferredGenders: [Gender.female],
-        lookingFor: [UserLookingFor.relationship, UserLookingFor.dating],
-        lastUpdated: DateTime.now(),
-      );
-      _logger.i('Loaded demo user data');
+      isLoading.value = true;
+      final response = await _userService.getMyProfile();
+      if (response.success && response.data != null) {
+        currentUser.value = response.data;
+        _logger.i('Loaded real profile from GET /profile');
+      } else {
+        // Fall back to mock so the UI always shows something
+        _logger.w('GET /profile failed — using mock data');
+        currentUser.value = MockData.currentUser;
+      }
     } catch (e) {
       _logger.e('Load user data error', error: e);
+      currentUser.value = MockData.currentUser;
+    } finally {
+      isLoading.value = false;
     }
   }
 
-  /// Get user profile
+  /// Get MY profile — GET /profile
+  Future<bool> getMyProfile() async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final response = await _userService.getMyProfile();
+
+      if (response.success && response.data != null) {
+        currentUser.value = response.data;
+        _logger.i('My profile loaded from GET /profile');
+        return true;
+      } else {
+        errorMessage.value = response.error ?? response.message;
+        _logger.w('GET /profile failed: ${response.error}');
+        return false;
+      }
+    } catch (e) {
+      errorMessage.value = 'Failed to load profile';
+      _logger.e('Get my profile error', error: e);
+      return false;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// Update MY profile — PUT /profile
+  Future<bool> updateMyProfile(Map<String, dynamic> updateData) async {
+    try {
+      isUpdating.value = true;
+      errorMessage.value = '';
+      successMessage.value = '';
+
+      final response = await _userService.updateMyProfile(updateData);
+
+      if (response.success && response.data != null) {
+        currentUser.value = response.data;
+        successMessage.value = 'Profile updated successfully';
+        _logger.i('Profile updated via PUT /profile');
+        return true;
+      } else {
+        errorMessage.value = response.error ?? response.message;
+        _logger.w('PUT /profile failed: ${response.error}');
+        return false;
+      }
+    } catch (e) {
+      errorMessage.value = 'Failed to update profile';
+      _logger.e('Update my profile error', error: e);
+      return false;
+    } finally {
+      isUpdating.value = false;
+    }
+  }
+
+  /// Get user profile (by ID)
   Future<bool> getUserProfile(String userId) async {
     try {
       isLoading.value = true;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dating_app/screens/auth/email_signin_screen.dart';
 import 'package:dating_app/services/auth_service.dart';
+import 'package:dating_app/utils/theme.dart';
 import 'email_otp_screen.dart';
 
 class EmailSignupScreen extends StatefulWidget {
@@ -26,9 +27,9 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
     String email = emailController.text.trim();
 
     if (!email.contains("@")) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Enter valid email")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Enter valid email")));
       return;
     }
 
@@ -43,14 +44,12 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
         // ✅ NAVIGATE TO OTP SCREEN
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => EmailOtpScreen(email: email),
-          ),
+          MaterialPageRoute(builder: (_) => EmailOtpScreen(email: email)),
         );
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(response.message)));
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -62,6 +61,7 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
       });
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,10 +72,7 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFFF3E7FF),
-              Color(0xFFFFE3EC),
-            ],
+            colors: [Color(0xFFF3E7FF), Color(0xFFFFE3EC)],
           ),
         ),
         child: SafeArea(
@@ -101,19 +98,14 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
                   /// TITLE
                   const Text(
                     "Sign up",
-                    style: TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
                   ),
 
                   const SizedBox(height: 8),
 
                   Text(
                     "Create your account using email",
-                    style: TextStyle(
-                      color: Colors.black.withOpacity(0.5),
-                    ),
+                    style: TextStyle(color: Colors.black.withOpacity(0.5)),
                   ),
 
                   const SizedBox(height: 40),
@@ -134,8 +126,9 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
                     child: TextField(
                       controller: emailController,
                       keyboardType: TextInputType.emailAddress,
-                      decoration: const InputDecoration(
-                        border: InputBorder.none,
+                      textAlignVertical: TextAlignVertical.center,
+                      cursorColor: Colors.purple,
+                      decoration: AppTheme.borderlessInputDecoration(
                         hintText: "Enter your email",
                       ),
                     ),
@@ -164,8 +157,11 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
                                 : Colors.transparent,
                           ),
                           child: isChecked
-                              ? const Icon(Icons.check,
-                                  size: 14, color: Colors.white)
+                              ? const Icon(
+                                  Icons.check,
+                                  size: 14,
+                                  color: Colors.white,
+                                )
                               : null,
                         ),
                       ),
@@ -190,15 +186,14 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
                     height: 55,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [
-                          Color(0xFFFF4E8A),
-                          Color(0xFF9B51E0),
-                        ],
+                        colors: [Color(0xFFFF4E8A), Color(0xFF9B51E0)],
                       ),
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: ElevatedButton(
-                      onPressed: (isChecked && !isLoading) ? sendEmailCode : null,
+                      onPressed: (isChecked && !isLoading)
+                          ? sendEmailCode
+                          : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
@@ -209,7 +204,9 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
                               width: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             )
                           : const Text(
@@ -228,9 +225,7 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: Divider(
-                          color: Colors.black.withOpacity(0.2),
-                        ),
+                        child: Divider(color: Colors.black.withOpacity(0.2)),
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 10),
@@ -242,9 +237,7 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
                         ),
                       ),
                       Expanded(
-                        child: Divider(
-                          color: Colors.black.withOpacity(0.2),
-                        ),
+                        child: Divider(color: Colors.black.withOpacity(0.2)),
                       ),
                     ],
                   ),
@@ -270,10 +263,7 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Image.asset(
-                            "assets/images/google.png",
-                            height: 22,
-                          ),
+                          Image.asset("assets/images/google.png", height: 22),
                           const SizedBox(width: 10),
                           const Text(
                             "Continue with Google",
