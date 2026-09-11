@@ -47,7 +47,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFF3E7FF), Color(0xFFFFE3EC)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
           ),
         ),
         child: SafeArea(
@@ -78,7 +78,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 const Text(
                   "STEP 3 OF 8",
                   style: TextStyle(
-                    color: Colors.purple,
+                    color: AppTheme.accentColor,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -87,8 +87,8 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
                 LinearProgressIndicator(
                   value: 3 / 8,
-                  backgroundColor: Colors.purple.shade100,
-                  color: Colors.purple,
+                  backgroundColor: AppTheme.accentColor.withOpacity(0.15),
+                  color: AppTheme.accentColor,
                 ),
 
                 const SizedBox(height: 40),
@@ -101,18 +101,29 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 const SizedBox(height: 30),
 
                 Container(
+                  height: 55,
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.6),
                     borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.purple),
+                    border: Border.all(color: AppTheme.accentColor),
                   ),
-                  child: TextField(
-                    controller: nameController,
-                    textAlignVertical: TextAlignVertical.center,
-                    cursorColor: Colors.purple,
-                    decoration: AppTheme.borderlessInputDecoration(
-                      hintText: "Your Name",
+                  // Center wraps the collapsed field so it sits exactly
+                  // mid-pill instead of hugging the bottom.
+                  child: Center(
+                    child: TextField(
+                      controller: nameController,
+                      cursorColor: AppTheme.accentColor,
+                      // Names go on the profile, so capitalise each word and
+                      // let the keyboard offer the device's saved name.
+                      textCapitalization: TextCapitalization.words,
+                      textInputAction: TextInputAction.done,
+                      autofillHints: const [AutofillHints.name],
+                      onSubmitted: (_) => continueNext(),
+                      decoration: AppTheme.borderlessInputDecoration(
+                        hintText: "e.g. Priya Sharma",
+                        isCollapsed: true,
+                      ),
                     ),
                   ),
                 ),
@@ -131,7 +142,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                   height: 55,
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFFF4E8A), Color(0xFF9B51E0)],
+                      colors: [Color(0xFFFF3D77), Color(0xFF8B5CF6)],
                     ),
                     borderRadius: BorderRadius.circular(30),
                   ),

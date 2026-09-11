@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:dating_app/controllers/registration_controller.dart';
 import 'describe_screen.dart';
 import 'base_layout.dart';
+import 'package:dating_app/utils/theme.dart';
 
 class BirthdayScreen extends StatefulWidget {
   const BirthdayScreen({super.key});
@@ -103,7 +104,7 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 10),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(30),
-                  border: Border.all(color: Colors.purple),
+                  border: Border.all(color: AppTheme.accentColor),
                   gradient: LinearGradient(
                     colors: [
                       Colors.pink.withOpacity(.25),
@@ -174,7 +175,7 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
             child: Text(
               "You are ${calculateAge()} years old",
               style: const TextStyle(
-                color: Colors.purple,
+                color: AppTheme.accentColor,
                 fontWeight: FontWeight.w600,
               ),
             ),

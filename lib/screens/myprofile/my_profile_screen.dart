@@ -9,6 +9,7 @@ import 'Dating_Tips_Screen.dart';
 import 'Notifications_Screen.dart';
 import 'Help_Support_Screen.dart';
 import 'hide_my_profile_screen.dart';
+import 'package:dating_app/utils/theme.dart';
 
 class MyProfileScreen extends StatefulWidget {
   final Function(int)? onTabTapped;
@@ -80,7 +81,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                   height: 45,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.pink),
+                    border: Border.all(color: AppTheme.primaryColor),
                   ),
                   child: TextButton(
                     onPressed: () {
@@ -89,7 +90,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                     child: const Text(
                       "Cancel",
                       style: TextStyle(
-                        color: Colors.pink,
+                        color: AppTheme.primaryColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -103,7 +104,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                   width: double.infinity,
                   height: 45,
                   decoration: BoxDecoration(
-                    color: Colors.pink,
+                    color: AppTheme.primaryColor,
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: TextButton(
@@ -178,14 +179,14 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                   height: 45,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.pink),
+                    border: Border.all(color: AppTheme.primaryColor),
                   ),
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: const Text(
                       "Cancel",
                       style: TextStyle(
-                        color: Colors.pink,
+                        color: AppTheme.primaryColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -199,7 +200,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                   width: double.infinity,
                   height: 45,
                   decoration: BoxDecoration(
-                    color: Colors.pink,
+                    color: AppTheme.primaryColor,
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: TextButton(
@@ -283,14 +284,14 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                   height: 45,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.pink),
+                    border: Border.all(color: AppTheme.primaryColor),
                   ),
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: const Text(
                       "Cancel",
                       style: TextStyle(
-                        color: Colors.pink,
+                        color: AppTheme.primaryColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -304,7 +305,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                   width: double.infinity,
                   height: 45,
                   decoration: BoxDecoration(
-                    color: Colors.pink,
+                    color: AppTheme.primaryColor,
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: TextButton(
@@ -346,7 +347,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFF3E7FF), Color(0xFFFFE3EC)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
           ),
         ),
 
@@ -386,7 +387,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: const Color(0xFFFF92C9),
+                        color: const Color(0xFFFF6F91),
                         width: 2,
                       ),
                     ),
@@ -408,7 +409,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFF92C9),
+                    color: const Color(0xFFFF6F91),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
@@ -481,7 +482,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                                   child: Text(
                                     "Edit Profile",
                                     style: TextStyle(
-                                      color: Color(0xFFFF92C9),
+                                      color: Color(0xFFFF6F91),
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -496,7 +497,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           decoration: BoxDecoration(
-                            color: Color(0xFFF04D8C),
+                            color: Color(0xFFFF3D77),
                             borderRadius: BorderRadius.circular(14),
                           ),
                           child: const Center(
@@ -555,14 +556,14 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF4F8),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFFF92C9)),
+                          border: Border.all(color: const Color(0xFFFF6F91)),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: const [
                             Icon(
                               Icons.lightbulb_outline,
-                              color: Color(0xFFFF92C9),
+                              color: Color(0xFFFF6F91),
                             ),
                             SizedBox(width: 10),
                             Expanded(
@@ -572,7 +573,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                                   Text(
                                     "PRO TIP",
                                     style: TextStyle(
-                                      color: Color(0xFFFF92C9),
+                                      color: Color(0xFFFF6F91),
                                       fontWeight: FontWeight.bold,
                                       fontSize: 12,
                                     ),
@@ -636,7 +637,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                           children: const [
                             Icon(
                               Icons.chat_bubble_outline,
-                              color: Color(0xFFF04D8C),
+                              color: Color(0xFFFF3D77),
                             ),
                             SizedBox(width: 12),
                             Column(
@@ -664,7 +665,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFFF04D8C), Color(0xFFB96EFF)],
+                            colors: [Color(0xFFFF3D77), Color(0xFFB96EFF)],
                           ),
                           borderRadius: BorderRadius.circular(24),
                         ),
@@ -732,7 +733,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                                 child: Text(
                                   "Upgrade for Phone Numbers",
                                   style: TextStyle(
-                                    color: Color(0xFFF04D8C),
+                                    color: Color(0xFFFF3D77),
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -827,7 +828,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                               ),
                               Switch(
                                 value: isBreakEnabled,
-                                activeColor: const Color(0xFFF04D8C),
+                                activeColor: const Color(0xFFFF3D77),
                                 onChanged: (val) {
                                   setState(() {
                                     isBreakEnabled = val;
@@ -917,12 +918,12 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             child: Row(
                               children: const [
-                                Icon(Icons.logout, color: Colors.pink),
+                                Icon(Icons.logout, color: AppTheme.primaryColor),
                                 SizedBox(width: 12),
                                 Text(
                                   "Logout",
                                   style: TextStyle(
-                                    color: Colors.pink,
+                                    color: AppTheme.primaryColor,
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
@@ -969,7 +970,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
           width: 28,
           height: height,
           decoration: BoxDecoration(
-            color: const Color(0xFFFF92C9),
+            color: const Color(0xFFFF6F91),
             borderRadius: BorderRadius.circular(12),
           ),
         ),
@@ -978,7 +979,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
           text,
           style: TextStyle(
             fontSize: 12,
-            color: active ? const Color(0xFFFF92C9) : Colors.grey,
+            color: active ? const Color(0xFFFF6F91) : Colors.grey,
             fontWeight: active ? FontWeight.bold : FontWeight.normal,
           ),
         ),

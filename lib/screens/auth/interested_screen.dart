@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dating_app/controllers/registration_controller.dart';
 import 'profile_text_screen.dart';
+import 'package:dating_app/utils/theme.dart';
 
 class InterestedScreen extends StatefulWidget {
   const InterestedScreen({super.key});
@@ -40,7 +41,7 @@ class _InterestedScreenState extends State<InterestedScreen> {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-            color: isSelected ? Colors.purple : Colors.grey.shade300,
+            color: isSelected ? AppTheme.accentColor : Colors.grey.shade300,
             width: 1.5,
           ),
           color: Colors.white.withOpacity(0.7),
@@ -51,7 +52,7 @@ class _InterestedScreenState extends State<InterestedScreen> {
             CircleAvatar(
               radius: 22,
               backgroundColor:
-                  isSelected ? Colors.purple : Colors.grey.shade200,
+                  isSelected ? AppTheme.accentColor : Colors.grey.shade200,
               child: Icon(
                 icon,
                 color: isSelected ? Colors.white : Colors.black54,
@@ -74,7 +75,7 @@ class _InterestedScreenState extends State<InterestedScreen> {
               isSelected
                   ? Icons.radio_button_checked
                   : Icons.radio_button_off,
-              color: Colors.purple,
+              color: AppTheme.accentColor,
             )
           ],
         ),
@@ -92,8 +93,8 @@ class _InterestedScreenState extends State<InterestedScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFF3E7FF),
-              Color(0xFFFFE3EC),
+              Color(0xFFFFD9EA),
+              Color(0xFFE7D9FF),
             ],
           ),
         ),
@@ -128,7 +129,7 @@ class _InterestedScreenState extends State<InterestedScreen> {
                 const Text(
                   "STEP 6 OF 8",
                   style: TextStyle(
-                    color: Colors.purple,
+                    color: AppTheme.accentColor,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -137,8 +138,8 @@ class _InterestedScreenState extends State<InterestedScreen> {
 
                 LinearProgressIndicator(
                   value: 6 / 8,
-                  backgroundColor: Colors.purple.shade100,
-                  color: Colors.purple,
+                  backgroundColor: AppTheme.accentColor.withOpacity(0.15),
+                  color: AppTheme.accentColor,
                 ),
 
                 const SizedBox(height: 40),
@@ -174,8 +175,8 @@ class _InterestedScreenState extends State<InterestedScreen> {
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [
-                        Color(0xFFFF4E8A),
-                        Color(0xFF9B51E0),
+                        Color(0xFFFF3D77),
+                        Color(0xFF8B5CF6),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(30),

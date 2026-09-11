@@ -39,7 +39,7 @@ class _ProfileTextScreenState extends State<ProfileTextScreen> {
   void continueNext() {
     String profileText = profileController.text.trim();
     if (profileText.isEmpty) {
-      profileText = "Hi, I am using DatingApp."; // Default profile text
+      profileText = "Hi, I am using Velora."; // Default profile text
     }
 
     // Store profile text in controller
@@ -59,7 +59,7 @@ class _ProfileTextScreenState extends State<ProfileTextScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFF3E7FF), Color(0xFFFFE3EC)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
           ),
         ),
         child: SafeArea(
@@ -98,7 +98,7 @@ class _ProfileTextScreenState extends State<ProfileTextScreen> {
                         const Text(
                           "STEP 7 OF 8",
                           style: TextStyle(
-                            color: Colors.purple,
+                            color: AppTheme.accentColor,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -107,8 +107,8 @@ class _ProfileTextScreenState extends State<ProfileTextScreen> {
 
                         LinearProgressIndicator(
                           value: 7 / 8,
-                          backgroundColor: Colors.purple.shade100,
-                          color: Colors.purple,
+                          backgroundColor: AppTheme.accentColor.withOpacity(0.15),
+                          color: AppTheme.accentColor,
                         ),
 
                         const SizedBox(height: 40),
@@ -142,7 +142,7 @@ class _ProfileTextScreenState extends State<ProfileTextScreen> {
                             maxLines: 4,
                             maxLength: 200,
                             textAlignVertical: TextAlignVertical.top,
-                            cursorColor: Colors.purple,
+                            cursorColor: AppTheme.accentColor,
                             decoration: AppTheme.borderlessInputDecoration(
                               hintText: "Write something about yourself...",
                               counterText: "",
@@ -171,7 +171,7 @@ class _ProfileTextScreenState extends State<ProfileTextScreen> {
                           height: 55,
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [Color(0xFFFF4E8A), Color(0xFF9B51E0)],
+                              colors: [Color(0xFFFF3D77), Color(0xFF8B5CF6)],
                             ),
                             borderRadius: BorderRadius.circular(30),
                           ),

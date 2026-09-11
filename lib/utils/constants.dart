@@ -5,7 +5,7 @@ class AppConstants {
   static const int maxRetries = 3;
 
   // App Configuration
-  static const String appName = 'DatingApp';
+  static const String appName = 'Velora';
   static const String appVersion = '1.0.0';
 
   // Firebase

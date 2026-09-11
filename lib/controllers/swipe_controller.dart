@@ -1,5 +1,6 @@
 import 'dart:collection';
 
+import 'package:dating_app/data/demo_profiles.dart';
 import 'package:dating_app/models/api_models.dart';
 import 'package:dating_app/models/match_model.dart';
 import 'package:dating_app/models/swipe_models.dart';
@@ -40,6 +41,10 @@ class SwipeController extends GetxController {
   final successMessage = ''.obs;
   final hasMoreProfiles = true.obs;
   final currentPage = 1.obs;
+
+  /// True while the deck is showing the bundled demo profiles because the
+  /// backend was unreachable or rejected the request.
+  final isUsingDemoProfiles = false.obs;
 
   static const int pageSize = 10;
   static const int preloadThreshold = 2;
@@ -84,9 +89,8 @@ class SwipeController extends GetxController {
       );
 
       if (!response.success) {
-        errorMessage.value = response.error ?? response.message;
         _logger.w('Load profiles failed: ${response.error}');
-        return false;
+        return _fallBackToDemoProfiles(refresh: refresh, reason: response.message);
       }
 
       final incoming = _dedupeProfiles(response.data ?? const []);
@@ -99,6 +103,7 @@ class SwipeController extends GetxController {
 
       hasMoreProfiles.value = (response.data ?? const []).length >= pageSize;
       errorMessage.value = '';
+      isUsingDemoProfiles.value = false;
 
       if (incoming.isEmpty && profiles.isEmpty) {
         successMessage.value = 'No more profiles to show.';
@@ -106,13 +111,35 @@ class SwipeController extends GetxController {
 
       return true;
     } catch (e) {
-      errorMessage.value = 'Failed to load profiles';
       _logger.e('Load profiles error', error: e);
-      return false;
+      return _fallBackToDemoProfiles(
+        refresh: refresh,
+        reason: 'Failed to load profiles',
+      );
     } finally {
       isLoading.value = false;
       isLoadingMore.value = false;
     }
+  }
+
+  /// Populates the deck from [DemoProfiles] so the app stays usable when the
+  /// API is unreachable or unauthenticated. Only fills an otherwise-empty
+  /// deck; a paging failure on top of real profiles just surfaces the error.
+  bool _fallBackToDemoProfiles({required bool refresh, required String reason}) {
+    if (!refresh || profiles.isNotEmpty) {
+      errorMessage.value = reason;
+      return false;
+    }
+
+    _logger.i('Falling back to demo profiles: $reason');
+
+    profiles.assignAll(DemoProfiles.deck);
+    isUsingDemoProfiles.value = true;
+    hasMoreProfiles.value = false;
+    errorMessage.value = '';
+    successMessage.value = 'Showing demo profiles — not signed in.';
+
+    return true;
   }
 
   Future<bool> loadMoreProfiles() async {
@@ -148,6 +175,25 @@ class SwipeController extends GetxController {
       loadMoreProfiles();
     }
 
+    // Demo deck isn't backed by the API — resolve the swipe locally instead of
+    // firing a request that would fail and bounce the card back.
+    if (isUsingDemoProfiles.value) {
+      if (action == SwipeAction.like) {
+        _prependUniqueProfile(likedProfiles, removedProfile);
+      } else {
+        _prependUniqueProfile(dislikedProfiles, removedProfile);
+      }
+
+      _pendingSwipeIds.remove(removedProfile.id);
+      successMessage.value =
+          action == SwipeAction.like ? 'Profile liked.' : 'Profile skipped.';
+
+      return SwipeSubmissionResult(
+        success: true,
+        message: successMessage.value,
+      );
+    }
+
     try {
       final response = action == SwipeAction.like
           ? await _swipeService.swipeRight(profile.id)
@@ -155,7 +201,7 @@ class SwipeController extends GetxController {
 
       if (!response.success) {
         _restoreProfile(removedProfile, profileIndex);
-        final message = response.error ?? response.message;
+        final message = response.message;
         errorMessage.value = message;
         _logger.w('Swipe failed: $message');
         return SwipeSubmissionResult(
@@ -246,7 +292,7 @@ class SwipeController extends GetxController {
         return true;
       }
 
-      errorMessage.value = response.error ?? response.message;
+      errorMessage.value = response.message;
       return false;
     } catch (e) {
       errorMessage.value = 'Failed to load matches';
@@ -268,7 +314,7 @@ class SwipeController extends GetxController {
         return true;
       }
 
-      errorMessage.value = response.error ?? response.message;
+      errorMessage.value = response.message;
       return false;
     } catch (e) {
       errorMessage.value = 'Failed to load top matches';
@@ -290,7 +336,7 @@ class SwipeController extends GetxController {
         return true;
       }
 
-      errorMessage.value = response.error ?? response.message;
+      errorMessage.value = response.message;
       return false;
     } catch (e) {
       errorMessage.value = 'Failed to load nearby profiles';
@@ -310,7 +356,7 @@ class SwipeController extends GetxController {
         return true;
       }
 
-      errorMessage.value = response.error ?? response.message;
+      errorMessage.value = response.message;
       return false;
     } catch (e) {
       errorMessage.value = 'Failed to accept match';
@@ -328,7 +374,7 @@ class SwipeController extends GetxController {
         return true;
       }
 
-      errorMessage.value = response.error ?? response.message;
+      errorMessage.value = response.message;
       return false;
     } catch (e) {
       errorMessage.value = 'Failed to reject match';
@@ -346,7 +392,7 @@ class SwipeController extends GetxController {
         return true;
       }
 
-      errorMessage.value = response.error ?? response.message;
+      errorMessage.value = response.message;
       return false;
     } catch (e) {
       errorMessage.value = 'Failed to unmatch';

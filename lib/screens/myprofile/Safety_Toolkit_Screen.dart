@@ -9,7 +9,7 @@ class SafetyToolkitScreen extends StatelessWidget {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFF6C1CC), Color(0xFFD6C7F4)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),

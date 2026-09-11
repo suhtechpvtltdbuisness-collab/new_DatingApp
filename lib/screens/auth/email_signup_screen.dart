@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dating_app/screens/auth/email_signin_screen.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/utils/theme.dart';
+import 'package:dating_app/widgets/common/gradient_button.dart';
 import 'email_otp_screen.dart';
 
 class EmailSignupScreen extends StatefulWidget {
@@ -72,15 +73,18 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFF3E7FF), Color(0xFFFFE3EC)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
           ),
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            child: Padding(
+            child: Align(
+              alignment: Alignment.topCenter,
+              child: Container(
+              constraints: const BoxConstraints(maxWidth: 480),
               padding: EdgeInsets.fromLTRB(
                 24,
-                24,
+                20,
                 24,
                 MediaQuery.of(context).viewInsets.bottom + 30,
               ),
@@ -88,12 +92,25 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   /// 🔙 BACK
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.arrow_back_ios_new),
+                  Row(
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white.withOpacity(0.6),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back_ios_new,
+                            size: 18,
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ),
+                    ],
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 24),
 
                   /// TITLE
                   const Text(
@@ -127,7 +144,7 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
                       controller: emailController,
                       keyboardType: TextInputType.emailAddress,
                       textAlignVertical: TextAlignVertical.center,
-                      cursorColor: Colors.purple,
+                      cursorColor: AppTheme.accentColor,
                       decoration: AppTheme.borderlessInputDecoration(
                         hintText: "Enter your email",
                       ),
@@ -151,9 +168,9 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
                           height: 22,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.pink),
+                            border: Border.all(color: AppTheme.primaryColor),
                             color: isChecked
-                                ? const Color(0xFFFF4E8A)
+                                ? const Color(0xFFFF3D77)
                                 : Colors.transparent,
                           ),
                           child: isChecked
@@ -181,42 +198,10 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
                   const SizedBox(height: 20),
 
                   /// SEND CODE BUTTON
-                  Container(
-                    width: double.infinity,
-                    height: 55,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFF4E8A), Color(0xFF9B51E0)],
-                      ),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: ElevatedButton(
-                      onPressed: (isChecked && !isLoading)
-                          ? sendEmailCode
-                          : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                      ),
-                      child: isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            )
-                          : const Text(
-                              "Send Code",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                    ),
+                  GradientButton(
+                    label: "Send Code",
+                    isLoading: isLoading,
+                    onPressed: isChecked ? sendEmailCode : null,
                   ),
 
                   const SizedBox(height: 30),
@@ -300,7 +285,7 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
                             TextSpan(
                               text: "Login",
                               style: TextStyle(
-                                color: Colors.purple,
+                                color: AppTheme.accentColor,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -312,6 +297,7 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
 
                   const SizedBox(height: 10),
                 ],
+              ),
               ),
             ),
           ),

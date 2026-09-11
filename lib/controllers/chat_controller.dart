@@ -113,7 +113,7 @@ class ChatController extends GetxController {
           messages.value = MockData.getMessagesForConversation(chatId);
           return true;
         }
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         return false;
       }
     } catch (e) {
@@ -280,7 +280,7 @@ class ChatController extends GetxController {
       if (response.success && response.data != null) {
         return response.data;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         return null;
       }
     } catch (e) {
@@ -339,7 +339,7 @@ class ChatController extends GetxController {
         successMessage.value = 'Message reported successfully';
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         return false;
       }
     } catch (e) {
@@ -424,7 +424,7 @@ class ChatController extends GetxController {
         _logger.i('Chat created: ${conv.id}');
         return conv;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         return null;
       }
     } catch (e) {
@@ -462,7 +462,7 @@ class ChatController extends GetxController {
         successMessage.value = 'Chat updated';
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         return false;
       }
     } catch (e) {
@@ -492,7 +492,7 @@ class ChatController extends GetxController {
         _logger.i('Loaded ${chatUsers.length} chat users');
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         return false;
       }
     } catch (e) {
@@ -520,7 +520,7 @@ class ChatController extends GetxController {
         _logger.i('Loaded ${response.data!.length} chats for recipient: $recipientId');
         return response.data!;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         return [];
       }
     } catch (e) {
@@ -546,7 +546,7 @@ class ChatController extends GetxController {
         _logger.i('Loaded ${response.data!.length} history entries for user: $userId');
         return response.data!;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         return [];
       }
     } catch (e) {

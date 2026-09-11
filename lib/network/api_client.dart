@@ -7,6 +7,18 @@ class ApiClient {
   late Dio _dio;
   late Logger _logger;
   late String _accessToken = '';
+  String _refreshToken = '';
+  bool _isRefreshing = false;
+
+  /// Set by [AuthService] at startup. Given the current refresh token,
+  /// should call the refresh-token endpoint and return the new access
+  /// token, or null if the refresh failed (expired/invalid session).
+  Future<String?> Function(String refreshToken)? onRefreshToken;
+
+  /// Called when the session can no longer be refreshed — the app should
+  /// clear local auth state and route the user back to sign in.
+  void Function()? onSessionExpired;
+
   // Singleton pattern
   static final ApiClient _instance = ApiClient._internal();
 
@@ -90,9 +102,32 @@ class ApiClient {
 
     // Handle specific error cases
     if (dioError.response?.statusCode == 401) {
-      // Unauthorized - try to refresh token
-      _logger.i('Attempting to refresh token...');
-      // TODO: Implement token refresh logic
+      final requestOptions = dioError.requestOptions;
+      final alreadyRetried = requestOptions.extra['retriedAfterRefresh'] == true;
+
+      if (!alreadyRetried && _refreshToken.isNotEmpty && onRefreshToken != null) {
+        _logger.i('Access token expired — attempting refresh...');
+
+        try {
+          final newAccessToken = await _refreshAccessTokenOnce();
+
+          if (newAccessToken != null && newAccessToken.isNotEmpty) {
+            // Retry the original request once with the fresh token.
+            requestOptions.extra['retriedAfterRefresh'] = true;
+            requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+
+            final retryResponse = await _dio.fetch(requestOptions);
+            return handler.resolve(retryResponse);
+          }
+        } catch (refreshError) {
+          _logger.e('Token refresh failed', error: refreshError);
+        }
+
+        // Refresh failed (or returned no token) — session is no longer valid.
+        _logger.w('Session expired — clearing tokens.');
+        clearTokens();
+        onSessionExpired?.call();
+      }
     }
 
     if (dioError.response?.statusCode == 403) {
@@ -103,15 +138,44 @@ class ApiClient {
     handler.next(dioError);
   }
 
+  /// Ensures only one refresh call is in flight at a time; concurrent 401s
+  /// while a refresh is already running wait for the same result instead of
+  /// each firing their own refresh request.
+  Future<String?> _refreshAccessTokenOnce() async {
+    if (_isRefreshing) {
+      // Wait briefly for the in-flight refresh to complete, then reuse
+      // whatever token it produced.
+      while (_isRefreshing) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+      return _accessToken.isNotEmpty ? _accessToken : null;
+    }
+
+    _isRefreshing = true;
+    try {
+      final newAccessToken = await onRefreshToken?.call(_refreshToken);
+      if (newAccessToken != null && newAccessToken.isNotEmpty) {
+        setTokens(newAccessToken);
+      }
+      return newAccessToken;
+    } finally {
+      _isRefreshing = false;
+    }
+  }
+
   // Set tokens
-  void setTokens(String accessToken) {
+  void setTokens(String accessToken, {String? refreshToken}) {
     _accessToken = accessToken;
+    if (refreshToken != null) {
+      _refreshToken = refreshToken;
+    }
     _logger.i('Tokens set');
   }
 
   // Clear tokens
   void clearTokens() {
     _accessToken = '';
+    _refreshToken = '';
     _logger.i('Tokens cleared');
   }
 
@@ -419,10 +483,24 @@ class ApiClient {
 
     switch (error.type) {
       case DioErrorType.badResponse:
-        message = error.response?.data is Map<String, dynamic>
-            ? (error.response?.data['message']?.toString() ?? 'Server error occurred')
-            : (error.response?.statusMessage ?? 'Server error occurred');
-        errorDetails = error.response?.data?.toString() ?? 'Unknown error';
+        final status = error.response?.statusCode;
+        final body = error.response?.data;
+
+        if (body is Map<String, dynamic> && body['message'] != null) {
+          message = body['message'].toString();
+        } else if (status == 401) {
+          message = 'Please sign in to continue.';
+        } else if (status == 403) {
+          message = "You don't have access to this.";
+        } else if (status == 404) {
+          message = 'Not found.';
+        } else if (status != null && status >= 500) {
+          message = 'The server had a problem. Please try again shortly.';
+        } else {
+          message = error.response?.statusMessage ?? 'Server error occurred';
+        }
+
+        errorDetails = body?.toString() ?? 'Unknown error';
         break;
       case DioErrorType.connectionTimeout:
       case DioErrorType.sendTimeout:

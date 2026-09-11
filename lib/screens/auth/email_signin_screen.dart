@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:dating_app/app/app_routes.dart';
 import 'package:dating_app/controllers/auth_controller.dart';
-import 'package:dating_app/utils/validators.dart';
 import 'package:dating_app/screens/auth/email_signup_screen.dart';
 import 'package:dating_app/utils/theme.dart';
+import 'package:dating_app/utils/validators.dart';
+import 'package:dating_app/widgets/common/gradient_button.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 class EmailSigninScreen extends StatefulWidget {
@@ -20,6 +21,7 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
   final AuthController _authController = Get.find<AuthController>();
 
   bool showEmailForm = false;
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
@@ -74,18 +76,12 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
       resizeToAvoidBottomInset: true,
       body: Container(
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFFF3E7FF), Color(0xFFFFE3EC)],
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
         child: SafeArea(
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
               24,
-              24,
+              12,
               24,
               MediaQuery.of(context).viewInsets.bottom + 30,
             ),
@@ -94,21 +90,25 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
               children: [
                 IconButton(
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back_ios_new),
+                  icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.textPrimaryColor),
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  'Sign in',
-                  style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold),
+                  'Welcome back',
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    color: AppTheme.textPrimaryColor,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   showEmailForm
                       ? 'Enter your email and password to continue.'
                       : 'Choose how you want to sign in.',
-                  style: TextStyle(color: Colors.black.withOpacity(0.5)),
+                  style: const TextStyle(color: AppTheme.textSecondaryColor, fontSize: 15),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 36),
                 if (!showEmailForm) ...[
                   _buildSignInOption(
                     icon: Icons.email_outlined,
@@ -136,63 +136,41 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
                 ] else ...[
                   const Text(
                     'Email',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryColor),
                   ),
                   const SizedBox(height: 10),
                   _buildTextField(
                     controller: emailController,
                     hintText: 'Enter your email',
                     keyboardType: TextInputType.emailAddress,
+                    prefixIcon: const Icon(Icons.alternate_email_rounded, color: AppTheme.textTertiaryColor, size: 20),
                   ),
                   const SizedBox(height: 20),
                   const Text(
                     'Password',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryColor),
                   ),
                   const SizedBox(height: 10),
                   _buildTextField(
                     controller: passwordController,
                     hintText: 'Enter your password',
-                    obscureText: true,
+                    obscureText: _obscurePassword,
+                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppTheme.textTertiaryColor, size: 20),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        color: AppTheme.textTertiaryColor,
+                        size: 20,
+                      ),
+                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                    ),
                   ),
                   const SizedBox(height: 30),
-                  Container(
-                    width: double.infinity,
-                    height: 55,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFFF4E8A), Color(0xFF9B51E0)],
-                      ),
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: ElevatedButton(
-                      onPressed: _authController.isLoading.value
-                          ? null
-                          : _loginWithEmail,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.transparent,
-                        shadowColor: Colors.transparent,
-                      ),
-                      child: Obx(
-                        () => _authController.isLoading.value
-                            ? const SizedBox(
-                                height: 22,
-                                width: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                ),
-                              )
-                            : const Text(
-                                'Login',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                      ),
+                  Obx(
+                    () => GradientButton(
+                      label: 'Login',
+                      isLoading: _authController.isLoading.value,
+                      onPressed: _loginWithEmail,
                     ),
                   ),
                   const SizedBox(height: 18),
@@ -203,10 +181,10 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
                           showEmailForm = false;
                         });
                       },
-                      child: Text(
+                      child: const Text(
                         'Back to sign in options',
                         style: TextStyle(
-                          color: Colors.purple.withOpacity(0.85),
+                          color: AppTheme.accentColor,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -214,19 +192,19 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
                   ),
                 ],
                 const SizedBox(height: 30),
-                const Divider(),
+                Divider(color: AppTheme.dividerColor),
                 const SizedBox(height: 18),
                 Center(
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text('Don\'t have an account? '),
+                      const Text("Don't have an account? ", style: TextStyle(color: AppTheme.textSecondaryColor)),
                       GestureDetector(
                         onTap: () => Get.to(() => const EmailSignupScreen()),
-                        child: Text(
+                        child: const Text(
                           'Sign up',
                           style: TextStyle(
-                            color: Colors.purple.withOpacity(0.9),
+                            color: AppTheme.primaryColor,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -253,18 +231,19 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        height: 60,
+        height: 58,
         decoration: BoxDecoration(
-          color: isPrimary ? const Color(0xFFFFE3EC) : Colors.white,
-          borderRadius: BorderRadius.circular(30),
+          color: isPrimary ? Colors.white : Colors.white.withOpacity(0.7),
+          borderRadius: BorderRadius.circular(AppTheme.radiusPill),
           border: Border.all(
-            color: isPrimary ? Colors.purple : Colors.black.withOpacity(0.1),
+            color: isPrimary ? AppTheme.primaryColor : Colors.black.withOpacity(0.08),
+            width: isPrimary ? 1.4 : 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
+              color: AppTheme.primaryColor.withOpacity(isPrimary ? 0.14 : 0.06),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -272,11 +251,11 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (icon != null) ...[
-              Icon(icon, color: Colors.purple),
+              Icon(icon, color: AppTheme.primaryColor),
               const SizedBox(width: 12),
             ],
             if (imageAsset != null) ...[
-              Image.asset(imageAsset, height: 24),
+              Image.asset(imageAsset, height: 22),
               const SizedBox(width: 12),
             ],
             Text(
@@ -284,7 +263,7 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: isPrimary ? Colors.purple : Colors.black,
+                color: isPrimary ? AppTheme.primaryColor : AppTheme.textPrimaryColor,
               ),
             ),
           ],
@@ -298,21 +277,29 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
     required String hintText,
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.text,
+    Widget? prefixIcon,
+    Widget? suffixIcon,
   }) {
     return Container(
-      height: 55,
-      padding: const EdgeInsets.symmetric(horizontal: 18),
+      height: 58,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(30),
+        color: Colors.white.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+        border: Border.all(color: AppTheme.inputBorderColor),
       ),
       child: TextField(
         controller: controller,
         obscureText: obscureText,
         keyboardType: keyboardType,
         textAlignVertical: TextAlignVertical.center,
-        cursorColor: Colors.purple,
-        decoration: AppTheme.borderlessInputDecoration(hintText: hintText),
+        cursorColor: AppTheme.primaryColor,
+        decoration: AppTheme.borderlessInputDecoration(
+          hintText: hintText,
+          prefixIcon: prefixIcon,
+          suffixIcon: suffixIcon,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+        ),
       ),
     );
   }

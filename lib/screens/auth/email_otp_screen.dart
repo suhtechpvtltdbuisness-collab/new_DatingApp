@@ -126,13 +126,13 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
         color: Colors.white.withOpacity(0.65),
         borderRadius: BorderRadius.circular(15),
         border: Border.all(
-          color: isFocused ? const Color(0xFFE548FF) : const Color(0xFFEAB9F6),
+          color: isFocused ? const Color(0xFF8B5CF6) : const Color(0xFFE7D9FF),
           width: 1.4,
         ),
         boxShadow: isFocused
             ? [
                 BoxShadow(
-                  color: const Color(0xFFE548FF).withOpacity(0.22),
+                  color: const Color(0xFF8B5CF6).withOpacity(0.22),
                   blurRadius: 14,
                   spreadRadius: 1.5,
                 ),
@@ -146,7 +146,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
         textAlign: TextAlign.center,
         textAlignVertical: TextAlignVertical.center,
         maxLength: 1,
-        cursorColor: const Color(0xFFE548FF),
+        cursorColor: const Color(0xFF8B5CF6),
         style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         decoration: AppTheme.borderlessInputDecoration(counterText: ""),
         inputFormatters: [
@@ -189,7 +189,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFF3E7FF), Color(0xFFFFE3EC)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
           ),
         ),
         child: SafeArea(
@@ -258,7 +258,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
                         height: 55,
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFFFF4E8A), Color(0xFF9B51E0)],
+                            colors: [Color(0xFFFF3D77), Color(0xFF8B5CF6)],
                           ),
                           borderRadius: BorderRadius.circular(30),
                         ),
@@ -306,7 +306,7 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
                                   text: "Send again",
                                   style: TextStyle(
                                     color: seconds == 0
-                                        ? Colors.purple
+                                        ? AppTheme.accentColor
                                         : Colors.grey,
                                     fontWeight: FontWeight.bold,
                                   ),

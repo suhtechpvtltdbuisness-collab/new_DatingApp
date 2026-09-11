@@ -41,7 +41,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xffF8E0E8), Color(0xffE9D6F3)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -76,7 +76,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.pink,
+                          color: AppTheme.primaryColor,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -123,14 +123,14 @@ class _LanguageScreenState extends State<LanguageScreen> {
                   child: TextField(
                     controller: searchController,
                     textAlignVertical: TextAlignVertical.center,
-                    cursorColor: Colors.pink,
+                    cursorColor: AppTheme.primaryColor,
                     onChanged: (value) {
                       setState(() {
                         searchQuery = value;
                       });
                     },
                     decoration: AppTheme.borderlessInputDecoration(
-                      prefixIcon: const Icon(Icons.search, color: Colors.pink),
+                      prefixIcon: const Icon(Icons.search, color: AppTheme.primaryColor),
                       hintText: "Search for a language",
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 16,
@@ -160,7 +160,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.pink,
+                            color: AppTheme.primaryColor,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
@@ -268,12 +268,12 @@ class _LanguageScreenState extends State<LanguageScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: selected
-                                    ? Colors.pink.shade50
+                                    ? AppTheme.primaryColor.withOpacity(0.08)
                                     : Colors.white,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: selected
-                                      ? Colors.pink
+                                      ? AppTheme.primaryColor
                                       : Colors.grey.shade200,
                                   width: selected ? 2 : 1,
                                 ),
@@ -296,7 +296,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                                             ? FontWeight.w600
                                             : FontWeight.normal,
                                         color: selected
-                                            ? Colors.pink
+                                            ? AppTheme.primaryColor
                                             : Colors.black87,
                                       ),
                                     ),
@@ -304,7 +304,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                                   if (selected)
                                     const Icon(
                                       Icons.check_circle,
-                                      color: Colors.pink,
+                                      color: AppTheme.primaryColor,
                                       size: 22,
                                     )
                                   else
@@ -360,7 +360,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                     ),
                     Switch(
                       value: showOthers,
-                      activeColor: Colors.pink,
+                      activeColor: AppTheme.primaryColor,
                       onChanged: (v) {
                         setState(() {
                           showOthers = v;

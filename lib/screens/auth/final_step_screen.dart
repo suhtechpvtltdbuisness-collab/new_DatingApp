@@ -1,13 +1,15 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'location_screen.dart';
 import 'package:get/get.dart';
 import 'package:dating_app/controllers/registration_controller.dart';
 
 class FinalStepScreen extends StatefulWidget {
-  final File? image;
+  /// Bytes rather than a dart:io File so the preview renders on web too.
+  final Uint8List? imageBytes;
 
-  const FinalStepScreen({super.key, this.image});
+  const FinalStepScreen({super.key, this.imageBytes});
 
   @override
   State<FinalStepScreen> createState() => _FinalStepScreenState();
@@ -33,7 +35,7 @@ class _FinalStepScreenState extends State<FinalStepScreen> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response.error ?? response.message)),
+        SnackBar(content: Text(response.message)),
       );
     }
   }
@@ -46,7 +48,7 @@ class _FinalStepScreenState extends State<FinalStepScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFF3E7FF), Color(0xFFFFE3EC)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
           ),
         ),
 
@@ -75,8 +77,8 @@ class _FinalStepScreenState extends State<FinalStepScreen> {
                   ),
 
                   child: ClipOval(
-                    child: widget.image != null
-                        ? Image.file(widget.image!, fit: BoxFit.cover)
+                    child: widget.imageBytes != null
+                        ? Image.memory(widget.imageBytes!, fit: BoxFit.cover)
                         : Image.network(
                             "https://i.pravatar.cc/300",
                             fit: BoxFit.cover,
@@ -110,7 +112,7 @@ class _FinalStepScreenState extends State<FinalStepScreen> {
 
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFFF4E8A), Color(0xFF9B51E0)],
+                      colors: [Color(0xFFFF3D77), Color(0xFF8B5CF6)],
                     ),
                     borderRadius: BorderRadius.circular(30),
                   ),

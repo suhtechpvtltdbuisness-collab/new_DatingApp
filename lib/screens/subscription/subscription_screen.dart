@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'all_features_screen.dart';
+import 'package:dating_app/utils/theme.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -14,7 +15,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEDE7F6),
+      backgroundColor: const Color(0xFFE7D9FF),
       body: SafeArea(
         child: Column(
           children: [
@@ -47,7 +48,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       padding: const EdgeInsets.all(20),
                       decoration: const BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [Color(0xFFFFE3EC), Color(0xFFEDE7F6)],
+                          colors: [Color(0xFFE7D9FF), Color(0xFFE7D9FF)],
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                         ),
@@ -59,13 +60,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: Colors.pink.shade100,
+                              color: AppTheme.primaryColor.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Text(
                               "EXCLUSIVE TIER",
                               style: TextStyle(
-                                color: Colors.pink,
+                                color: AppTheme.primaryColor,
                                 fontSize: 12,
                               ),
                             ),
@@ -95,7 +96,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFFFF4D8D), Color(0xFFFF6FA5)],
+                          colors: [Color(0xFFFF3D77), Color(0xFFFF6FA5)],
                         ),
                         borderRadius: BorderRadius.circular(24),
                       ),
@@ -167,7 +168,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(30),
                           border: Border.all(
-                            color: const Color(0xFFFF4D8D), // exact pink tone
+                            color: const Color(0xFFFF3D77), // exact pink tone
                             width: 1.5,
                           ),
                         ),
@@ -175,7 +176,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           child: Text(
                             "See all perks",
                             style: TextStyle(
-                              color: Color(0xFFFF4D8D),
+                              color: Color(0xFFFF3D77),
                               fontWeight: FontWeight.w600,
                               fontSize: 14,
                             ),
@@ -254,7 +255,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 18),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFF4D8D),
+                  color: const Color(0xFFFF3D77),
                   borderRadius: BorderRadius.circular(30),
                 ),
                 child: const Center(
@@ -289,7 +290,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: Colors.pink),
+          Icon(icon, color: AppTheme.primaryColor),
           const SizedBox(height: 10),
           Text(
             title,
@@ -321,7 +322,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFFF4D8D) : Colors.transparent,
+          color: selected ? const Color(0xFFFF3D77) : Colors.transparent,
           borderRadius: BorderRadius.circular(30),
           border: Border.all(
             color: selected ? Colors.transparent : Colors.grey.shade300,
@@ -339,7 +340,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: Colors.pink.shade700,
+                        color: AppTheme.primaryDarkColor,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: const Text(

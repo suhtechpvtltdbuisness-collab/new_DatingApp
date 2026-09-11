@@ -26,7 +26,7 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Report submitted for "$selectedReason"'),
-        backgroundColor: Colors.pink.shade600,
+        backgroundColor: AppTheme.primaryDarkColor,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
         duration: const Duration(seconds: 3),
@@ -116,7 +116,7 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
               minLines: 4,
               maxLines: 6,
               textAlignVertical: TextAlignVertical.top,
-              cursorColor: Colors.pink,
+              cursorColor: AppTheme.primaryColor,
               decoration: InputDecoration(
                 hintText: 'Describe what happened...',
                 filled: true,
@@ -144,7 +144,7 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
               height: 54,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.pink,
+                  backgroundColor: AppTheme.primaryColor,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),

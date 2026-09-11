@@ -341,7 +341,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFEFD3DC), Color(0xFFD6C4F7)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -584,7 +584,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
                           gradient: const LinearGradient(
-                            colors: [Color(0xFFFF5C8A), Color(0xFFFF2E63)],
+                            colors: [Color(0xFFFF3D77), Color(0xFFD81159)],
                           ),
                           borderRadius: BorderRadius.circular(30),
                         ),

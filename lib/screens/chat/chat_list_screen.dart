@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:dating_app/utils/theme.dart';
+import 'package:dating_app/widgets/common/glass_card.dart';
 
 import '../../controllers/chat_controller.dart';
 import '../../models/chat_model.dart';
+import '../matches/matches_screen.dart';
 import 'chat_screen.dart';
 
 class ChatListScreen extends StatefulWidget {
@@ -29,7 +31,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEED1DA),
+      backgroundColor: Colors.transparent,
       body: SafeArea(
         child: Column(
           children: [
@@ -41,7 +43,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 children: [
                   const Text(
                     'Chats',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppTheme.textPrimaryColor),
                   ),
                 ],
               ),
@@ -53,14 +55,15 @@ class _ChatListScreenState extends State<ChatListScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 15),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(25),
+                  color: Colors.white.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(AppTheme.radiusPill),
+                  border: Border.all(color: AppTheme.inputBorderColor),
                 ),
                 child: TextField(
                   textAlignVertical: TextAlignVertical.center,
-                  cursorColor: Colors.pink,
+                  cursorColor: AppTheme.primaryColor,
                   decoration: AppTheme.borderlessInputDecoration(
-                    prefixIcon: const Icon(Icons.search),
+                    prefixIcon: const Icon(Icons.search, color: AppTheme.textTertiaryColor),
                     hintText: 'Search matches or chats',
                   ),
                 ),
@@ -74,12 +77,18 @@ class _ChatListScreenState extends State<ChatListScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text(
+                children: [
+                  const Text(
                     'Your matches',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.w700, color: AppTheme.textPrimaryColor),
                   ),
-                  Text('See all', style: TextStyle(color: Colors.pink)),
+                  GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const MatchesScreen()),
+                    ),
+                    child: const Text('See all', style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.w600)),
+                  ),
                 ],
               ),
             ),
@@ -112,7 +121,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                           width: 60,
                           height: 60,
                           decoration: const BoxDecoration(
-                            color: Colors.pink,
+                            gradient: AppTheme.heroGradient,
                             shape: BoxShape.circle,
                           ),
                           child: const Center(
@@ -126,7 +135,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                           ),
                         ),
                         const SizedBox(height: 5),
-                        const Text('Likes'),
+                        const Text('Likes', style: TextStyle(color: AppTheme.textPrimaryColor)),
                       ],
                     ),
                   ],
@@ -139,19 +148,16 @@ class _ChatListScreenState extends State<ChatListScreen> {
             /// Opening Moves Card
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
+              child: GlassCard(
                 padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF3D7DF),
-                  borderRadius: BorderRadius.circular(15),
-                ),
+                radius: 18,
                 child: Row(
                   children: [
                     Container(
                       width: 35,
                       height: 35,
                       decoration: const BoxDecoration(
-                        color: Colors.pink,
+                        gradient: AppTheme.heroGradient,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -168,7 +174,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                           Text(
                             'YOUR OPENING MOVES',
                             style: TextStyle(
-                              color: Colors.pink,
+                              color: AppTheme.primaryColor,
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
                             ),
@@ -176,11 +182,12 @@ class _ChatListScreenState extends State<ChatListScreen> {
                           Text(
                             "What's the best piece of advice you've received?",
                             overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: AppTheme.textPrimaryColor),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(Icons.arrow_forward_ios, size: 16),
+                    const Icon(Icons.arrow_forward_ios, size: 16, color: AppTheme.textTertiaryColor),
                   ],
                 ),
               ),
@@ -193,7 +200,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               child: Obx(() {
                 if (_chatController.isLoading.value) {
                   return const Center(
-                    child: CircularProgressIndicator(color: Colors.pink),
+                    child: CircularProgressIndicator(color: AppTheme.primaryColor),
                   );
                 }
 
@@ -207,7 +214,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         Icon(
                           Icons.chat_bubble_outline,
                           size: 60,
-                          color: Colors.pink,
+                          color: AppTheme.primaryColor,
                         ),
                         SizedBox(height: 12),
                         Text(
@@ -225,7 +232,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 }
 
                 return RefreshIndicator(
-                  color: Colors.pink,
+                  color: AppTheme.primaryColor,
                   onRefresh: () =>
                       _chatController.getConversations(refresh: true),
                   child: ListView.builder(
@@ -340,7 +347,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
               width: 20,
               height: 20,
               decoration: const BoxDecoration(
-                color: Colors.pink,
+                color: AppTheme.primaryColor,
                 shape: BoxShape.circle,
               ),
               child: Center(

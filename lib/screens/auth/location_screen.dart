@@ -3,6 +3,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:dating_app/controllers/registration_controller.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:dating_app/utils/theme.dart';
 
 class LocationScreen extends StatefulWidget {
   const LocationScreen({super.key});
@@ -122,8 +123,8 @@ class _LocationScreenState extends State<LocationScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFF3E7FF),
-              Color(0xFFFFE3EC),
+              Color(0xFFFFD9EA),
+              Color(0xFFE7D9FF),
             ],
           ),
         ),
@@ -137,7 +138,7 @@ class _LocationScreenState extends State<LocationScreen> {
                 const Icon(
                   Icons.location_on,
                   size: 80,
-                  color: Colors.purple,
+                  color: AppTheme.accentColor,
                 ),
 
                 const SizedBox(height: 30),
@@ -166,8 +167,8 @@ class _LocationScreenState extends State<LocationScreen> {
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [
-                        Color(0xFFFF4E8A),
-                        Color(0xFF9B51E0),
+                        Color(0xFFFF3D77),
+                        Color(0xFF8B5CF6),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(30),

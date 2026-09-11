@@ -59,11 +59,11 @@ class HaveAccountScreen extends StatelessWidget {
                           const SizedBox(width: 8),
 
                           const Text(
-                            "Hookup",
+                            "Velora",
                             style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFFEB50A2),
+                              color: Color(0xFFFF3D77),
                             ),
                           ),
 
@@ -105,8 +105,8 @@ class HaveAccountScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
                         colors: [
-                          Color(0xffFF4B7D),
-                          Color(0xff9C4DFF),
+                          Color(0xFFFF3D77),
+                          Color(0xFF8B5CF6),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(30),

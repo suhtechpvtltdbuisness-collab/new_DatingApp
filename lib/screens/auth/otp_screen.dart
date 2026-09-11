@@ -132,7 +132,7 @@ class _OTPScreenState extends State<OTPScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFF3E7FF), Color(0xFFFFE3EC)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
           ),
         ),
 
@@ -207,8 +207,8 @@ class _OTPScreenState extends State<OTPScreen> {
                                 borderRadius: BorderRadius.circular(18),
                                 border: Border.all(
                                   color: isFocused
-                                      ? const Color(0xFFE548FF)
-                                      : const Color(0xFFEAB9F6),
+                                      ? const Color(0xFF8B5CF6)
+                                      : const Color(0xFFE7D9FF),
                                   width: 1.4,
                                 ),
                                 color: Colors.white.withOpacity(0.55),
@@ -216,7 +216,7 @@ class _OTPScreenState extends State<OTPScreen> {
                                     ? [
                                         BoxShadow(
                                           color: const Color(
-                                            0xFFE548FF,
+                                            0xFF8B5CF6,
                                           ).withOpacity(0.22),
                                           blurRadius: 14,
                                           spreadRadius: 1.5,
@@ -231,7 +231,7 @@ class _OTPScreenState extends State<OTPScreen> {
                                 textAlignVertical: TextAlignVertical.center,
                                 keyboardType: TextInputType.number,
                                 maxLength: 1,
-                                cursorColor: const Color(0xFFE548FF),
+                                cursorColor: const Color(0xFF8B5CF6),
                                 style: const TextStyle(
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
@@ -258,7 +258,7 @@ class _OTPScreenState extends State<OTPScreen> {
 
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(
-                              colors: [Color(0xFFFF4E8A), Color(0xFF9B51E0)],
+                              colors: [Color(0xFFFF3D77), Color(0xFF8B5CF6)],
                             ),
                             borderRadius: BorderRadius.circular(30),
                           ),

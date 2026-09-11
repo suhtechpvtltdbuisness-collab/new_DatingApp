@@ -73,7 +73,7 @@ class AuthController extends GetxController {
 
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Sign up failed: ${response.error}');
         return false;
       }
@@ -112,7 +112,7 @@ class AuthController extends GetxController {
 
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Login failed: ${response.error}');
         return false;
       }
@@ -176,7 +176,7 @@ class AuthController extends GetxController {
         successMessage.value = 'Email verified successfully';
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Email verification failed: ${response.error}');
         return false;
       }
@@ -202,7 +202,7 @@ class AuthController extends GetxController {
         successMessage.value = 'OTP resent to your email';
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Resend OTP failed: ${response.error}');
         return false;
       }
@@ -229,7 +229,7 @@ class AuthController extends GetxController {
             'Password reset instructions sent to your email';
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Reset password failed: ${response.error}');
         return false;
       }
@@ -259,7 +259,7 @@ class AuthController extends GetxController {
         successMessage.value = 'Password changed successfully';
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Change password failed: ${response.error}');
         return false;
       }

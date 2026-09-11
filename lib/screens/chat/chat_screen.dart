@@ -8,6 +8,7 @@ import '../../utils/theme.dart';
 import '../home/home_screen.dart';
 import '../profile/profile_screen.dart';
 import 'report_user_screen.dart';
+import 'package:dating_app/utils/theme.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -294,7 +295,7 @@ class _ChatScreenState extends State<ChatScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message, style: const TextStyle(color: Colors.white)),
-        backgroundColor: Colors.pink.shade600,
+        backgroundColor: AppTheme.primaryDarkColor,
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
         duration: const Duration(seconds: 3),
@@ -336,7 +337,7 @@ class _ChatScreenState extends State<ChatScreen> {
             },
             child: Text(
               confirmText,
-              style: TextStyle(color: Colors.pink.shade700),
+              style: TextStyle(color: AppTheme.primaryDarkColor),
             ),
           ),
         ],
@@ -370,12 +371,12 @@ class _ChatScreenState extends State<ChatScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.pink.shade50,
+                color: AppTheme.primaryColor.withOpacity(0.08),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 'Time $timeString',
-                style: TextStyle(color: Colors.pink.shade700, fontSize: 12),
+                style: TextStyle(color: AppTheme.primaryDarkColor, fontSize: 12),
               ),
             ),
           ],
@@ -385,7 +386,7 @@ class _ChatScreenState extends State<ChatScreen> {
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'I Understand',
-              style: TextStyle(color: Colors.pink.shade700),
+              style: TextStyle(color: AppTheme.primaryDarkColor),
             ),
           ),
         ],
@@ -511,7 +512,7 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Obx(() {
               if (_chatController.isLoadingMessages.value) {
                 return const Center(
-                  child: CircularProgressIndicator(color: Colors.pink),
+                  child: CircularProgressIndicator(color: AppTheme.primaryColor),
                 );
               }
 
@@ -591,7 +592,7 @@ class _ChatScreenState extends State<ChatScreen> {
                             controller: _inputController,
                             onSubmitted: (_) => _sendMessage(),
                             textAlignVertical: TextAlignVertical.center,
-                            cursorColor: Colors.pink,
+                            cursorColor: AppTheme.primaryColor,
                             decoration: AppTheme.borderlessInputDecoration(
                               hintText: 'Type your message..',
                             ),
@@ -615,8 +616,8 @@ class _ChatScreenState extends State<ChatScreen> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: _chatController.isSending.value
-                            ? Colors.pink.shade200
-                            : Colors.pink,
+                            ? AppTheme.primaryColor.withOpacity(0.25)
+                            : AppTheme.primaryColor,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: _chatController.isSending.value
@@ -699,7 +700,7 @@ class _MessageBubble extends StatelessWidget {
                   size: 14,
                   color: msg.status == MessageStatus.read
                       ? Colors.blue
-                      : Colors.pink,
+                      : AppTheme.primaryColor,
                 ),
               ],
             ],

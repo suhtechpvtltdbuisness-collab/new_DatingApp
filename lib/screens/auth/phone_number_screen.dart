@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:dio/dio.dart';
 import 'package:country_code_picker/country_code_picker.dart';
-import 'package:dating_app/screens/auth/otp_screen.dart';
+import 'package:dating_app/screens/auth/location_screen.dart';
+import 'package:dating_app/screens/auth/profile_setup_screen.dart';
 import 'package:dating_app/utils/theme.dart';
+import 'package:dating_app/widgets/common/gradient_button.dart';
 // 👉 import your email signup screen
 import 'package:dating_app/screens/auth/email_signup_screen.dart';
 
@@ -28,7 +29,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
     super.dispose();
   }
 
-  void sendCode() async {
+  void sendCode() {
     String phone = phoneController.text.trim();
 
     if (phone.length != 10) {
@@ -38,43 +39,16 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
       return;
     }
 
-    String fullPhone = "$countryCode$phone";
-
-    final dio = Dio();
-
-    try {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator()),
-      );
-
-      final response = await dio.get(
-        "https://dating-backend-rust.vercel.app/users/otp/$fullPhone",
-      );
-
-      Navigator.pop(context);
-
-      if (response.statusCode == 200) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                OTPScreen(phoneNumber: fullPhone, isLogin: widget.isLogin),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Failed to send OTP")));
-      }
-    } catch (e) {
-      Navigator.pop(context);
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Something went wrong")));
-    }
+    // OTP verification is intentionally skipped — no SMS is sent and no code
+    // is checked. Go straight to the next step of the flow.
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => widget.isLogin
+            ? const LocationScreen()
+            : const ProfileSetupScreen(),
+      ),
+    );
   }
 
   @override
@@ -85,7 +59,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFFF3E7FF), Color(0xFFFFE3EC)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
           ),
         ),
         child: SafeArea(
@@ -94,12 +68,36 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
               return SingleChildScrollView(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Padding(
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: Container(
+                    constraints: const BoxConstraints(maxWidth: 480),
                     padding: const EdgeInsets.symmetric(horizontal: 24),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 20),
+
+                        /// BACK
+                        Row(
+                          children: [
+                            Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: Colors.white.withOpacity(0.6),
+                              ),
+                              child: IconButton(
+                                icon: const Icon(
+                                  Icons.arrow_back_ios_new,
+                                  size: 18,
+                                ),
+                                onPressed: () => Navigator.pop(context),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 24),
 
                         /// TITLE
                         const Text(
@@ -114,7 +112,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
 
                         /// SUBTEXT
                         Text(
-                          "We'll send you a verification code to your phone.",
+                          "We'll use this to keep your account secure.",
                           style: TextStyle(
                             color: Colors.black.withOpacity(0.5),
                           ),
@@ -190,23 +188,28 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                                   color: Colors.white.withOpacity(0.9),
                                   borderRadius: BorderRadius.circular(30),
                                 ),
-                                child: TextField(
-                                  controller: phoneController,
-                                  keyboardType: TextInputType.number,
-                                  textAlignVertical: TextAlignVertical.center,
-                                  cursorColor: Colors.purple,
-                                  decoration:
-                                      AppTheme.borderlessInputDecoration(
-                                        hintText: "000-000-0000",
-                                      ),
-                                  style: const TextStyle(
-                                    fontSize: 17,
-                                    letterSpacing: 1.1,
+                                // Center wraps the collapsed field so it sits
+                                // exactly mid-pill instead of hugging the top.
+                                child: Center(
+                                  child: TextField(
+                                    controller: phoneController,
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.center,
+                                    cursorColor: AppTheme.accentColor,
+                                    decoration:
+                                        AppTheme.borderlessInputDecoration(
+                                          hintText: "000-000-0000",
+                                          isCollapsed: true,
+                                        ),
+                                    style: const TextStyle(
+                                      fontSize: 17,
+                                      letterSpacing: 1.1,
+                                    ),
+                                    inputFormatters: [
+                                      FilteringTextInputFormatter.digitsOnly,
+                                      LengthLimitingTextInputFormatter(10),
+                                    ],
                                   ),
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                    LengthLimitingTextInputFormatter(10),
-                                  ],
                                 ),
                               ),
                             ),
@@ -232,14 +235,14 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                               children: [
                                 Icon(
                                   Icons.mail_outline,
-                                  color: Colors.purple,
+                                  color: AppTheme.accentColor,
                                   size: 18,
                                 ),
                                 SizedBox(width: 6),
                                 Text(
                                   "Use email instead",
                                   style: TextStyle(
-                                    color: Colors.purple,
+                                    color: AppTheme.accentColor,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -268,9 +271,9 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                                 height: 20,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.purple),
+                                  border: Border.all(color: AppTheme.accentColor),
                                   color: isChecked
-                                      ? Colors.purple
+                                      ? AppTheme.accentColor
                                       : Colors.transparent,
                                 ),
                                 child: isChecked
@@ -297,35 +300,15 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
 
                         const SizedBox(height: 16),
 
-                        Container(
-                          width: double.infinity,
-                          height: 55,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFFF4E8A), Color(0xFF9B51E0)],
-                            ),
-                            borderRadius: BorderRadius.circular(30),
-                          ),
-                          child: ElevatedButton(
-                            onPressed: isChecked ? sendCode : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              disabledBackgroundColor: Colors.transparent,
-                            ),
-                            child: const Text(
-                              "Send Code",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                        GradientButton(
+                          label: "Send Code",
+                          onPressed: isChecked ? sendCode : null,
                         ),
 
                         const SizedBox(height: 20),
                       ],
                     ),
+                  ),
                   ),
                 ),
               );

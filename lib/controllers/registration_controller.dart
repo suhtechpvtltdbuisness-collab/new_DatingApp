@@ -68,7 +68,7 @@ class RegistrationController extends GetxController {
         // Clear data after successful registration
         clearData();
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
       }
 
       return response;

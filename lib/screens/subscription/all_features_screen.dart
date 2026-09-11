@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dating_app/utils/theme.dart';
 
 class AllFeaturesScreen extends StatefulWidget {
   final int initialIndex;
@@ -93,7 +94,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: Colors.pink,
+                              color: AppTheme.primaryColor,
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: const Text(
@@ -225,7 +226,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
         children: [
           CircleAvatar(
             backgroundColor: Colors.grey.shade200,
-            child: Icon(icon, color: Colors.pink),
+            child: Icon(icon, color: AppTheme.primaryColor),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -268,7 +269,7 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
           CircleAvatar(
             radius: 22,
             backgroundColor: Colors.grey.shade200,
-            child: Icon(icon, color: Colors.pink),
+            child: Icon(icon, color: AppTheme.primaryColor),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -326,12 +327,12 @@ class _AllFeaturesScreenState extends State<AllFeaturesScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: isActive ? Colors.pink : Colors.grey),
+          Icon(icon, color: isActive ? AppTheme.primaryColor : Colors.grey),
           const SizedBox(height: 4),
           Text(
             label,
             style: TextStyle(
-              color: isActive ? Colors.pink : Colors.grey,
+              color: isActive ? AppTheme.primaryColor : Colors.grey,
               fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
             ),
           ),

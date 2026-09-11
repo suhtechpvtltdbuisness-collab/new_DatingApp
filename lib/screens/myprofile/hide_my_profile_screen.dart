@@ -30,7 +30,7 @@ class _HideMyProfileScreenState extends State<HideMyProfileScreen> {
                     height: 56,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFEFD3DC), Color(0xFFD6C4F7)],
+                        colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -66,10 +66,10 @@ class _HideMyProfileScreenState extends State<HideMyProfileScreen> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 13),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEFD3DC).withOpacity(0.5),
+                              color: const Color(0xFFFFD9EA).withOpacity(0.5),
                               borderRadius: BorderRadius.circular(30),
                               border: Border.all(
-                                  color: const Color(0xFFD6C4F7), width: 1),
+                                  color: const Color(0xFFE7D9FF), width: 1),
                             ),
                             child: const Center(
                               child: Text(
@@ -92,7 +92,7 @@ class _HideMyProfileScreenState extends State<HideMyProfileScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 13),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
-                                colors: [Color(0xFFFF5C8A), Color(0xFFFF2E63)],
+                                colors: [Color(0xFFFF3D77), Color(0xFFD81159)],
                               ),
                               borderRadius: BorderRadius.circular(30),
                             ),
@@ -158,7 +158,7 @@ class _HideMyProfileScreenState extends State<HideMyProfileScreen> {
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: LinearGradient(
-                  colors: [Color(0xFFFF5C8A), Color(0xFF9B6AAA)],
+                  colors: [Color(0xFFFF3D77), Color(0xFF9B6AAA)],
                 ),
               ),
             ),
@@ -195,7 +195,7 @@ class _HideMyProfileScreenState extends State<HideMyProfileScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFEFD3DC), Color(0xFFD6C4F7)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -228,23 +228,23 @@ class _HideMyProfileScreenState extends State<HideMyProfileScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF5C8A).withOpacity(0.12),
+                          color: const Color(0xFFFF3D77).withOpacity(0.12),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
-                              color: const Color(0xFFFF5C8A).withOpacity(0.35),
+                              color: const Color(0xFFFF3D77).withOpacity(0.35),
                               width: 1),
                         ),
                         child: Row(
                           children: const [
                             Icon(Icons.info_outline,
-                                color: Color(0xFFFF2E63), size: 18),
+                                color: Color(0xFFD81159), size: 18),
                             SizedBox(width: 10),
                             Expanded(
                               child: Text(
                                 'Your profile is currently hidden from others',
                                 style: TextStyle(
                                     fontSize: 13,
-                                    color: Color(0xFFCC2255),
+                                    color: Color(0xFFD81159),
                                     fontWeight: FontWeight.w500,
                                     height: 1.4),
                               ),
@@ -291,7 +291,7 @@ class _HideMyProfileScreenState extends State<HideMyProfileScreen> {
                         activeTrackColor: const Color(0xFF9B6AAA),
                         inactiveThumbColor: Colors.white,
                         inactiveTrackColor:
-                            const Color(0xFFD6C4F7).withOpacity(0.6),
+                            const Color(0xFFE7D9FF).withOpacity(0.6),
                       ),
                     ),
                   ],
@@ -307,7 +307,7 @@ class _HideMyProfileScreenState extends State<HideMyProfileScreen> {
                       height: 32,
                       decoration: BoxDecoration(
                         gradient: const LinearGradient(
-                          colors: [Color(0xFFEFD3DC), Color(0xFFD6C4F7)],
+                          colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -331,7 +331,7 @@ class _HideMyProfileScreenState extends State<HideMyProfileScreen> {
                 const SizedBox(height: 14),
                 Container(
                   height: 1,
-                  color: const Color(0xFFEFD3DC).withOpacity(0.8),
+                  color: const Color(0xFFFFD9EA).withOpacity(0.8),
                   margin: const EdgeInsets.only(bottom: 14),
                 ),
                 _bulletPoint('Your profile will not appear in search results'),
@@ -354,7 +354,7 @@ class _HideMyProfileScreenState extends State<HideMyProfileScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: _isProfileHidden
-                            ? const Color(0xFFFF2E63)
+                            ? const Color(0xFFD81159)
                             : const Color(0xFF4CAF50),
                       ),
                     ),
@@ -367,7 +367,7 @@ class _HideMyProfileScreenState extends State<HideMyProfileScreen> {
                         fontSize: 13.5,
                         fontWeight: FontWeight.w500,
                         color: _isProfileHidden
-                            ? const Color(0xFFCC2255)
+                            ? const Color(0xFFD81159)
                             : const Color(0xFF2E7D32),
                       ),
                     ),
@@ -377,7 +377,7 @@ class _HideMyProfileScreenState extends State<HideMyProfileScreen> {
                           horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: _isProfileHidden
-                            ? const Color(0xFFFF2E63).withOpacity(0.1)
+                            ? const Color(0xFFD81159).withOpacity(0.1)
                             : const Color(0xFF4CAF50).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
                       ),
@@ -387,7 +387,7 @@ class _HideMyProfileScreenState extends State<HideMyProfileScreen> {
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: _isProfileHidden
-                              ? const Color(0xFFCC2255)
+                              ? const Color(0xFFD81159)
                               : const Color(0xFF2E7D32),
                         ),
                       ),

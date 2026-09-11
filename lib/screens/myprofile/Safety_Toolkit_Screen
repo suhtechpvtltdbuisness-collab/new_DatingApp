@@ -9,7 +9,7 @@ class SafetyToolkitScreen extends StatelessWidget {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFF6C1CC), Color(0xFFD6C7F4)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -60,11 +60,36 @@ class SafetyToolkitScreen extends StatelessWidget {
                 child: ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   children: const [
-                    _ListCard(),
-                    _ListCard(),
-                    _ListCard(),
-                    _ListCard(),
-                    _ListCard(),
+                    _ListCard(
+                      title: "Meet in public the first few times",
+                      body:
+                          "Pick a cafe, restaurant or another busy place. Leave "
+                          "private homes for when you genuinely trust them.",
+                    ),
+                    _ListCard(
+                      title: "Tell a friend your plans",
+                      body:
+                          "Share who you are meeting, where you will be and when "
+                          "you expect to be back. Send them the profile too.",
+                    ),
+                    _ListCard(
+                      title: "Arrange your own transport",
+                      body:
+                          "Travel to and from the date yourself so you can leave "
+                          "whenever you want, without depending on anyone.",
+                    ),
+                    _ListCard(
+                      title: "Keep personal details private",
+                      body:
+                          "Hold back your home address, workplace and financial "
+                          "details until you know the person well.",
+                    ),
+                    _ListCard(
+                      title: "Never send money",
+                      body:
+                          "No genuine match asks you to transfer money, buy gift "
+                          "cards or invest. Report anyone who does.",
+                    ),
                   ],
                 ),
               ),
@@ -77,7 +102,10 @@ class SafetyToolkitScreen extends StatelessWidget {
 }
 
 class _ListCard extends StatelessWidget {
-  const _ListCard();
+  const _ListCard({required this.title, required this.body});
+
+  final String title;
+  final String body;
 
   @override
   Widget build(BuildContext context) {
@@ -88,20 +116,20 @@ class _ListCard extends StatelessWidget {
         color: Colors.white.withOpacity(0.9),
         borderRadius: BorderRadius.circular(14),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            "List item",
-            style: TextStyle(
+            title,
+            style: const TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 15,
             ),
           ),
-          SizedBox(height: 4),
+          const SizedBox(height: 4),
           Text(
-            "Supporting line text lorem ipsum dolor sit amet, consectetur.",
-            style: TextStyle(fontSize: 13),
+            body,
+            style: const TextStyle(fontSize: 13),
           ),
         ],
       ),

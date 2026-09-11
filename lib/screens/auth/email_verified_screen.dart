@@ -16,8 +16,8 @@ class EmailVerifiedScreen extends StatelessWidget {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFF3E7FF),
-              Color(0xFFFFE3EC),
+              Color(0xFFFFD9EA),
+              Color(0xFFE7D9FF),
             ],
           ),
         ),
@@ -34,7 +34,7 @@ class EmailVerifiedScreen extends StatelessWidget {
                   height: 100,
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Color(0xFFFF4E8A),
+                    color: Color(0xFFFF3D77),
                   ),
                   child: const Icon(
                     Icons.check,
@@ -74,8 +74,8 @@ class EmailVerifiedScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [
-                        Color(0xFFFF4E8A),
-                        Color(0xFF9B51E0),
+                        Color(0xFFFF3D77),
+                        Color(0xFF8B5CF6),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(30),

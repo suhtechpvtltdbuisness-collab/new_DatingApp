@@ -5,6 +5,8 @@ import 'package:dating_app/controllers/user_controller.dart';
 import 'package:dating_app/utils/theme.dart';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
 
@@ -145,7 +147,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ? 'Profile updated successfully!'
                 : 'Failed to update profile.',
           ),
-          backgroundColor: success ? Colors.pink : Colors.red,
+          backgroundColor: success ? AppTheme.primaryColor : Colors.red,
           duration: const Duration(seconds: 2),
         ),
       );
@@ -162,7 +164,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library, color: Colors.pink),
+              leading: const Icon(Icons.photo_library, color: AppTheme.primaryColor),
               title: const Text("Choose from Gallery"),
               onTap: () async {
                 Navigator.pop(context);
@@ -170,7 +172,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: Colors.pink),
+              leading: const Icon(Icons.camera_alt, color: AppTheme.primaryColor),
               title: const Text("Take a Photo"),
               onTap: () async {
                 Navigator.pop(context);
@@ -194,7 +196,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text("Photo added successfully!"),
-              backgroundColor: Colors.pink,
+              backgroundColor: AppTheme.primaryColor,
             ),
           );
         }
@@ -218,7 +220,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text("Photo removed"),
-        backgroundColor: Colors.pink,
+        backgroundColor: AppTheme.primaryColor,
         duration: Duration(seconds: 1),
       ),
     );
@@ -261,7 +263,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text("$interest added!"),
-                            backgroundColor: Colors.pink,
+                            backgroundColor: AppTheme.primaryColor,
                             duration: const Duration(seconds: 1),
                           ),
                         );
@@ -271,17 +273,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: isSelected
-                              ? Colors.pink
+                              ? AppTheme.primaryColor
                               : Colors.grey.shade300,
                         ),
                         borderRadius: BorderRadius.circular(20),
-                        color: isSelected ? Colors.pink.shade50 : Colors.white,
+                        color: isSelected ? AppTheme.primaryColor.withOpacity(0.08) : Colors.white,
                       ),
                       alignment: Alignment.center,
                       child: Text(
                         interest,
                         style: TextStyle(
-                          color: isSelected ? Colors.pink : Colors.black,
+                          color: isSelected ? AppTheme.primaryColor : Colors.black,
                           fontWeight: isSelected
                               ? FontWeight.bold
                               : FontWeight.normal,
@@ -305,7 +307,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("$interest removed"),
-        backgroundColor: Colors.pink,
+        backgroundColor: AppTheme.primaryColor,
         duration: const Duration(seconds: 1),
       ),
     );
@@ -350,7 +352,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text("$item added!"),
-                            backgroundColor: Colors.pink,
+                            backgroundColor: AppTheme.primaryColor,
                             duration: const Duration(seconds: 1),
                           ),
                         );
@@ -368,11 +370,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: isSelected
-                              ? Colors.pink
+                              ? AppTheme.primaryColor
                               : Colors.grey.shade300,
                         ),
                         borderRadius: BorderRadius.circular(20),
-                        color: isSelected ? Colors.pink.shade50 : Colors.white,
+                        color: isSelected ? AppTheme.primaryColor.withOpacity(0.08) : Colors.white,
                       ),
                       alignment: Alignment.center,
                       child: Text(
@@ -380,7 +382,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 11,
-                          color: isSelected ? Colors.pink : Colors.black,
+                          color: isSelected ? AppTheme.primaryColor : Colors.black,
                           fontWeight: isSelected
                               ? FontWeight.bold
                               : FontWeight.normal,
@@ -404,7 +406,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("$item removed"),
-        backgroundColor: Colors.pink,
+        backgroundColor: AppTheme.primaryColor,
         duration: const Duration(seconds: 1),
       ),
     );
@@ -449,7 +451,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text("$item added!"),
-                            backgroundColor: Colors.pink,
+                            backgroundColor: AppTheme.primaryColor,
                             duration: const Duration(seconds: 1),
                           ),
                         );
@@ -467,11 +469,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: isSelected
-                              ? Colors.pink
+                              ? AppTheme.primaryColor
                               : Colors.grey.shade300,
                         ),
                         borderRadius: BorderRadius.circular(20),
-                        color: isSelected ? Colors.pink.shade50 : Colors.white,
+                        color: isSelected ? AppTheme.primaryColor.withOpacity(0.08) : Colors.white,
                       ),
                       alignment: Alignment.center,
                       child: Text(
@@ -479,7 +481,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 11,
-                          color: isSelected ? Colors.pink : Colors.black,
+                          color: isSelected ? AppTheme.primaryColor : Colors.black,
                           fontWeight: isSelected
                               ? FontWeight.bold
                               : FontWeight.normal,
@@ -503,7 +505,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text("$item removed"),
-        backgroundColor: Colors.pink,
+        backgroundColor: AppTheme.primaryColor,
         duration: const Duration(seconds: 1),
       ),
     );
@@ -515,7 +517,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFF3E7FF), Color(0xFFFFE3EC)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -552,7 +554,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     height: 22,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2.5,
-                                      color: Colors.pink,
+                                      color: AppTheme.primaryColor,
                                     ),
                                   ),
                                 )
@@ -561,7 +563,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   child: const Text(
                                     'Save',
                                     style: TextStyle(
-                                      color: Colors.pink,
+                                      color: AppTheme.primaryColor,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
                                     ),
@@ -634,7 +636,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                 child: Icon(
                                   Icons.add,
                                   size: 30,
-                                  color: Colors.pink,
+                                  color: AppTheme.primaryColor,
                                 ),
                               ),
                             ),
@@ -665,7 +667,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           children: const [
                             Row(
                               children: [
-                                Icon(Icons.verified, color: Colors.pink),
+                                Icon(Icons.verified, color: AppTheme.primaryColor),
                                 SizedBox(width: 10),
                                 Text("Verification"),
                               ],
@@ -813,7 +815,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             maxLines: 4,
                             maxLength: 300,
                             textAlignVertical: TextAlignVertical.top,
-                            cursorColor: Colors.pink,
+                            cursorColor: AppTheme.primaryColor,
                             decoration: AppTheme.borderlessInputDecoration(
                               hintText: 'Write something about yourself...',
                               contentPadding: EdgeInsets.zero,
@@ -976,7 +978,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: 3,
-        selectedItemColor: Colors.pink,
+        selectedItemColor: AppTheme.primaryColor,
         unselectedItemColor: Colors.black54,
         type: BottomNavigationBarType.fixed,
         onTap: (index) {},
@@ -1060,29 +1062,56 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
+  Widget _brokenImagePlaceholder() => Container(
+        color: Colors.grey.shade300,
+        child: const Icon(Icons.broken_image, color: Colors.grey),
+      );
+
+  /// [_uploadedImages] mixes bundled asset paths, remote photo URLs from the
+  /// API, and local paths from the image picker — and on web a picked path is
+  /// a blob: URL that only Image.network can read (Image.file asserts there).
+  /// Pick the right loader per source instead of assuming a local file.
+  Widget _imageForPath(dynamic imagePath) {
+    final path = imagePath.toString();
+
+    Widget errorFallback(BuildContext context, Object error, StackTrace? stack) =>
+        _brokenImagePlaceholder();
+
+    if (path.startsWith('assets/')) {
+      return Image.asset(
+        path,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: errorFallback,
+      );
+    }
+
+    if (kIsWeb || path.startsWith('http') || path.startsWith('blob:')) {
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: errorFallback,
+      );
+    }
+
+    return Image.file(
+      File(path),
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      errorBuilder: errorFallback,
+    );
+  }
+
   Widget _imageCard(dynamic imagePath, int index) {
-    final bool isAsset = imagePath.toString().startsWith('assets/');
     return Stack(
       children: [
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: isAsset
-              ? Image.asset(
-                  imagePath,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                )
-              : Image.file(
-                  File(imagePath),
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.grey.shade300,
-                    child: const Icon(Icons.broken_image, color: Colors.grey),
-                  ),
-                ),
+          child: _imageForPath(imagePath),
         ),
         Positioned(
           top: 6,
@@ -1111,15 +1140,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.pink),
+          border: Border.all(color: AppTheme.primaryColor),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(text, style: const TextStyle(color: Colors.pink)),
+            Text(text, style: const TextStyle(color: AppTheme.primaryColor)),
             const SizedBox(width: 6),
-            const Icon(Icons.close, size: 14, color: Colors.pink),
+            const Icon(Icons.close, size: 14, color: AppTheme.primaryColor),
           ],
         ),
       ),
@@ -1132,15 +1161,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.pink),
+          border: Border.all(color: AppTheme.primaryColor),
           borderRadius: BorderRadius.circular(20),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text("Add more", style: TextStyle(color: Colors.pink)),
+            Text("Add more", style: TextStyle(color: AppTheme.primaryColor)),
             SizedBox(width: 6),
-            Icon(Icons.add, size: 16, color: Colors.pink),
+            Icon(Icons.add, size: 16, color: AppTheme.primaryColor),
           ],
         ),
       ),
@@ -1195,7 +1224,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             children: [
               Row(
                 children: [
-                  Icon(icon, color: Colors.pink),
+                  Icon(icon, color: AppTheme.primaryColor),
                   const SizedBox(width: 12),
                   Text(title),
                 ],

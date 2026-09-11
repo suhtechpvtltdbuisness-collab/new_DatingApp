@@ -27,7 +27,7 @@ class _TakeBreakScreenState extends State<TakeBreakScreen> {
           Radio(
             value: value,
             groupValue: selectedOption,
-            activeColor: const Color(0xFFF04D8C),
+            activeColor: const Color(0xFFFF3D77),
             onChanged: (val) {
               setState(() {
                 selectedOption = val!;
@@ -56,7 +56,7 @@ class _TakeBreakScreenState extends State<TakeBreakScreen> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeColor: const Color(0xFFF04D8C),
+            activeColor: const Color(0xFFFF3D77),
           ),
         ],
       ),

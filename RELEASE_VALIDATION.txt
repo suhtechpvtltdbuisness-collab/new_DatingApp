@@ -1,0 +1,19 @@
+DatingApp production-source validation
+Date: 2026-08-12
+
+PASS - Android manifest parses as valid XML
+PASS - Production applicationId changed to com.suhtech.datingapp
+PASS - Release build no longer uses Android debug signing key
+PASS - Dedicated upload keystore generated
+PASS - INTERNET permission added to main/release manifest
+PASS - Cleartext HTTP traffic disabled
+PASS - Android backup disabled for locally stored authentication data
+PASS - Release code/resource shrinking enabled
+PASS - Minimum app age constant is 18
+PASS - Existing project analyzer output records lint/deprecation notices, not Dart compile errors
+
+ENVIRONMENT LIMITATION
+The current execution container does not contain Flutter SDK or Android SDK, so a new binary APK/AAB cannot be compiled or emulator-installed here. The included build_release.sh runs clean, dependency restore, analyze, tests, AAB build and APK build on any Flutter/Android build host.
+
+GOOGLE PLAY
+For new Play apps, upload the AAB, not the APK. Complete Play Console declarations for Data safety, content rating/18+ audience, privacy policy, app access, and the Social/Dating Child Safety Standards declaration.

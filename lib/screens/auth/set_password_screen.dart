@@ -85,7 +85,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
               controller: controller,
               obscureText: obscure,
               textAlignVertical: TextAlignVertical.center,
-              cursorColor: Colors.purple,
+              cursorColor: AppTheme.accentColor,
               decoration: AppTheme.borderlessInputDecoration(hintText: hint),
             ),
           ),
@@ -110,7 +110,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
           Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFFF3E7FF), Color(0xFFFFE3EC)],
+                colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
               ),
             ),
             child: SafeArea(
@@ -182,8 +182,8 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
                                   colors: [
-                                    Color(0xFFFF4E8A),
-                                    Color(0xFF9B51E0),
+                                    Color(0xFFFF3D77),
+                                    Color(0xFF8B5CF6),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(30),

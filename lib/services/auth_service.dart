@@ -2,6 +2,7 @@ import 'package:dating_app/models/api_models.dart';
 import 'package:dating_app/network/api_client.dart';
 import 'package:dating_app/network/api_endpoints.dart';
 import 'package:dating_app/utils/constants.dart';
+import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -26,10 +27,62 @@ class AuthService {
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
     final token = _prefs?.getString(StorageKeys.userToken);
+    final refreshToken = _prefs?.getString(StorageKeys.refreshToken);
 
     if (token != null) {
-      _apiClient.setTokens(token);
+      _apiClient.setTokens(token, refreshToken: refreshToken);
     }
+
+    // Wire the refresh flow: when a request gets a 401, ApiClient calls
+    // back here with the stored refresh token; we hit the refresh
+    // endpoint directly (bypassing the normal interceptor chain to avoid
+    // recursively triggering another 401 handler) and persist the result.
+    _apiClient.onRefreshToken = _performTokenRefresh;
+    _apiClient.onSessionExpired = () {
+      _logger.w('Session expired — local auth state cleared.');
+      _clearTokens();
+    };
+  }
+
+  Future<String?> _performTokenRefresh(String refreshToken) async {
+    if (refreshToken.isEmpty) return null;
+
+    // Use a bare Dio instance (no auth interceptors) for the refresh call
+    // itself — routing it through ApiClient's own interceptor chain would
+    // risk a second 401 on this very request recursively re-triggering the
+    // refresh flow.
+    final rawDio = Dio(BaseOptions(
+      baseUrl: AppConstants.baseUrl,
+      connectTimeout: AppConstants.apiTimeout,
+      receiveTimeout: AppConstants.apiTimeout,
+    ));
+
+    try {
+      final response = await rawDio.post(
+        ApiEndpoints.refreshToken,
+        data: {'refreshToken': refreshToken},
+      );
+
+      final body = response.data;
+      final payload = body is Map<String, dynamic> && body.containsKey('data')
+          ? body['data']
+          : body;
+
+      if (payload is Map<String, dynamic>) {
+        final authResponse = AuthResponse.fromJson(payload);
+        await _saveTokens(
+          authResponse.accessToken,
+          authResponse.refreshToken.isNotEmpty ? authResponse.refreshToken : refreshToken,
+          authResponse.userId,
+          authResponse.userEmail,
+        );
+        return authResponse.accessToken;
+      }
+    } catch (e) {
+      _logger.e('Token refresh request failed', error: e);
+    }
+
+    return null;
   }
 
   // ===============================
@@ -258,13 +311,18 @@ class AuthService {
     try {
       _logger.i('Logging out user');
 
+      final prefs = await _getPrefs();
+      final refreshToken = prefs.getString(StorageKeys.refreshToken);
+
       // Always clear local state first, regardless of API success
       await _clearTokens();
 
-      // Best-effort API call (fire and forget — the token is already gone locally)
+      // Best-effort revocation — the token is already gone locally, so pass
+      // the refresh token explicitly rather than relying on the auth header.
       try {
         await _apiClient.post<void>(
           ApiEndpoints.logout,
+          data: {'refreshToken': refreshToken},
           fromJsonT: (_) {},
         );
       } catch (_) {

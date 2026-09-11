@@ -32,7 +32,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
           Switch(
             value: value,
-            activeColor: const Color(0xFFF04D8C),
+            activeColor: const Color(0xFFFF3D77),
             onChanged: onChanged,
           ),
         ],
@@ -47,7 +47,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFEFD3DC), Color(0xFFD6C4F7)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),

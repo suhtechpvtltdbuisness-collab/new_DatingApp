@@ -1,8 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dotted_border/dotted_border.dart';
-import 'dart:io';
 import 'location_screen.dart';
+import 'package:dating_app/utils/theme.dart';
 
 class UploadPhotoScreen extends StatefulWidget {
   const UploadPhotoScreen({super.key});
@@ -13,32 +15,49 @@ class UploadPhotoScreen extends StatefulWidget {
 
 class _UploadPhotoScreenState extends State<UploadPhotoScreen> {
 
-  File? image;
+  /// Kept as bytes rather than a dart:io File so the same code path works on
+  /// web (where dart:io File throws) as well as Android/iOS.
+  Uint8List? imageBytes;
 
-  Future pickImage() async {
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-    );
+  Future<void> pickImage() async {
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: ImageSource.gallery,
+      );
 
-    if (picked != null) {
+      if (picked == null) return;
+
+      final bytes = await picked.readAsBytes();
+
+      if (!mounted) return;
+
       setState(() {
-        image = File(picked.path);
+        imageBytes = bytes;
       });
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Couldn't open that photo: $e")),
+      );
     }
   }
 
   void continueNext() {
+    if (imageBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please add a profile picture first")),
+      );
+      return;
+    }
 
-  if (image == null) return;
-
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => const LocationScreen(),
-    ),
-  );
-
-}
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LocationScreen(),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,8 +69,8 @@ class _UploadPhotoScreenState extends State<UploadPhotoScreen> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Color(0xFFF3E7FF),
-              Color(0xFFFFE3EC),
+              Color(0xFFFFD9EA),
+              Color(0xFFE7D9FF),
             ],
           ),
         ),
@@ -86,7 +105,7 @@ class _UploadPhotoScreenState extends State<UploadPhotoScreen> {
                 const Text(
                   "STEP 8 OF 8",
                   style: TextStyle(
-                    color: Colors.purple,
+                    color: AppTheme.accentColor,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -95,8 +114,8 @@ class _UploadPhotoScreenState extends State<UploadPhotoScreen> {
 
                 LinearProgressIndicator(
                   value: 1,
-                  backgroundColor: Colors.purple.shade100,
-                  color: Colors.purple,
+                  backgroundColor: AppTheme.accentColor.withOpacity(0.15),
+                  color: AppTheme.accentColor,
                 ),
 
                 const SizedBox(height: 40),
@@ -118,14 +137,14 @@ class _UploadPhotoScreenState extends State<UploadPhotoScreen> {
                       borderType: BorderType.RRect,
                       radius: const Radius.circular(25),
                       dashPattern: const [6,4],
-                      color: Colors.purple,
+                      color: AppTheme.accentColor,
                       strokeWidth: 2,
                       child: Container(
                         width: 220,
                         height: 220,
                         alignment: Alignment.center,
 
-                        child: image == null
+                        child: imageBytes == null
                             ? Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: const [
@@ -133,7 +152,7 @@ class _UploadPhotoScreenState extends State<UploadPhotoScreen> {
                                   Icon(
                                     Icons.add_a_photo,
                                     size: 40,
-                                    color: Colors.purple,
+                                    color: AppTheme.accentColor,
                                   ),
 
                                   SizedBox(height: 10),
@@ -141,7 +160,7 @@ class _UploadPhotoScreenState extends State<UploadPhotoScreen> {
                                   Text(
                                     "Upload a Photo",
                                     style: TextStyle(
-                                      color: Colors.purple,
+                                      color: AppTheme.accentColor,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -149,8 +168,8 @@ class _UploadPhotoScreenState extends State<UploadPhotoScreen> {
                               )
                             : ClipRRect(
                                 borderRadius: BorderRadius.circular(25),
-                                child: Image.file(
-                                  image!,
+                                child: Image.memory(
+                                  imageBytes!,
                                   fit: BoxFit.cover,
                                   width: 220,
                                   height: 220,
@@ -169,8 +188,8 @@ class _UploadPhotoScreenState extends State<UploadPhotoScreen> {
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
                       colors: [
-                        Color(0xFFFF4E8A),
-                        Color(0xFF9B51E0),
+                        Color(0xFFFF3D77),
+                        Color(0xFF8B5CF6),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(30),

@@ -24,7 +24,7 @@ class DatingTipsScreen extends StatelessWidget {
               color: Colors.grey.shade200,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: const Color(0xFFF04D8C)),
+            child: Icon(icon, color: const Color(0xFFFF3D77)),
           ),
 
           const SizedBox(height: 12),
@@ -60,7 +60,7 @@ class DatingTipsScreen extends StatelessWidget {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFEFD3DC), Color(0xFFD6C4F7)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),

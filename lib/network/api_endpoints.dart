@@ -28,7 +28,7 @@ class ApiEndpoints {
   static const String updateUserProfile = '/users/:id';
   static const String deleteAccount = '/users/:id';
   static const String uploadProfilePhoto = '/users/upload-photo';
-  static const String deleteProfilePhoto = '/users/delete-photo';
+  static const String deleteProfilePhoto = '/users/delete-photo/:photoId';
   static const String getUserPreferences = '/users/preferences';
   static const String updateUserPreferences = '/users/preferences';
 
@@ -54,9 +54,9 @@ class ApiEndpoints {
   static const String unlikeProfile = '/profiles/unlike';
   static const String getMatches = '/matches';
   static const String getMatchDetail = '/matches/:id';
-  static const String acceptMatch = '/matches/accept';
-  static const String rejectMatch = '/matches/reject';
-  static const String unmatch = '/matches/unmatch';
+  static const String acceptMatch = '/matches/:id/accept';
+  static const String rejectMatch = '/matches/:id/reject';
+  static const String unmatch = '/matches/:id/unmatch';
   static const String getTopMatches = '/matches/top';
   static const String getNearbyProfiles = '/profiles/nearby';
 
@@ -85,7 +85,7 @@ class ApiEndpoints {
   // ===============================
 
   static const String blockUser = '/users/:id/block';
-  static const String unblockUser = '/users/:id/unblock';
+  static const String unblockUser = '/users/:id/unblock/:blockedUserId';
   static const String getBlockedUsers = '/users/blocked';
 
   // ===============================

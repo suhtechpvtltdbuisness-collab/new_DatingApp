@@ -1,3 +1,4 @@
+import 'package:dating_app/utils/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:dating_app/screens/auth/phone_number_screen.dart';
 import 'package:dating_app/screens/auth/have_account_screen.dart';
@@ -54,11 +55,11 @@ class CreateAccountScreen extends StatelessWidget {
                           const SizedBox(width: 8),
 
                           const Text(
-                            "Hookup",
+                            "Velora",
                             style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFFEB50A2),
+                              color: Color(0xFFFF3D77),
                             ),
                           ),
                         ],
@@ -67,9 +68,9 @@ class CreateAccountScreen extends StatelessWidget {
                       const SizedBox(height: 5),
 
                       const Text(
-                        "Lorem ipsum dolor sit",
+                        "Destined connections",
                         style: TextStyle(
-                          color: Color(0xFFEB50A2),
+                          color: Color(0xFFFF3D77),
                           fontSize: 16,
                         ),
                       ),
@@ -78,15 +79,66 @@ class CreateAccountScreen extends StatelessWidget {
 
                   const Spacer(),
 
-                  /// Main Title
-                  const Text(
-                    "Lorem ipsum\n dolor soth",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 34,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+                  /// Main Title — "perfect match" carries the brand gradient
+                  /// so the promise reads as the hero of the screen.
+                  Column(
+                    children: [
+                      const Text(
+                        "Find your",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                          height: 1.1,
+                        ),
+                      ),
+                      ShaderMask(
+                        shaderCallback: (bounds) =>
+                            AppTheme.heroGradient.createShader(bounds),
+                        child: const Text(
+                          "perfect match",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 42,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.4,
+                            height: 1.15,
+                            // ShaderMask paints over this; it only has to be
+                            // opaque for the gradient to show through.
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 26,
+                            height: 1,
+                            color: Colors.white.withOpacity(0.45),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(
+                            "Written in the stars",
+                            style: TextStyle(
+                              fontSize: 13,
+                              letterSpacing: 1.6,
+                              color: Colors.white.withOpacity(0.85),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Container(
+                            width: 26,
+                            height: 1,
+                            color: Colors.white.withOpacity(0.45),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 40),
@@ -97,7 +149,7 @@ class CreateAccountScreen extends StatelessWidget {
                     width: double.infinity,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xffFF4B7D), Color(0xff9C4DFF)],
+                        colors: [Color(0xFFFF3D77), Color(0xFF8B5CF6)],
                       ),
                       borderRadius: BorderRadius.circular(30),
                     ),

@@ -4,7 +4,6 @@ import 'package:dating_app/models/user_preferences_model.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/services/user_service.dart';
 import 'package:dating_app/data/mock_data.dart';
-import 'package:dating_app/utils/constants.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 
@@ -64,7 +63,7 @@ class UserController extends GetxController {
         _logger.i('My profile loaded from GET /profile');
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('GET /profile failed: ${response.error}');
         return false;
       }
@@ -92,7 +91,7 @@ class UserController extends GetxController {
         _logger.i('Profile updated via PUT /profile');
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('PUT /profile failed: ${response.error}');
         return false;
       }
@@ -118,7 +117,7 @@ class UserController extends GetxController {
         _logger.i('User profile loaded');
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Get profile failed: ${response.error}');
         return false;
       }
@@ -152,7 +151,7 @@ class UserController extends GetxController {
         _logger.i('Profile updated');
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Update profile failed: ${response.error}');
         return false;
       }
@@ -190,7 +189,7 @@ class UserController extends GetxController {
         _logger.i('Photo uploaded');
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Upload photo failed: ${response.error}');
         return false;
       }
@@ -231,7 +230,7 @@ class UserController extends GetxController {
         _logger.i('Photos uploaded');
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Upload photos failed: ${response.error}');
         return false;
       }
@@ -272,7 +271,7 @@ class UserController extends GetxController {
         _logger.i('Photo deleted');
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Delete photo failed: ${response.error}');
         return false;
       }
@@ -297,7 +296,7 @@ class UserController extends GetxController {
         _logger.i('User preferences loaded');
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Get preferences failed: ${response.error}');
         return false;
       }
@@ -329,7 +328,7 @@ class UserController extends GetxController {
         _logger.i('Preferences updated');
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Update preferences failed: ${response.error}');
         return false;
       }
@@ -362,7 +361,7 @@ class UserController extends GetxController {
         _logger.i('User blocked');
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Block user failed: ${response.error}');
         return false;
       }
@@ -395,7 +394,7 @@ class UserController extends GetxController {
         _logger.i('User unblocked');
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Unblock user failed: ${response.error}');
         return false;
       }
@@ -420,7 +419,7 @@ class UserController extends GetxController {
         _logger.i('Blocked users loaded');
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Get blocked users failed: ${response.error}');
         return false;
       }
@@ -453,7 +452,7 @@ class UserController extends GetxController {
         _logger.i('Account deleted');
         return true;
       } else {
-        errorMessage.value = response.error ?? response.message;
+        errorMessage.value = response.message;
         _logger.w('Delete account failed: ${response.error}');
         return false;
       }

@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'language_screen.dart';
+import 'package:dating_app/utils/theme.dart';
 
 class FilterScreen extends StatefulWidget {
   const FilterScreen({super.key});
@@ -28,7 +29,7 @@ class _FilterScreenState extends State<FilterScreen> {
         /// Gradient background
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xffF8E0E8), Color(0xffE9D6F3)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -72,7 +73,7 @@ class _FilterScreenState extends State<FilterScreen> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.pink,
+                          color: AppTheme.primaryColor,
                           borderRadius: BorderRadius.circular(25),
                         ),
                         child: const Text(
@@ -92,13 +93,13 @@ class _FilterScreenState extends State<FilterScreen> {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.pink),
+                          border: Border.all(color: AppTheme.primaryColor),
                           borderRadius: BorderRadius.circular(25),
                         ),
                         child: const Text(
                           "Advanced filters",
                           style: TextStyle(
-                            color: Colors.pink,
+                            color: AppTheme.primaryColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -152,8 +153,8 @@ class _FilterScreenState extends State<FilterScreen> {
                         values: ageRange,
                         min: 18,
                         max: 60,
-                        activeColor: Colors.pink,
-                        inactiveColor: Colors.pink.shade100,
+                        activeColor: AppTheme.primaryColor,
+                        inactiveColor: AppTheme.primaryColor.withOpacity(0.15),
                         onChanged: (values) {
                           setState(() {
                             ageRange = values;
@@ -176,7 +177,7 @@ class _FilterScreenState extends State<FilterScreen> {
 
                           Switch(
                             value: ageToggle,
-                            activeColor: Colors.pink,
+                            activeColor: AppTheme.primaryColor,
                             onChanged: (val) {
                               setState(() {
                                 ageToggle = val;
@@ -209,8 +210,8 @@ class _FilterScreenState extends State<FilterScreen> {
                         value: distance,
                         min: 1,
                         max: 100,
-                        activeColor: Colors.pink,
-                        inactiveColor: Colors.pink.shade100,
+                        activeColor: AppTheme.primaryColor,
+                        inactiveColor: AppTheme.primaryColor.withOpacity(0.15),
                         onChanged: (value) {
                           setState(() {
                             distance = value;
@@ -233,7 +234,7 @@ class _FilterScreenState extends State<FilterScreen> {
 
                           Switch(
                             value: distanceToggle,
-                            activeColor: Colors.pink,
+                            activeColor: AppTheme.primaryColor,
                             onChanged: (val) {
                               setState(() {
                                 distanceToggle = val;
@@ -276,8 +277,8 @@ class _FilterScreenState extends State<FilterScreen> {
                               interests.remove(e);
                             });
                           },
-                          backgroundColor: Colors.pink.shade50,
-                          deleteIconColor: Colors.pink,
+                          backgroundColor: AppTheme.primaryColor.withOpacity(0.08),
+                          deleteIconColor: AppTheme.primaryColor,
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           materialTapTargetSize:
                               MaterialTapTargetSize.shrinkWrap,
@@ -290,8 +291,8 @@ class _FilterScreenState extends State<FilterScreen> {
 
                 OutlinedButton(
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.pink,
-                    side: const BorderSide(color: Colors.pink),
+                    foregroundColor: AppTheme.primaryColor,
+                    side: const BorderSide(color: AppTheme.primaryColor),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -308,7 +309,7 @@ class _FilterScreenState extends State<FilterScreen> {
                   children: [
                     const Row(
                       children: [
-                        Icon(Icons.verified, color: Colors.pink),
+                        Icon(Icons.verified, color: AppTheme.primaryColor),
                         SizedBox(width: 8),
                         Text(
                           "Verified only",
@@ -319,7 +320,7 @@ class _FilterScreenState extends State<FilterScreen> {
 
                     Switch(
                       value: verifiedOnly,
-                      activeColor: Colors.pink,
+                      activeColor: AppTheme.primaryColor,
                       onChanged: (val) {
                         setState(() {
                           verifiedOnly = val;
@@ -450,11 +451,11 @@ class _FilterScreenState extends State<FilterScreen> {
 
         decoration: BoxDecoration(
           border: Border.all(
-            color: selected ? Colors.pink : Colors.grey.shade300,
+            color: selected ? AppTheme.primaryColor : Colors.grey.shade300,
             width: 2,
           ),
           borderRadius: BorderRadius.circular(15),
-          color: selected ? Colors.pink.shade50 : Colors.white,
+          color: selected ? AppTheme.primaryColor.withOpacity(0.08) : Colors.white,
         ),
 
         child: Row(
@@ -464,7 +465,7 @@ class _FilterScreenState extends State<FilterScreen> {
 
             Icon(
               selected ? Icons.check_circle : Icons.circle_outlined,
-              color: selected ? Colors.pink : Colors.grey,
+              color: selected ? AppTheme.primaryColor : Colors.grey,
             ),
           ],
         ),
@@ -492,20 +493,20 @@ class _FilterScreenState extends State<FilterScreen> {
             autofocus: true,
             textCapitalization: TextCapitalization.words,
             textAlignVertical: TextAlignVertical.center,
-            cursorColor: Colors.pink,
+            cursorColor: AppTheme.primaryColor,
             decoration: InputDecoration(
               hintText: "Enter interest",
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.pink.shade100, width: 1.2),
+                borderSide: BorderSide(color: AppTheme.primaryColor.withOpacity(0.15), width: 1.2),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.pink.shade100, width: 1.2),
+                borderSide: BorderSide(color: AppTheme.primaryColor.withOpacity(0.15), width: 1.2),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.pink, width: 1.2),
+                borderSide: const BorderSide(color: AppTheme.primaryColor, width: 1.2),
               ),
             ),
           ),
@@ -516,7 +517,7 @@ class _FilterScreenState extends State<FilterScreen> {
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.pink,
+                backgroundColor: AppTheme.primaryColor,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),

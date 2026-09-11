@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dating_app/utils/theme.dart';
 
 class BlockedUsersScreen extends StatefulWidget {
   const BlockedUsersScreen({super.key});
@@ -38,13 +39,13 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                   height: 100,
                   width: 100,
                   decoration: BoxDecoration(
-                    color: Colors.pink.shade50,
+                    color: AppTheme.primaryColor.withOpacity(0.08),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     Icons.lock_open,
                     size: 50,
-                    color: Colors.pink.shade400,
+                    color: AppTheme.primaryColor.withOpacity(0.6),
                   ),
                 ),
 
@@ -72,14 +73,14 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                   height: 45,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(30),
-                    border: Border.all(color: Colors.pink),
+                    border: Border.all(color: AppTheme.primaryColor),
                   ),
                   child: TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: const Text(
                       "Cancel",
                       style: TextStyle(
-                        color: Colors.pink,
+                        color: AppTheme.primaryColor,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -93,7 +94,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
                   width: double.infinity,
                   height: 45,
                   decoration: BoxDecoration(
-                    color: Colors.pink,
+                    color: AppTheme.primaryColor,
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: TextButton(
@@ -135,7 +136,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('$userName has been unblocked'),
-        backgroundColor: const Color(0xFFE91E63),
+        backgroundColor: const Color(0xFFFF3D77),
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
       ),
@@ -148,7 +149,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFFF6C1CC), Color(0xFFD6C7F4)],
+            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -267,7 +268,7 @@ class UserCard extends StatelessWidget {
           // Avatar
           CircleAvatar(
             radius: 18,
-            backgroundColor: const Color(0xFFD6C7F4),
+            backgroundColor: const Color(0xFFE7D9FF),
             child: Text(
               avatar,
               style: const TextStyle(color: Colors.black),
@@ -292,7 +293,7 @@ class UserCard extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: const Color(0xFFE91E63), // Pink border
+                  color: const Color(0xFFFF3D77), // Pink border
                   width: 1.5,
                 ),
                 color: Colors.transparent,
@@ -300,7 +301,7 @@ class UserCard extends StatelessWidget {
               child: const Text(
                 "Unblock",
                 style: TextStyle(
-                  color: Color(0xFFE91E63), // Pink text
+                  color: Color(0xFFFF3D77), // Pink text
                   fontWeight: FontWeight.w600,
                   fontSize: 13,
                 ),
