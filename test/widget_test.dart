@@ -9,7 +9,7 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    await dotenv.load(fileName: '.env.example');
+    dotenv.testLoad(fileInput: 'BASE_URL=https://dating-backend-rust.vercel.app\n');
     Get.reset();
   });
 

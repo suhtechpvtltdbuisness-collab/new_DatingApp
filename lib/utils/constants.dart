@@ -6,12 +6,9 @@ class AppConstants {
       'https://dating-backend-rust.vercel.app';
 
   static String get baseUrl {
-    try {
-      final url = dotenv.env['BASE_URL'];
-      if (url != null && url.isNotEmpty) return url;
-    } catch (_) {
-      // dotenv not loaded yet (e.g. widget tests)
-    }
+    if (!dotenv.isInitialized) return _defaultBaseUrl;
+    final url = dotenv.env['BASE_URL'];
+    if (url != null && url.isNotEmpty) return url;
     return _defaultBaseUrl;
   }
 
