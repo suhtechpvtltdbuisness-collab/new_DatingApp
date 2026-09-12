@@ -27,6 +27,7 @@ dependencies:
    get: ^4.6.6
    # HTTP & Networking
    dio: ^5.3.1
+   flutter_dotenv: ^5.2.1
    # Local Storage
    shared_preferences: ^2.2.2
    # Image & Media
@@ -50,5 +51,6 @@ flutter:
   uses-material-design: true
 
   assets:
+    - .env
     - assets/images/
 

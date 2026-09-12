@@ -2,7 +2,7 @@ import 'package:dating_app/utils/constants.dart';
 
 class ApiEndpoints {
   /// ✅ BASE URL
-  static const String baseUrl = AppConstants.baseUrl;
+  static String get baseUrl => AppConstants.baseUrl;
 
   // ===============================
   // ✅ AUTH (UPDATED)

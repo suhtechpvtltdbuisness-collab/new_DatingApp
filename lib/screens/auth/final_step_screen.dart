@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'location_screen.dart';
+import 'package:dating_app/app/app_routes.dart';
 import 'package:get/get.dart';
 import 'package:dating_app/controllers/registration_controller.dart';
 
@@ -27,12 +27,7 @@ class _FinalStepScreenState extends State<FinalStepScreen> {
     setState(() => isLoading = false);
 
     if (response.success) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const LocationScreen(),
-        ),
-      );
+      AppRoutes.toHome();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(response.message)),

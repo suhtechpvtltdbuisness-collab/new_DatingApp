@@ -252,10 +252,17 @@ class AuthResponse {
   /// ApiClient._parseResponse extracts `data` before calling fromJson,
   /// so `json` here = { "accessToken": "...", "refreshToken": "..." }.
   factory AuthResponse.fromJson(Map<String, dynamic> json) {
-    final accessToken = json['accessToken'] as String? ?? '';
-    final refreshToken = json['refreshToken'] as String? ?? '';
+    final accessToken = json['accessToken'] as String? ??
+        json['token'] as String? ??
+        json['access_token'] as String? ??
+        '';
+    final refreshToken = json['refreshToken'] as String? ??
+        json['refresh_token'] as String? ??
+        '';
     // Decode userId from JWT sub claim (no secret needed — just parsing payload)
-    final userId = json['userId'] as String? ?? _extractSubFromJwt(accessToken);
+    final userId = json['userId'] as String? ??
+        json['id'] as String? ??
+        _extractSubFromJwt(accessToken);
     return AuthResponse(
       accessToken: accessToken,
       refreshToken: refreshToken,

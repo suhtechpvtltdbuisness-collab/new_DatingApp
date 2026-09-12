@@ -140,7 +140,7 @@ class AuthService {
   // ✅ REGISTER USER (EMAIL FLOW)
   // ===============================
 
-  Future<ApiResponse<void>> registerUser({
+  Future<ApiResponse<AuthResponse>> registerUser({
     required String name,
     required String phoneNumber,
     required String dob,
@@ -173,11 +173,33 @@ class AuthService {
         data["password"] = password;
       }
 
-      final response = await _apiClient.post<void>(
+      final response = await _apiClient.post<AuthResponse>(
         ApiEndpoints.signup,
         data: data,
-        fromJsonT: (_) {},
+        fromJsonT: (json) => AuthResponse.fromJson(
+          json is Map<String, dynamic> ? json : <String, dynamic>{},
+        ),
       );
+
+      if (response.success &&
+          response.data != null &&
+          response.data!.accessToken.isNotEmpty) {
+        await _saveTokens(
+          response.data!.accessToken,
+          response.data!.refreshToken,
+          response.data!.userId,
+          response.data!.userEmail.isNotEmpty
+              ? response.data!.userEmail
+              : (email ?? ''),
+        );
+      } else if (response.success &&
+          email != null &&
+          email.isNotEmpty &&
+          password != null &&
+          password.isNotEmpty) {
+        // Backend may create the user without returning tokens — sign in next.
+        return login(LoginRequest(email: email, password: password));
+      }
 
       return response;
     } catch (e) {
@@ -206,7 +228,7 @@ class AuthService {
     await prefs.setString(StorageKeys.userId, userId);
     await prefs.setString(StorageKeys.userEmail, email);
 
-    _apiClient.setTokens(accessToken);
+    _apiClient.setTokens(accessToken, refreshToken: refreshToken);
 
     _logger.i('Tokens saved');
   }

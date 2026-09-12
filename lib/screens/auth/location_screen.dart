@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
+import 'package:dating_app/app/app_routes.dart';
 import 'package:dating_app/controllers/registration_controller.dart';
+import 'package:dating_app/screens/auth/email_signin_screen.dart';
+import 'package:dating_app/services/auth_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:dating_app/utils/theme.dart';
 
@@ -13,11 +16,11 @@ class LocationScreen extends StatefulWidget {
 }
 
 class _LocationScreenState extends State<LocationScreen> {
-  final RegistrationController registrationController = Get.find<RegistrationController>();
+  final RegistrationController registrationController =
+      Get.find<RegistrationController>();
   bool isLoading = false;
   int denyCount = 0;
 
-  /// Function to check location permission
   Future<void> _checkLocation(BuildContext context) async {
     setState(() => isLoading = true);
 
@@ -25,7 +28,6 @@ class _LocationScreenState extends State<LocationScreen> {
       bool serviceEnabled;
       LocationPermission permission;
 
-      /// 1️⃣ Check if location service is enabled
       serviceEnabled = await Geolocator.isLocationServiceEnabled();
 
       if (!serviceEnabled) {
@@ -34,10 +36,8 @@ class _LocationScreenState extends State<LocationScreen> {
         return;
       }
 
-      /// 2️⃣ Check permission
       permission = await Geolocator.checkPermission();
 
-      /// If permission not given → request permission
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
@@ -45,50 +45,85 @@ class _LocationScreenState extends State<LocationScreen> {
         }
       }
 
-      /// If permission denied again → stop
       if (permission == LocationPermission.denied) {
         if (denyCount >= 2) {
           _showSettingsDialog();
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Location permission is required to continue")),
+            const SnackBar(
+              content: Text("Location permission is required to continue"),
+            ),
           );
         }
         setState(() => isLoading = false);
         return;
       }
 
-      /// If permission permanently denied
       if (permission == LocationPermission.deniedForever) {
         _showSettingsDialog();
         setState(() => isLoading = false);
         return;
       }
 
-      /// 3️⃣ If permission granted → get location
       if (permission == LocationPermission.whileInUse ||
           permission == LocationPermission.always) {
-
         Position position = await Geolocator.getCurrentPosition(
           desiredAccuracy: LocationAccuracy.high,
         );
 
-        // Store location in controller
         registrationController.setLocation([
           position.longitude.toString(),
-          position.latitude.toString()
+          position.latitude.toString(),
         ]);
 
-        // Navigate to Home Screen after getting location
-        Navigator.pushReplacementNamed(context, "/home");
+        await _continueAfterLocation();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Failed to get location. Please try again.")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Failed to get location. Please try again."),
+          ),
+        );
+      }
     } finally {
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
     }
+  }
+
+  Future<void> _continueAfterLocation() async {
+    final authService = AuthService();
+    final hasSignupData = registrationController.name.value.isNotEmpty ||
+        registrationController.email.value.isNotEmpty;
+
+    if (hasSignupData && !authService.isLoggedIn()) {
+      final response = await registrationController.registerUser();
+      if (!mounted) return;
+
+      if (!response.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              response.message.isNotEmpty
+                  ? response.message
+                  : 'Registration failed. Please try again.',
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
+    if (!authService.isLoggedIn()) {
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const EmailSigninScreen()),
+      );
+      return;
+    }
+
+    AppRoutes.toHome();
   }
 
   void _showSettingsDialog() {
@@ -96,7 +131,9 @@ class _LocationScreenState extends State<LocationScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Location Permission Required"),
-        content: const Text("Location access is mandatory to use this app. Please enable it in settings."),
+        content: const Text(
+          "Location access is mandatory to use this app. Please enable it in settings.",
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -134,15 +171,12 @@ class _LocationScreenState extends State<LocationScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-
                 const Icon(
                   Icons.location_on,
                   size: 80,
                   color: AppTheme.accentColor,
                 ),
-
                 const SizedBox(height: 30),
-
                 const Text(
                   "Can we get your location, please?",
                   textAlign: TextAlign.center,
@@ -151,16 +185,12 @@ class _LocationScreenState extends State<LocationScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 const SizedBox(height: 10),
-
                 const Text(
                   "We need it so we can show you people nearby.",
                   textAlign: TextAlign.center,
                 ),
-
                 const SizedBox(height: 40),
-
                 Container(
                   width: double.infinity,
                   height: 55,
@@ -185,7 +215,8 @@ class _LocationScreenState extends State<LocationScreen> {
                             width: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : const Text(
@@ -197,7 +228,6 @@ class _LocationScreenState extends State<LocationScreen> {
                           ),
                   ),
                 ),
-
               ],
             ),
           ),

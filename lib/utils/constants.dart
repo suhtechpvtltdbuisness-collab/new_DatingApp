@@ -1,6 +1,9 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class AppConstants {
   // API Configuration
-  static const String baseUrl = 'https://dating-backend-rust.vercel.app';
+  static String get baseUrl =>
+      dotenv.env['BASE_URL'] ?? 'https://dating-backend-rust.vercel.app';
   static const Duration apiTimeout = Duration(seconds: 30);
   static const int maxRetries = 3;
 

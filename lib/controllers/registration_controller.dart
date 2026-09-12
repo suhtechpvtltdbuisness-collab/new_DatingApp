@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:dating_app/controllers/auth_controller.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/models/api_models.dart';
 
@@ -44,7 +45,7 @@ class RegistrationController extends GetxController {
   void setLocation(List<String> coordinates) => location.value = coordinates;
 
   // Register user with all collected data
-  Future<ApiResponse<void>> registerUser() async {
+  Future<ApiResponse<AuthResponse>> registerUser() async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
@@ -65,7 +66,15 @@ class RegistrationController extends GetxController {
       );
 
       if (response.success) {
-        // Clear data after successful registration
+        if (Get.isRegistered<AuthController>()) {
+          final auth = Get.find<AuthController>();
+          auth.isLoggedIn.value = true;
+          auth.userId.value =
+              response.data?.userId ?? _authService.getCurrentUserId() ?? '';
+          auth.userEmail.value = response.data?.userEmail.isNotEmpty == true
+              ? response.data!.userEmail
+              : email.value;
+        }
         clearData();
       } else {
         errorMessage.value = response.message;

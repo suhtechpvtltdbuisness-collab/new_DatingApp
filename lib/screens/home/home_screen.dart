@@ -1,3 +1,5 @@
+import 'package:dating_app/app/app_routes.dart';
+import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/utils/constants.dart';
 import 'package:dating_app/utils/theme.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +26,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!AuthService().isLoggedIn()) {
+        AppRoutes.toOnboarding();
+      }
+    });
   }
 
   void _onTabTapped(int index) {
