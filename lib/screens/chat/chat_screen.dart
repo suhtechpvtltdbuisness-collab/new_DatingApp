@@ -8,7 +8,6 @@ import '../../utils/theme.dart';
 import '../home/home_screen.dart';
 import '../profile/profile_screen.dart';
 import 'report_user_screen.dart';
-import 'package:dating_app/utils/theme.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;

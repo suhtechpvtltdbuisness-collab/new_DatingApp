@@ -5,7 +5,6 @@ import 'package:dating_app/utils/theme.dart';
 import 'package:flutter/material.dart';
 import '../chat/chat_list_screen.dart';
 import '../filter/filter_screen.dart';
-import '../profile/profile_screen.dart';
 import '../myprofile/my_profile_screen.dart';
 import '../like/liked_you_screen.dart';
 import '../swipe/swipe_screen.dart';

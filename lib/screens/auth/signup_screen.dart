@@ -103,7 +103,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
               // Gender
               DropdownButtonFormField<String>(
-                initialValue: _selectedGender,
+                value: _selectedGender,
                 decoration: const InputDecoration(
                   labelText: 'Gender',
                   prefixIcon: Icon(Icons.wc),
@@ -131,7 +131,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
               // Interested In
               DropdownButtonFormField<String>(
-                initialValue: _selectedInterestedIn,
+                value: _selectedInterestedIn,
                 decoration: const InputDecoration(
                   labelText: 'Interested In',
                   prefixIcon: Icon(Icons.favorite),

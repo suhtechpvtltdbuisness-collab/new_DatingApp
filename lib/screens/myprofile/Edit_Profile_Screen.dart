@@ -1176,44 +1176,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _greyChip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(text),
-    );
-  }
-
-  Widget _sectionCard({
-    required String title,
-    required String subtitle,
-    required List<Widget> children,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 4),
-        Text(subtitle, style: const TextStyle(color: Colors.grey)),
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Wrap(spacing: 10, runSpacing: 10, children: children),
-        ),
-      ],
-    );
-  }
-
   Widget _aboutTile(IconData icon, String title, String value) {
     return Column(
       children: [
