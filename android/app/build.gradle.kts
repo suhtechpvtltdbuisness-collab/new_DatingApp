@@ -1,4 +1,5 @@
 import java.util.Properties
+import java.io.FileInputStream
 
 plugins {
     id("com.android.application")
@@ -7,10 +8,18 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+val keystorePropertiesFile = rootProject.file("key.properties")
+val keystoreProperties = Properties()
+val hasReleaseKeystore = keystorePropertiesFile.exists().also { exists ->
+    if (exists) {
+        keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+    }
+}
+
 android {
     namespace = "com.suhtech.datingapp"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -28,15 +37,11 @@ android {
     }
 
     signingConfigs {
-        create("release") {
-            val keystorePropertiesFile = rootProject.file("key.properties")
-            if (keystorePropertiesFile.exists()) {
-                val keystoreProperties = Properties().apply {
-                    keystorePropertiesFile.inputStream().use { load(it) }
-                }
+        if (hasReleaseKeystore) {
+            create("release") {
                 keyAlias = keystoreProperties.getProperty("keyAlias")
                 keyPassword = keystoreProperties.getProperty("keyPassword")
-                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
                 storePassword = keystoreProperties.getProperty("storePassword")
             }
         }
@@ -44,7 +49,12 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("release")
+            signingConfig = if (hasReleaseKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                // Avoid signReleaseBundle NPE when key.properties is missing (e.g. CI without secrets).
+                signingConfigs.getByName("debug")
+            }
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
