@@ -2,8 +2,19 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConstants {
   // API Configuration
-  static String get baseUrl =>
-      dotenv.env['BASE_URL'] ?? 'https://dating-backend-rust.vercel.app';
+  static const String _defaultBaseUrl =
+      'https://dating-backend-rust.vercel.app';
+
+  static String get baseUrl {
+    try {
+      final url = dotenv.env['BASE_URL'];
+      if (url != null && url.isNotEmpty) return url;
+    } catch (_) {
+      // dotenv not loaded yet (e.g. widget tests)
+    }
+    return _defaultBaseUrl;
+  }
+
   static const Duration apiTimeout = Duration(seconds: 30);
   static const int maxRetries = 3;
 
