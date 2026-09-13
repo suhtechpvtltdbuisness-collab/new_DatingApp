@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:dating_app/app/app_routes.dart';
+import 'package:dating_app/controllers/auth_controller.dart';
 import 'package:dating_app/controllers/user_controller.dart';
+import 'package:dating_app/models/user_model.dart';
+import 'package:dating_app/screens/profile/profile_screen.dart';
+import 'package:dating_app/screens/subscription/subscription_screen.dart';
 import 'Edit_Profile_Screen.dart';
 import 'Safety_Toolkit_Screen.dart';
 import 'Blocked_Users_Screen.dart';
@@ -108,10 +113,11 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: TextButton(
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(context);
-
-                      /// 👉 ADD YOUR LOGOUT LOGIC HERE
+                      final auth = Get.find<AuthController>();
+                      await auth.logout();
+                      AppRoutes.toLogin();
                     },
                     child: const Text(
                       "Log out",
@@ -127,6 +133,26 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
           ),
         );
       },
+    );
+  }
+
+  Future<void> _openEditProfile() async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+    );
+    if (updated == true) {
+      await _userController.refreshProfile();
+    }
+  }
+
+  void _openPreview(UserModel? user) {
+    if (user == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProfileDetailsScreen(profile: user),
+      ),
     );
   }
 
@@ -204,10 +230,28 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: TextButton(
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(context);
-
-                      /// 👉 ADD DEACTIVATE LOGIC
+                      final success = await _userController.updateMyProfile({
+                        'active': false,
+                      });
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            success
+                                ? 'Account deactivated'
+                                : (_userController.errorMessage.value.isNotEmpty
+                                    ? _userController.errorMessage.value
+                                    : 'Failed to deactivate account'),
+                          ),
+                        ),
+                      );
+                      if (success) {
+                        final auth = Get.find<AuthController>();
+                        await auth.logout();
+                        AppRoutes.toLogin();
+                      }
                     },
                     child: const Text(
                       "Deactivate",
@@ -309,10 +353,25 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: TextButton(
-                    onPressed: () {
+                    onPressed: () async {
                       Navigator.pop(context);
-
-                      /// 👉 ADD DELETE LOGIC
+                      final success = await _userController.deleteAccount();
+                      if (!mounted) return;
+                      if (success) {
+                        final auth = Get.find<AuthController>();
+                        await auth.logout();
+                        AppRoutes.toLogin();
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              _userController.errorMessage.value.isNotEmpty
+                                  ? _userController.errorMessage.value
+                                  : 'Failed to delete account',
+                            ),
+                          ),
+                        );
+                      }
                     },
                     child: const Text(
                       "Delete",
@@ -338,11 +397,39 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     );
   }
 
+  String _photoTip(UserModel? user) {
+    final count = user?.photoUrls.length ?? 0;
+    if (count == 0) {
+      return 'Add at least 3 clear photos. Profiles with more photos get more matches.';
+    }
+    if (count < 3) {
+      return 'You have $count photo${count == 1 ? '' : 's'}. Add ${3 - count} more to boost your vibe score.';
+    }
+    if ((user?.bio ?? '').trim().isEmpty) {
+      return 'Great photo set. Add a short bio so people know what you are about.';
+    }
+    return 'Keep your first photo recent and well-lit. Leading with your best shot improves replies.';
+  }
+
+  List<Widget> _photoInsightBars(UserModel? user) {
+    final photos = user?.photoUrls ?? const <String>[];
+    if (photos.isEmpty) {
+      return [
+        _bar(30, 'Add', false),
+        _bar(30, 'Add', false),
+        _bar(30, 'Add', false),
+      ];
+    }
+    final heights = <double>[100, 78, 62, 88, 70, 55];
+    return List.generate(photos.length.clamp(0, 4), (index) {
+      return _bar(heights[index % heights.length], 'Pic ${index + 1}', index == 0);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        /// BACKGROUND
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -350,237 +437,260 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
             colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
           ),
         ),
-
         child: SafeArea(
-          child: SingleChildScrollView(
-            child: Column(
+          child: RefreshIndicator(
+            color: AppTheme.primaryColor,
+            onRefresh: _userController.refreshProfile,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
               children: [
                 const SizedBox(height: 10),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      "My Profile",
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Obx(() {
+                  if (_userController.isLoading.value &&
+                      _userController.currentUser.value == null) {
+                    return const Padding(
+                      padding: EdgeInsets.all(40),
+                      child: CircularProgressIndicator(color: AppTheme.primaryColor),
+                    );
+                  }
 
-                /// TITLE
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  final user = _userController.currentUser.value;
+                  final imageUrl =
+                      user != null && user.photoUrls.isNotEmpty
+                          ? user.photoUrls.first
+                          : '';
+                  final name = user == null
+                      ? 'Complete your profile'
+                      : '${user.firstName.isEmpty ? 'Member' : user.firstName}, ${user.age}';
+                  final location = user?.locationLabel ?? '';
+
+                  return Column(
                     children: [
-                      const Text(
-                        "My Profile",
-                        style: TextStyle(
-                          fontSize: 22,
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFFFF6F91),
+                            width: 2,
+                          ),
+                        ),
+                        child: CircleAvatar(
+                          radius: 45,
+                          backgroundImage: imageUrl.startsWith('http')
+                              ? NetworkImage(imageUrl) as ImageProvider
+                              : const AssetImage('assets/images/profile.png'),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF6F91),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          "${user?.vibeScore ?? 0}% VIBE SCORE",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                /// PROFILE IMAGE
-                Obx(() {
-                  final user = _userController.currentUser.value;
-                  final imageUrl = user != null && user.photoUrls.isNotEmpty
-                      ? user.photoUrls.first
-                      : '';
-                  return Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: const Color(0xFFFF6F91),
-                        width: 2,
+                      Text(
+                        location.isNotEmpty ? location : 'Location not set',
+                        style: const TextStyle(color: Colors.grey),
                       ),
-                    ),
-                    child: CircleAvatar(
-                      radius: 45,
-                      backgroundImage: imageUrl.startsWith('http')
-                          ? NetworkImage(imageUrl) as ImageProvider
-                          : const AssetImage('assets/images/profile.png'),
-                    ),
-                  );
-                }),
-
-                const SizedBox(height: 10),
-
-                /// VIBE SCORE
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF6F91),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    "85% VIBE SCORE",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                /// NAME
-                Obx(() {
-                  final user = _userController.currentUser.value;
-                  final name = user != null
-                      ? '${user.firstName}, ${user.age}'
-                      : 'Loading...';
-                  return Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  );
-                }),
-
-                Obx(() {
-                  final user = _userController.currentUser.value;
-                  final location = user != null
-                      ? [user.city, user.country].whereType<String>().join(', ')
-                      : '';
-                  return Text(
-                    location.isNotEmpty ? location : 'Location not set',
-                    style: const TextStyle(color: Colors.grey),
-                  );
-                }),
-
-                const SizedBox(height: 20),
-
-                /// BUTTONS
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(14),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const EditProfileScreen(),
+                      if ((user?.bio ?? '').trim().isNotEmpty) ...[
+                        const SizedBox(height: 10),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 28),
+                          child: Text(
+                            user!.bio!,
+                            textAlign: TextAlign.center,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.black54),
+                          ),
+                        ),
+                      ],
+                      if (user != null && user.interests.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: user.interests.take(5).map((interest) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.75),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  interest,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFFFF3D77),
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               );
-                            },
-                            child: Ink(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.7),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 14),
-                                child: Center(
-                                  child: Text(
-                                    "Edit Profile",
-                                    style: TextStyle(
-                                      color: Color(0xFFFF6F91),
-                                      fontWeight: FontWeight.w600,
+                            }).toList(),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  onTap: _openEditProfile,
+                                  child: Ink(
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.7),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 14),
+                                      child: Center(
+                                        child: Text(
+                                          "Edit Profile",
+                                          style: TextStyle(
+                                            color: Color(0xFFFF6F91),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          decoration: BoxDecoration(
-                            color: Color(0xFFFF3D77),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              "Preview",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                /// PHOTO INSIGHTS
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.7),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Photo Insights",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          _bar(90, "Pic 1", false),
-                          _bar(70, "Pic 2", true),
-                          _bar(50, "Pic 3", false),
-                          _bar(75, "Pic 4", false),
-                        ],
-                      ),
-
-                      const SizedBox(height: 25),
-
-                      Container(
-                        padding: const EdgeInsets.all(14),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF4F8),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFFF6F91)),
-                        ),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Icon(
-                              Icons.lightbulb_outline,
-                              color: Color(0xFFFF6F91),
-                            ),
-                            SizedBox(width: 10),
+                            const SizedBox(width: 12),
                             Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    "PRO TIP",
-                                    style: TextStyle(
-                                      color: Color(0xFFFF6F91),
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 12,
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  onTap: () => _openPreview(user),
+                                  child: Ink(
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFF3D77),
+                                      borderRadius: BorderRadius.circular(14),
+                                    ),
+                                    child: const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 14),
+                                      child: Center(
+                                        child: Text(
+                                          "Preview",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    "Outdoor photos get 42% more engagement. Try adding a hiking or beach shot!",
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      Container(
+                        margin: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Photo Insights",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: _photoInsightBars(user),
+                            ),
+                            const SizedBox(height: 25),
+                            Container(
+                              padding: const EdgeInsets.all(14),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFF4F8),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: const Color(0xFFFF6F91)),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Icon(
+                                    Icons.lightbulb_outline,
+                                    color: Color(0xFFFF6F91),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          "PRO TIP",
+                                          style: TextStyle(
+                                            color: Color(0xFFFF6F91),
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(_photoTip(user)),
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
@@ -589,12 +699,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                         ),
                       ),
                     ],
-                  ),
-                ),
-
+                  );
+                }),
                 const SizedBox(height: 20),
-
-                /// WHITE BACKGROUND CONTAINER FROM WALLET & PLANS TO LOGOUT
                 Container(
                   width: double.infinity,
                   decoration: const BoxDecoration(
@@ -606,8 +713,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                   child: Column(
                     children: [
                       const SizedBox(height: 20),
-
-                      /// ================= WALLET & PLANS =================
                       const Padding(
                         padding: EdgeInsets.symmetric(horizontal: 16),
                         child: Align(
@@ -621,128 +726,97 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 12),
-
-                      /// Chat Pass
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.7),
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Row(
-                          children: const [
-                            Icon(
-                              Icons.chat_bubble_outline,
-                              color: Color(0xFFFF3D77),
+                      InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SubscriptionScreen(),
                             ),
-                            SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  "1-Day Chat Pass",
-                                  style: TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                Text(
-                                  "Unlimited messages",
-                                  style: TextStyle(color: Colors.grey),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      /// Monthly Pro Card
-                      Container(
-                        margin: const EdgeInsets.symmetric(horizontal: 16),
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFF3D77), Color(0xFFB96EFF)],
+                          );
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.7),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: Colors.grey.shade300),
                           ),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Column(
+                          child: const Row(
+                            children: [
+                              Icon(
+                                Icons.chat_bubble_outline,
+                                color: Color(0xFFFF3D77),
+                              ),
+                              SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      "Monthly Pro",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 18,
-                                      ),
+                                      "Chat Pass & Plans",
+                                      style: TextStyle(fontWeight: FontWeight.bold),
                                     ),
                                     Text(
-                                      "Go beyond limits",
-                                      style: TextStyle(color: Colors.white70),
+                                      "View available upgrades",
+                                      style: TextStyle(color: Colors.grey),
                                     ),
                                   ],
                                 ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.white70),
-                                  ),
-                                  child: const Text(
-                                    "Best value",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 20),
-
-                            const Text(
-                              "₹600 /month",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
                               ),
-                            ),
-
-                            const SizedBox(height: 20),
-
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  "Upgrade for Phone Numbers",
-                                  style: TextStyle(
-                                    color: Color(0xFFFF3D77),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
+                              Icon(Icons.chevron_right, color: Colors.grey),
+                            ],
+                          ),
                         ),
                       ),
-
+                      const SizedBox(height: 16),
+                      InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SubscriptionScreen(),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.all(18),
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFFFF3D77), Color(0xFFB96EFF)],
+                            ),
+                            borderRadius: BorderRadius.circular(24),
+                          ),
+                          child: const Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Monthly Pro",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 18,
+                                ),
+                              ),
+                              Text(
+                                "Go beyond limits",
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                              SizedBox(height: 16),
+                              Text(
+                                "Tap to view plans",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 25),
 
                       /// ================= SAFETY & WELLBEING =================
@@ -956,6 +1030,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
               ],
             ),
           ),
+        ),
         ),
       ),
     );

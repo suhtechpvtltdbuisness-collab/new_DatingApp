@@ -263,13 +263,12 @@ class UserService {
     try {
       _logger.i('Deleting profile photo: $photoId');
 
-      final endpoint = ApiEndpoints.getEndpoint(
-        ApiEndpoints.deleteProfilePhoto,
-        {'id': userId, 'photoId': photoId},
-      );
-
       final response = await _apiClient.delete<void>(
-        endpoint,
+        '/users/delete-photo',
+        data: {
+          'photoUrl': photoId,
+          'photoId': photoId,
+        },
         fromJsonT: (_) {},
       );
 

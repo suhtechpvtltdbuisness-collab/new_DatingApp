@@ -3,7 +3,6 @@ import 'package:dating_app/models/user_model.dart' as models;
 import 'package:dating_app/models/user_preferences_model.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/services/user_service.dart';
-import 'package:dating_app/data/mock_data.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 
@@ -29,26 +28,28 @@ class UserController extends GetxController {
     _loadUserData();
   }
 
-  /// Load user data — real API with mock fallback
+  /// Load user data from GET /profile
   Future<void> _loadUserData() async {
     try {
       isLoading.value = true;
       final response = await _userService.getMyProfile();
       if (response.success && response.data != null) {
         currentUser.value = response.data;
+        errorMessage.value = '';
         _logger.i('Loaded real profile from GET /profile');
       } else {
-        // Fall back to mock so the UI always shows something
-        _logger.w('GET /profile failed — using mock data');
-        currentUser.value = MockData.currentUser;
+        errorMessage.value = response.message;
+        _logger.w('GET /profile failed: ${response.error}');
       }
     } catch (e) {
+      errorMessage.value = 'Failed to load profile';
       _logger.e('Load user data error', error: e);
-      currentUser.value = MockData.currentUser;
     } finally {
       isLoading.value = false;
     }
   }
+
+  Future<void> refreshProfile() => _loadUserData();
 
   /// Get MY profile — GET /profile
   Future<bool> getMyProfile() async {
@@ -258,10 +259,9 @@ class UserController extends GetxController {
       final response = await _userService.deleteProfilePhoto(userId, photoId);
 
       if (response.success) {
-        // Remove photo from local model
         if (currentUser.value != null) {
           final updatedPhotos = currentUser.value!.photoUrls
-              .where((url) => !url.contains(photoId))
+              .where((url) => url != photoId && !url.contains(photoId))
               .toList();
           currentUser.value = currentUser.value!.copyWith(
             photoUrls: updatedPhotos,
