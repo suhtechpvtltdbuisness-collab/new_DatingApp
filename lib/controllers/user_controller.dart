@@ -180,7 +180,7 @@ class UserController extends GetxController {
       final response = await _userService.uploadProfilePhoto(userId, filePath);
 
       if (response.success && response.data != null) {
-        // Update local user model with new photo URLs
+        await getMyProfile();
         if (currentUser.value != null) {
           currentUser.value = currentUser.value!.copyWith(
             photoUrls: response.data,

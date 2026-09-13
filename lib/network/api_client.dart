@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:dating_app/models/api_models.dart';
 import 'package:dating_app/utils/constants.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:logger/logger.dart';
 
 class ApiClient {
@@ -73,6 +74,13 @@ class ApiClient {
     // Add authentication token if available
     if (_accessToken.isNotEmpty) {
       options.headers['Authorization'] = 'Bearer $_accessToken';
+    }
+
+    // Default content-type is JSON. FormData must set its own multipart
+    // boundary or the browser hangs and the upload times out.
+    if (options.data is FormData) {
+      options.headers.remove(Headers.contentTypeHeader);
+      options.contentType = null;
     }
 
     handler.next(options);
@@ -345,6 +353,14 @@ class ApiClient {
     }
   }
 
+  /// Works on web and mobile. `fromFile` needs dart:io and fails in Chrome.
+  Future<MultipartFile> _multipartFromPath(String filePath) async {
+    final file = XFile(filePath);
+    final bytes = await file.readAsBytes();
+    final name = file.name.trim().isNotEmpty ? file.name : 'photo.jpg';
+    return MultipartFile.fromBytes(bytes, filename: name);
+  }
+
   // Upload file
   Future<ApiResponse<T>> uploadFile<T>(
     String endpoint, {
@@ -357,7 +373,7 @@ class ApiClient {
   }) async {
     try {
       final formData = FormData.fromMap({
-        fieldName: await MultipartFile.fromFile(filePath),
+        fieldName: await _multipartFromPath(filePath),
         ...?additionalData,
       });
 
@@ -365,6 +381,11 @@ class ApiClient {
       final response = await _dio.post(
         endpoint,
         data: formData,
+        options: Options(
+          sendTimeout: const Duration(minutes: 2),
+          receiveTimeout: const Duration(minutes: 2),
+          extra: {'skipRetry': true},
+        ),
         onSendProgress: onSendProgress,
         cancelToken: cancelToken,
       );
@@ -395,7 +416,7 @@ class ApiClient {
     try {
       final List<MultipartFile> files = [];
       for (final filePath in filePaths) {
-        files.add(await MultipartFile.fromFile(filePath));
+        files.add(await _multipartFromPath(filePath));
       }
 
       final formData = FormData.fromMap({
@@ -407,6 +428,11 @@ class ApiClient {
       final response = await _dio.post(
         endpoint,
         data: formData,
+        options: Options(
+          sendTimeout: const Duration(minutes: 2),
+          receiveTimeout: const Duration(minutes: 2),
+          extra: {'skipRetry': true},
+        ),
         onSendProgress: onSendProgress,
         cancelToken: cancelToken,
       );
@@ -550,7 +576,10 @@ class RetryInterceptor extends Interceptor {
     final isRetryableStatusCode = err.response?.statusCode == 408 ||
         err.response?.statusCode == 429; // Too many requests
 
-    if (isNetworkError || isRetryableStatusCode) {
+    final skipRetry = err.requestOptions.extra['skipRetry'] == true ||
+        err.requestOptions.data is FormData;
+
+    if (!skipRetry && (isNetworkError || isRetryableStatusCode)) {
       if (_retryCount < maxRetries) {
         _retryCount++;
         Logger().i('Retrying request ($_retryCount/$maxRetries)...');

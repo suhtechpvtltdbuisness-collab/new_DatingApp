@@ -39,6 +39,7 @@ class UserModel {
   final DateTime lastActive;
   final bool isVerified;
   final bool isOnline;
+  final bool active;
   final List<String>? blockedUsers;
 
   UserModel({
@@ -80,6 +81,7 @@ class UserModel {
     required this.lastActive,
     this.isVerified = false,
     this.isOnline = false,
+    this.active = true,
     this.blockedUsers,
   });
 
@@ -196,6 +198,7 @@ class UserModel {
           : DateTime.now(),
       isVerified: json['isVerified'] ?? false,
       isOnline: json['isOnline'] ?? false,
+      active: json['active'] != false,
       blockedUsers: json['blockedUsers'] != null
           ? List<String>.from(json['blockedUsers'])
           : null,
@@ -289,6 +292,7 @@ class UserModel {
       'lastActive': lastActive.toIso8601String(),
       'isVerified': isVerified,
       'isOnline': isOnline,
+      'active': active,
       'blockedUsers': blockedUsers,
     };
   }
@@ -332,6 +336,7 @@ class UserModel {
     DateTime? lastActive,
     bool? isVerified,
     bool? isOnline,
+    bool? active,
     List<String>? blockedUsers,
   }) {
     return UserModel(
@@ -373,6 +378,7 @@ class UserModel {
       lastActive: lastActive ?? this.lastActive,
       isVerified: isVerified ?? this.isVerified,
       isOnline: isOnline ?? this.isOnline,
+      active: active ?? this.active,
       blockedUsers: blockedUsers ?? this.blockedUsers,
     );
   }

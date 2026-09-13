@@ -47,6 +47,7 @@ class ApiEndpoints {
   static const String swipeLeft = '/swipes/left/:userId';
   static const String getSwipeMatches = '/swipes/matches';
   static const String getSwipeLikes = '/swipes/likes';
+  static const String getLikedYou = '/swipes/liked-you';
   static const String getSwipeDislikes = '/swipes/dislikes';
   static const String likeProfile = '/profiles/like';
   static const String superLikeProfile = '/profiles/super-like';

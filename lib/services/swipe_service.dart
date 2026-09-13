@@ -6,6 +6,53 @@ import 'package:dating_app/network/api_client.dart';
 import 'package:dating_app/network/api_endpoints.dart';
 import 'package:logger/logger.dart';
 
+class IncomingLike {
+  const IncomingLike({
+    required this.user,
+    required this.swipeId,
+    required this.matchScore,
+    required this.isNew,
+    this.likedAt,
+    this.distanceKm,
+  });
+
+  final UserModel user;
+  final String swipeId;
+  final int matchScore;
+  final bool isNew;
+  final DateTime? likedAt;
+  final double? distanceKm;
+
+  factory IncomingLike.fromJson(Map<String, dynamic> json) {
+    return IncomingLike(
+      user: UserModel.fromJson(json),
+      swipeId: (json['swipeId'] ?? '').toString(),
+      matchScore: int.tryParse('${json['matchScore'] ?? 0}') ?? 0,
+      isNew: json['isNew'] == true,
+      likedAt: json['likedAt'] != null
+          ? DateTime.tryParse(json['likedAt'].toString())
+          : null,
+      distanceKm: json['distanceKm'] == null
+          ? null
+          : double.tryParse('${json['distanceKm']}'),
+    );
+  }
+}
+
+class IncomingLikesResult {
+  const IncomingLikesResult({
+    required this.likes,
+    required this.allCount,
+    required this.newCount,
+    required this.nearbyCount,
+  });
+
+  final List<IncomingLike> likes;
+  final int allCount;
+  final int newCount;
+  final int nearbyCount;
+}
+
 /// Swipe/Discovery Service
 /// Handles swiping, matching, and discovery-related operations.
 class SwipeService {
@@ -235,6 +282,57 @@ class SwipeService {
       _logger.e('Get liked profiles error', error: e);
       return ApiResponse.error(
         message: 'Failed to fetch liked profiles',
+        error: e.toString(),
+      );
+    }
+  }
+
+  Future<ApiResponse<IncomingLikesResult>> getIncomingLikes({
+    String filter = 'all',
+  }) async {
+    try {
+      _logger.i('Fetching incoming likes filter=$filter');
+      final response = await _apiClient.get<dynamic>(
+        ApiEndpoints.getLikedYou,
+        queryParameters: {'filter': filter},
+        fromJsonT: (json) => json,
+      );
+
+      final data = response.data;
+      if (!response.success || data == null) {
+        return ApiResponse.error(
+          message: response.message,
+          error: response.error ?? 'Failed to fetch likes',
+        );
+      }
+
+      final map = data is Map<String, dynamic>
+          ? data
+          : (data is Map ? Map<String, dynamic>.from(data) : <String, dynamic>{});
+      final rawLikes = data is List ? data : map['likes'];
+      final counts = map['counts'] is Map
+          ? Map<String, dynamic>.from(map['counts'] as Map)
+          : <String, dynamic>{};
+      final likes = rawLikes is List
+          ? rawLikes
+              .whereType<Map>()
+              .map((item) => IncomingLike.fromJson(Map<String, dynamic>.from(item)))
+              .toList()
+          : <IncomingLike>[];
+
+      return ApiResponse.success(
+        message: 'Incoming likes fetched',
+        data: IncomingLikesResult(
+          likes: likes,
+          allCount: int.tryParse('${counts['all'] ?? likes.length}') ?? likes.length,
+          newCount: int.tryParse('${counts['new'] ?? 0}') ?? 0,
+          nearbyCount: int.tryParse('${counts['nearby'] ?? 0}') ?? 0,
+        ),
+      );
+    } catch (e) {
+      _logger.e('Get incoming likes error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to fetch likes',
         error: e.toString(),
       );
     }

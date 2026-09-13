@@ -7,6 +7,15 @@ import 'package:logger/logger.dart';
 
 /// User Service
 /// Handles user profile, preferences, and related operations
+Map<String, dynamic> _unwrapUser(Map<String, dynamic> raw) {
+  for (final key in ['user', 'data']) {
+    final value = raw[key];
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+  }
+  return raw;
+}
+
 class UserService {
   final ApiClient _apiClient = ApiClient();
   final Logger _logger = Logger();
@@ -33,12 +42,7 @@ class UserService {
       );
 
       if (response.success && response.data != null) {
-        final raw = response.data!;
-        // Handle backends that wrap the user under 'user', 'data', or 'profile'
-        final Map<String, dynamic> userJson =
-            (raw['user'] ?? raw['profile'] ?? raw['data'] ?? raw)
-                as Map<String, dynamic>;
-        final user = UserModel.fromJson(userJson);
+        final user = UserModel.fromJson(_unwrapUser(response.data!));
         return ApiResponse.success(
           message: 'Profile fetched successfully',
           data: user,
@@ -75,11 +79,7 @@ class UserService {
       );
 
       if (response.success && response.data != null) {
-        final raw = response.data!;
-        final Map<String, dynamic> userJson =
-            (raw['user'] ?? raw['profile'] ?? raw['data'] ?? raw)
-                as Map<String, dynamic>;
-        final user = UserModel.fromJson(userJson);
+        final user = UserModel.fromJson(_unwrapUser(response.data!));
         return ApiResponse.success(
           message: 'Profile updated successfully',
           data: user,

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:dating_app/app/app_routes.dart';
 import 'package:dating_app/controllers/auth_controller.dart';
 import 'package:dating_app/controllers/user_controller.dart';
 import 'package:dating_app/models/user_model.dart';
+import 'package:dating_app/models/user_preferences_model.dart';
 import 'package:dating_app/screens/profile/profile_screen.dart';
 import 'package:dating_app/screens/subscription/subscription_screen.dart';
 import 'Edit_Profile_Screen.dart';
@@ -15,6 +17,7 @@ import 'Notifications_Screen.dart';
 import 'Help_Support_Screen.dart';
 import 'hide_my_profile_screen.dart';
 import 'package:dating_app/utils/theme.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MyProfileScreen extends StatefulWidget {
   final Function(int)? onTabTapped;
@@ -27,9 +30,172 @@ class MyProfileScreen extends StatefulWidget {
 
 class _MyProfileScreenState extends State<MyProfileScreen> {
   bool isBreakEnabled = false;
+  bool _isUpdatingBreak = false;
+  String? _breakLabel;
+  bool _isUploadingPhoto = false;
+  final ImagePicker _picker = ImagePicker();
 
   // Access the UserController (registered in app bindings)
   final UserController _userController = Get.find<UserController>();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBreakState();
+  }
+
+  Future<void> _loadBreakState() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      isBreakEnabled = prefs.getBool('on_break') ?? isBreakEnabled;
+      _breakLabel = prefs.getString('break_label');
+    });
+  }
+
+  Future<void> _addProfilePhoto() async {
+    if (_isUploadingPhoto) return;
+
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: AppTheme.primaryColor),
+              title: const Text('Choose from Gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppTheme.primaryColor),
+              title: const Text('Take a Photo'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !mounted) return;
+
+    try {
+      final image = await _picker.pickImage(
+        source: source,
+        imageQuality: 70,
+        maxWidth: 1600,
+        maxHeight: 1600,
+      );
+      if (image == null || !mounted) return;
+
+      setState(() => _isUploadingPhoto = true);
+      final success = await _userController.uploadProfilePhoto(image.path);
+      if (!mounted) return;
+
+      if (success) {
+        await _userController.refreshProfile();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Photo uploaded'),
+            backgroundColor: AppTheme.primaryColor,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _userController.errorMessage.value.isNotEmpty
+                  ? _userController.errorMessage.value
+                  : 'Failed to upload photo',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error adding photo: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isUploadingPhoto = false);
+    }
+  }
+
+  Future<void> _setBreak(bool enabled, {TakeBreakChoice? choice}) async {
+    if (_isUpdatingBreak) return;
+    setState(() => _isUpdatingBreak = true);
+
+    var ok = true;
+    if (choice?.hideProfile != false) {
+      ok = await _userController.updateMyProfile({'active': !enabled});
+    }
+
+    if (ok && choice != null && choice.disableNotifications) {
+      final userId = _userController.currentUser.value?.id;
+      if (userId != null && userId.isNotEmpty) {
+        await _userController.getUserPreferences(userId);
+        final current = _userController.userPreferences.value ??
+            UserPreferencesModel.defaultPreferences(userId);
+        await _userController.updateUserPreferences(
+          current.copyWith(notificationsEnabled: !enabled),
+        );
+      }
+    }
+
+    if (!mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    if (ok) {
+      await prefs.setBool('on_break', enabled);
+      if (enabled && choice != null) {
+        await prefs.setString('break_label', choice.untilLabel);
+      } else {
+        await prefs.remove('break_label');
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _isUpdatingBreak = false;
+      isBreakEnabled = ok && enabled;
+      _breakLabel = ok && enabled ? choice?.untilLabel : null;
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          !ok
+              ? (_userController.errorMessage.value.isNotEmpty
+                  ? _userController.errorMessage.value
+                  : 'Could not update break')
+              : enabled
+                  ? 'Break started. Your profile is hidden ${_breakLabel ?? 'until you turn it off'}.'
+                  : 'Break ended. Your profile is visible again.',
+        ),
+        backgroundColor: ok ? AppTheme.primaryColor : Colors.red,
+      ),
+    );
+  }
+
+  Future<void> _onBreakChanged(bool value) async {
+    if (_isUpdatingBreak) return;
+    if (!value) {
+      await _setBreak(false);
+      return;
+    }
+
+    final choice = await Navigator.push<TakeBreakChoice>(
+      context,
+      MaterialPageRoute(builder: (_) => const TakeBreakScreen()),
+    );
+    if (!mounted) return;
+    if (choice == null) {
+      setState(() => isBreakEnabled = false);
+      return;
+    }
+    await _setBreak(true, choice: choice);
+  }
 
   void _showLogoutDialog(BuildContext context) {
     showDialog(
@@ -413,17 +579,94 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
   List<Widget> _photoInsightBars(UserModel? user) {
     final photos = user?.photoUrls ?? const <String>[];
-    if (photos.isEmpty) {
-      return [
-        _bar(30, 'Add', false),
-        _bar(30, 'Add', false),
-        _bar(30, 'Add', false),
-      ];
+    final slots = <Widget>[];
+
+    for (var i = 0; i < photos.length.clamp(0, 4); i++) {
+      slots.add(
+        _photoSlot(
+          label: 'Pic ${i + 1}',
+          imageUrl: photos[i],
+          active: i == 0,
+          onTap: _openEditProfile,
+        ),
+      );
     }
-    final heights = <double>[100, 78, 62, 88, 70, 55];
-    return List.generate(photos.length.clamp(0, 4), (index) {
-      return _bar(heights[index % heights.length], 'Pic ${index + 1}', index == 0);
-    });
+
+    final emptySlots = (3 - slots.length).clamp(0, 3);
+    for (var i = 0; i < emptySlots; i++) {
+      slots.add(
+        _photoSlot(
+          label: 'Add',
+          imageUrl: null,
+          active: false,
+          onTap: _isUploadingPhoto ? null : _addProfilePhoto,
+        ),
+      );
+    }
+
+    return slots;
+  }
+
+  Widget _photoSlot({
+    required String label,
+    required String? imageUrl,
+    required bool active,
+    required VoidCallback? onTap,
+  }) {
+    final hasImage = imageUrl != null && imageUrl.startsWith('http');
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Container(
+            width: 56,
+            height: hasImage ? 88 : 56,
+            decoration: BoxDecoration(
+              color: const Color(0xFFFF6F91).withOpacity(hasImage ? 1 : 0.18),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: active ? const Color(0xFFFF3D77) : const Color(0xFFFF6F91),
+                width: active ? 2 : 1,
+              ),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: hasImage
+                ? Image.network(
+                    imageUrl!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.broken_image,
+                      color: Colors.white,
+                    ),
+                  )
+                : _isUploadingPhoto
+                    ? const Padding(
+                        padding: EdgeInsets.all(14),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Color(0xFFFF6F91),
+                        ),
+                      )
+                    : const Icon(Icons.add, color: Color(0xFFFF6F91), size: 28),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: active || label == 'Add'
+                  ? const Color(0xFFFF6F91)
+                  : Colors.grey,
+              fontWeight: active || label == 'Add'
+                  ? FontWeight.bold
+                  : FontWeight.normal,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -481,20 +724,29 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
                   return Column(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: const Color(0xFFFF6F91),
-                            width: 2,
+                      GestureDetector(
+                        onTap: _isUploadingPhoto ? null : _addProfilePhoto,
+                        child: Container(
+                          padding: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: const Color(0xFFFF6F91),
+                              width: 2,
+                            ),
                           ),
-                        ),
-                        child: CircleAvatar(
-                          radius: 45,
-                          backgroundImage: imageUrl.startsWith('http')
-                              ? NetworkImage(imageUrl) as ImageProvider
-                              : const AssetImage('assets/images/profile.png'),
+                          child: CircleAvatar(
+                            radius: 45,
+                            backgroundImage: imageUrl.startsWith('http')
+                                ? NetworkImage(imageUrl) as ImageProvider
+                                : const AssetImage('assets/images/profile.png'),
+                            child: imageUrl.startsWith('http')
+                                ? null
+                                : const Icon(
+                                    Icons.add_a_photo,
+                                    color: Colors.white70,
+                                  ),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -874,54 +1126,70 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                         },
                       ),
 
-                      /// Take a Break with toggle
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 14,
-                            horizontal: 12,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border(
-                              bottom: BorderSide(color: Colors.grey.shade300),
+                      Obx(() {
+                        final onBreak =
+                            _userController.currentUser.value?.active == false ||
+                                isBreakEnabled;
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 14,
+                              horizontal: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border(
+                                bottom: BorderSide(color: Colors.grey.shade300),
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.free_breakfast_outlined,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Take a Break',
+                                        style: TextStyle(fontSize: 16),
+                                      ),
+                                      if (onBreak)
+                                        Text(
+                                          _breakLabel == null
+                                              ? 'Profile hidden until you resume'
+                                              : 'Hidden $_breakLabel',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                if (_isUpdatingBreak)
+                                  const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Color(0xFFFF3D77),
+                                    ),
+                                  )
+                                else
+                                  Switch(
+                                    value: onBreak,
+                                    activeColor: const Color(0xFFFF3D77),
+                                    onChanged: _onBreakChanged,
+                                  ),
+                              ],
                             ),
                           ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.free_breakfast_outlined,
-                                color: Colors.grey,
-                              ),
-                              const SizedBox(width: 12),
-                              const Expanded(
-                                child: Text(
-                                  "Take a Break",
-                                  style: TextStyle(fontSize: 16),
-                                ),
-                              ),
-                              Switch(
-                                value: isBreakEnabled,
-                                activeColor: const Color(0xFFFF3D77),
-                                onChanged: (val) {
-                                  setState(() {
-                                    isBreakEnabled = val;
-                                  });
-
-                                  if (val) {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const TakeBreakScreen(),
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                        );
+                      }),
 
                       _buildTile(
                         Icons.lightbulb_outline,
@@ -1033,32 +1301,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         ),
         ),
       ),
-    );
-  }
-
-  /// BAR
-  Widget _bar(double height, String text, bool active) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        Container(
-          width: 28,
-          height: height,
-          decoration: BoxDecoration(
-            color: const Color(0xFFFF6F91),
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 12,
-            color: active ? const Color(0xFFFF6F91) : Colors.grey,
-            fontWeight: active ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-      ],
     );
   }
 

@@ -268,7 +268,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
-        imageQuality: 85,
+        imageQuality: 70,
+        maxWidth: 1600,
+        maxHeight: 1600,
       );
       if (image == null) return;
 
