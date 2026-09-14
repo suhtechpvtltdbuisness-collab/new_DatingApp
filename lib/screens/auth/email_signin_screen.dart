@@ -89,8 +89,15 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 IconButton(
-                  onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back_ios_new, color: AppTheme.textPrimaryColor),
+                  onPressed:
+                      () =>
+                          Navigator.canPop(context)
+                              ? Navigator.pop(context)
+                              : AppRoutes.toOnboarding(),
+                  icon: const Icon(
+                    Icons.arrow_back_ios_new,
+                    color: AppTheme.textPrimaryColor,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 const Text(
@@ -106,7 +113,10 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
                   showEmailForm
                       ? 'Enter your email and password to continue.'
                       : 'Choose how you want to sign in.',
-                  style: const TextStyle(color: AppTheme.textSecondaryColor, fontSize: 15),
+                  style: const TextStyle(
+                    color: AppTheme.textSecondaryColor,
+                    fontSize: 15,
+                  ),
                 ),
                 const SizedBox(height: 36),
                 if (!showEmailForm) ...[
@@ -136,33 +146,54 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
                 ] else ...[
                   const Text(
                     'Email',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryColor),
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimaryColor,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   _buildTextField(
                     controller: emailController,
                     hintText: 'Enter your email',
                     keyboardType: TextInputType.emailAddress,
-                    prefixIcon: const Icon(Icons.alternate_email_rounded, color: AppTheme.textTertiaryColor, size: 20),
+                    prefixIcon: const Icon(
+                      Icons.alternate_email_rounded,
+                      color: AppTheme.textTertiaryColor,
+                      size: 20,
+                    ),
                   ),
                   const SizedBox(height: 20),
                   const Text(
                     'Password',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryColor),
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimaryColor,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   _buildTextField(
                     controller: passwordController,
                     hintText: 'Enter your password',
                     obscureText: _obscurePassword,
-                    prefixIcon: const Icon(Icons.lock_outline_rounded, color: AppTheme.textTertiaryColor, size: 20),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline_rounded,
+                      color: AppTheme.textTertiaryColor,
+                      size: 20,
+                    ),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                        _obscurePassword
+                            ? Icons.visibility_off_outlined
+                            : Icons.visibility_outlined,
                         color: AppTheme.textTertiaryColor,
                         size: 20,
                       ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      onPressed:
+                          () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
                     ),
                   ),
                   const SizedBox(height: 30),
@@ -198,7 +229,10 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text("Don't have an account? ", style: TextStyle(color: AppTheme.textSecondaryColor)),
+                      const Text(
+                        "Don't have an account? ",
+                        style: TextStyle(color: AppTheme.textSecondaryColor),
+                      ),
                       GestureDetector(
                         onTap: () => Get.to(() => const EmailSignupScreen()),
                         child: const Text(
@@ -236,7 +270,10 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
           color: isPrimary ? Colors.white : Colors.white.withOpacity(0.7),
           borderRadius: BorderRadius.circular(AppTheme.radiusPill),
           border: Border.all(
-            color: isPrimary ? AppTheme.primaryColor : Colors.black.withOpacity(0.08),
+            color:
+                isPrimary
+                    ? AppTheme.primaryColor
+                    : Colors.black.withOpacity(0.08),
             width: isPrimary ? 1.4 : 1,
           ),
           boxShadow: [
@@ -263,7 +300,10 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: isPrimary ? AppTheme.primaryColor : AppTheme.textPrimaryColor,
+                color:
+                    isPrimary
+                        ? AppTheme.primaryColor
+                        : AppTheme.textPrimaryColor,
               ),
             ),
           ],
@@ -288,17 +328,20 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
         borderRadius: BorderRadius.circular(AppTheme.radiusPill),
         border: Border.all(color: AppTheme.inputBorderColor),
       ),
-      child: TextField(
-        controller: controller,
-        obscureText: obscureText,
-        keyboardType: keyboardType,
-        textAlignVertical: TextAlignVertical.center,
-        cursorColor: AppTheme.primaryColor,
-        decoration: AppTheme.borderlessInputDecoration(
-          hintText: hintText,
-          prefixIcon: prefixIcon,
-          suffixIcon: suffixIcon,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Center(
+        child: TextField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          textAlignVertical: TextAlignVertical.center,
+          cursorColor: AppTheme.primaryColor,
+          decoration: AppTheme.borderlessInputDecoration(
+            hintText: hintText,
+            prefixIcon: prefixIcon,
+            suffixIcon: suffixIcon,
+            isCollapsed: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 10),
+          ),
         ),
       ),
     );

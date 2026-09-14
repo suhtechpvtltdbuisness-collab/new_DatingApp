@@ -1,3 +1,4 @@
+import 'package:dating_app/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:dio/dio.dart';
@@ -75,7 +76,7 @@ class _OTPScreenState extends State<OTPScreen> {
       );
 
       final response = await dio.post(
-        "https://dating-backend-rust.vercel.app/users/otp/validate",
+        "${AppConstants.baseUrl}/users/otp/validate",
         data: {"otp": otp, "number": widget.phoneNumber},
       );
 
@@ -203,6 +204,7 @@ class _OTPScreenState extends State<OTPScreen> {
                               duration: const Duration(milliseconds: 180),
                               width: 65,
                               height: 65,
+                              alignment: Alignment.center,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(18),
                                 border: Border.all(
@@ -238,6 +240,7 @@ class _OTPScreenState extends State<OTPScreen> {
                                 ),
                                 decoration: AppTheme.borderlessInputDecoration(
                                   counterText: "",
+                                  isCollapsed: true,
                                 ),
                                 inputFormatters: [
                                   FilteringTextInputFormatter.digitsOnly,

@@ -86,7 +86,10 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
               obscureText: obscure,
               textAlignVertical: TextAlignVertical.center,
               cursorColor: AppTheme.accentColor,
-              decoration: AppTheme.borderlessInputDecoration(hintText: hint),
+              decoration: AppTheme.borderlessInputDecoration(
+                hintText: hint,
+                isCollapsed: true,
+              ),
             ),
           ),
           GestureDetector(

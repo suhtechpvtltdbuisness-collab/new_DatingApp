@@ -1,7 +1,7 @@
 import 'package:dating_app/app/app_bindings.dart';
-import 'package:dating_app/screens/auth/login_screen.dart';
+import 'package:dating_app/screens/auth/email_signin_screen.dart';
+import 'package:dating_app/screens/auth/email_signup_screen.dart';
 import 'package:dating_app/screens/auth/onboarding_screen.dart';
-import 'package:dating_app/screens/auth/signup_screen.dart';
 import 'package:dating_app/screens/home/home_screen.dart';
 import 'package:get/get.dart';
 
@@ -33,23 +33,19 @@ class AppRoutes {
     // Auth routes
     GetPage(
       name: login,
-      page: () => LoginScreen(),
+      page: () => const EmailSigninScreen(),
       binding: AppBindings(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
       name: signup,
-      page: () => SignupScreen(),
+      page: () => const EmailSignupScreen(),
       binding: AppBindings(),
       transition: Transition.rightToLeft,
     ),
 
     // Home/Main routes
-    GetPage(
-      name: home,
-      page: () => HomeScreen(),
-      binding: AppBindings(),
-    ),
+    GetPage(name: home, page: () => HomeScreen(), binding: AppBindings()),
   ];
 
   // Helper methods for navigation

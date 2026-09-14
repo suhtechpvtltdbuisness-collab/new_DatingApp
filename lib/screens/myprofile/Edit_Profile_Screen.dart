@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:dating_app/widgets/photo_source_picker.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -266,12 +267,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   Future<void> _addImage(ImageSource source) async {
     try {
-      final XFile? image = await _picker.pickImage(
-        source: source,
-        imageQuality: 70,
-        maxWidth: 1600,
-        maxHeight: 1600,
-      );
+      final XFile? image = await pickProfilePhoto(context, _picker, source);
       if (image == null) return;
 
       setState(() => _isUploadingPhoto = true);

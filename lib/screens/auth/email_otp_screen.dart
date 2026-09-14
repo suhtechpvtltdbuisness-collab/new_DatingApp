@@ -148,7 +148,10 @@ class _EmailOtpScreenState extends State<EmailOtpScreen> {
         maxLength: 1,
         cursorColor: const Color(0xFF8B5CF6),
         style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-        decoration: AppTheme.borderlessInputDecoration(counterText: ""),
+        decoration: AppTheme.borderlessInputDecoration(
+          counterText: "",
+          isCollapsed: true,
+        ),
         inputFormatters: [
           FilteringTextInputFormatter.digitsOnly,
           LengthLimitingTextInputFormatter(1),
