@@ -63,7 +63,7 @@ flutter_launcher_icons:
   remove_alpha_ios: true
   image_path: "assets/icon/velora_emblem.png"
   adaptive_icon_background: "#130A22"
-  adaptive_icon_foreground: "assets/icon/velora_foreground.png"
+  adaptive_icon_foreground: "assets/icon/velora_emblem.png"
   web:
     generate: true
     image_path: "assets/icon/velora_emblem.png"
