@@ -1,13 +1,18 @@
 import 'dart:collection';
+import 'dart:convert';
 
-import 'package:dating_app/data/demo_profiles.dart';
+import 'package:dating_app/controllers/user_controller.dart';
+import 'package:dating_app/models/discovery_filters.dart';
 import 'package:dating_app/models/api_models.dart';
 import 'package:dating_app/models/match_model.dart';
 import 'package:dating_app/models/swipe_models.dart';
 import 'package:dating_app/models/user_model.dart';
+import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/services/swipe_service.dart';
+import 'package:dating_app/services/user_service.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SwipeSubmissionResult {
   final bool success;
@@ -42,9 +47,13 @@ class SwipeController extends GetxController {
   final hasMoreProfiles = true.obs;
   final currentPage = 1.obs;
 
-  /// True while the deck is showing the bundled demo profiles because the
-  /// backend was unreachable or rejected the request.
-  final isUsingDemoProfiles = false.obs;
+  /// Saved People filters (see [DiscoveryFilters] for where each is stored).
+  final filters = const DiscoveryFilters().obs;
+  final filtersLoaded = false.obs;
+  final isSavingFilters = false.obs;
+
+  /// True when the deck had to use the "if I run out" relaxations.
+  final isRelaxed = false.obs;
 
   static const int pageSize = 10;
   static const int preloadThreshold = 2;
@@ -65,10 +74,13 @@ class SwipeController extends GetxController {
 
   bool canSwipe(String userId) => !_pendingSwipeIds.contains(userId);
 
+  static const int _maxEmptyPagesToSkip = 5;
+
   Future<bool> loadProfiles({bool refresh = false}) async {
     if (refresh) {
       currentPage.value = 1;
       hasMoreProfiles.value = true;
+      isRelaxed.value = false;
     }
 
     if ((refresh && isLoading.value) || (!refresh && (isLoadingMore.value || !hasMoreProfiles.value))) {
@@ -83,17 +95,41 @@ class SwipeController extends GetxController {
         isLoadingMore.value = true;
       }
 
-      final response = await _swipeService.getSuggestions(
-        page: currentPage.value,
-        limit: pageSize,
-      );
-
-      if (!response.success) {
-        _logger.w('Load profiles failed: ${response.error}');
-        return _fallBackToDemoProfiles(refresh: refresh, reason: response.message);
+      if (!filtersLoaded.value) {
+        await loadFilters();
       }
 
-      final incoming = _dedupeProfiles(response.data ?? const []);
+      var incoming = <UserModel>[];
+      var skipped = 0;
+      // Device-side filters can empty a whole page; keep paging a little so
+      // the deck doesn't look empty while matching people exist further on.
+      while (true) {
+        final response = await _swipeService.getProfiles(
+          page: currentPage.value,
+          limit: pageSize,
+          filters: filters.value.toQuery(relaxed: isRelaxed.value),
+        );
+
+        if (!response.success) {
+          _logger.w('Load profiles failed: ${response.error}');
+          errorMessage.value = response.message.isNotEmpty
+              ? response.message
+              : 'Could not load people. Please try again.';
+          return false;
+        }
+
+        final page = response.data ?? const <UserModel>[];
+        hasMoreProfiles.value = page.length >= pageSize;
+        incoming = _applyFilters(_dedupeProfiles(page));
+
+        if (incoming.isNotEmpty ||
+            !hasMoreProfiles.value ||
+            skipped >= _maxEmptyPagesToSkip) {
+          break;
+        }
+        skipped++;
+        currentPage.value++;
+      }
 
       if (refresh) {
         profiles.assignAll(incoming);
@@ -101,45 +137,194 @@ class SwipeController extends GetxController {
         profiles.addAll(incoming);
       }
 
-      hasMoreProfiles.value = (response.data ?? const []).length >= pageSize;
-      errorMessage.value = '';
-      isUsingDemoProfiles.value = false;
+      // "If I run out" relaxations: retry once with widened age/distance.
+      if (refresh &&
+          profiles.isEmpty &&
+          !isRelaxed.value &&
+          (filters.value.expandAge || filters.value.expandDistance)) {
+        isRelaxed.value = true;
+        currentPage.value = 1;
+        hasMoreProfiles.value = true;
+        isLoading.value = false;
+        return loadProfiles();
+      }
 
-      if (incoming.isEmpty && profiles.isEmpty) {
+      errorMessage.value = '';
+      if (profiles.isEmpty) {
         successMessage.value = 'No more profiles to show.';
       }
 
       return true;
     } catch (e) {
       _logger.e('Load profiles error', error: e);
-      return _fallBackToDemoProfiles(
-        refresh: refresh,
-        reason: 'Failed to load profiles',
-      );
+      errorMessage.value = 'Could not load people. Please try again.';
+      return false;
     } finally {
       isLoading.value = false;
       isLoadingMore.value = false;
     }
   }
 
-  /// Populates the deck from [DemoProfiles] so the app stays usable when the
-  /// API is unreachable or unauthenticated. Only fills an otherwise-empty
-  /// deck; a paging failure on top of real profiles just surfaces the error.
-  bool _fallBackToDemoProfiles({required bool refresh, required String reason}) {
-    if (!refresh || profiles.isNotEmpty) {
-      errorMessage.value = reason;
-      return false;
+  List<UserModel> _applyFilters(List<UserModel> people) {
+    final me = Get.isRegistered<UserController>()
+        ? Get.find<UserController>().currentUser.value
+        : null;
+    final myId = AuthService().getCurrentUserId() ?? '';
+    return filters.value
+        .apply(
+          people,
+          originLat: me?.latitude,
+          originLng: me?.longitude,
+          relaxed: isRelaxed.value,
+        )
+        // Defensive: the viewer's own card never belongs in their deck.
+        .where((p) => p.id != myId)
+        .toList();
+  }
+
+  String get _localFiltersKey =>
+      'discovery_filters_${AuthService().getCurrentUserId() ?? ''}';
+
+  /// Loads filters from GET /profile + GET /users/preferences, plus the
+  /// device-only options. Falls back to defaults if the calls fail.
+  Future<bool> loadFilters() async {
+    final userService = UserService();
+    var next = const DiscoveryFilters();
+    var ok = true;
+
+    final profileFuture = userService.getMyProfile();
+    final prefsFuture = userService.getUserPreferences(
+      AuthService().getCurrentUserId() ?? '',
+    );
+    final profile = await profileFuture;
+    final prefs = await prefsFuture;
+
+    if (profile.success && profile.data != null) {
+      next = next.copyWith(
+        interestedIn: DiscoveryFilters.normalizeInterestedIn(
+          profile.data!.interestedIn,
+        ),
+      );
+    } else {
+      ok = false;
     }
 
-    _logger.i('Falling back to demo profiles: $reason');
+    if (prefs.success && prefs.data != null) {
+      final p = prefs.data!;
+      next = next.copyWith(
+        minAge: p.minAge.clamp(DiscoveryFilters.ageFloor, DiscoveryFilters.ageCeiling),
+        maxAge: p.maxAge.clamp(DiscoveryFilters.ageFloor, DiscoveryFilters.ageCeiling),
+        maxDistance: p.maxDistance,
+        interests: p.interests,
+      );
+    } else {
+      ok = false;
+    }
 
-    profiles.assignAll(DemoProfiles.deck);
-    isUsingDemoProfiles.value = true;
-    hasMoreProfiles.value = false;
+    try {
+      final local = await SharedPreferences.getInstance();
+      final raw = local.getString(_localFiltersKey);
+      if (raw != null) {
+        next = next.withLocal(Map<String, dynamic>.from(jsonDecode(raw) as Map));
+      }
+    } catch (e) {
+      _logger.w('Could not read device filters: $e');
+    }
+
+    filters.value = next;
+    filtersLoaded.value = ok;
+    return ok;
+  }
+
+  /// Persists filters to the backend (and device-only options locally),
+  /// then reloads the deck. Returns an error message, or null on success.
+  Future<String?> saveFilters(DiscoveryFilters draft) async {
+    if (isSavingFilters.value) return 'Already saving';
+    isSavingFilters.value = true;
+    try {
+      final userService = UserService();
+      final userId = AuthService().getCurrentUserId() ?? '';
+      if (userId.isEmpty) return 'Please sign in to continue.';
+
+      final prefsResponse = await userService.getUserPreferences(userId);
+      if (!prefsResponse.success || prefsResponse.data == null) {
+        return prefsResponse.message.isNotEmpty
+            ? prefsResponse.message
+            : 'Could not load your current preferences';
+      }
+
+      final saved = await userService.updateUserPreferences(
+        userId,
+        prefsResponse.data!.copyWith(
+          minAge: draft.minAge,
+          maxAge: draft.maxAge,
+          maxDistance: draft.maxDistance,
+          interests: draft.interests,
+        ),
+      );
+      if (!saved.success) {
+        return saved.message.isNotEmpty ? saved.message : 'Could not save filters';
+      }
+
+      if (draft.interestedIn.isNotEmpty) {
+        final profileSaved = await userService.updateMyProfile({
+          'interestedIn': draft.interestedIn,
+        });
+        if (!profileSaved.success) {
+          return profileSaved.message.isNotEmpty
+              ? profileSaved.message
+              : 'Could not save who you want to date';
+        }
+        if (Get.isRegistered<UserController>() && profileSaved.data != null) {
+          Get.find<UserController>().currentUser.value = profileSaved.data;
+        }
+      }
+
+      final local = await SharedPreferences.getInstance();
+      final effective = draft.copyWith(distanceEnabled: true);
+      await local.setString(_localFiltersKey, jsonEncode(effective.localToJson()));
+
+      // Reflect what the server actually stored (it normalises interests).
+      final p = saved.data;
+      filters.value = effective.copyWith(
+        minAge: p?.minAge,
+        maxAge: p?.maxAge,
+        maxDistance: p?.maxDistance,
+        interests: p?.interests,
+      );
+      filtersLoaded.value = true;
+
+      await loadProfiles(refresh: true);
+      return null;
+    } catch (e) {
+      _logger.e('Save filters error', error: e);
+      return 'Could not save filters. Please try again.';
+    } finally {
+      isSavingFilters.value = false;
+    }
+  }
+
+  /// Clears everything tied to the signed-in user (called on logout).
+  void resetSession() {
+    profiles.clear();
+    likedProfiles.clear();
+    dislikedProfiles.clear();
+    matches.clear();
+    _pendingSwipeIds.clear();
+    filters.value = const DiscoveryFilters();
+    filtersLoaded.value = false;
+    isRelaxed.value = false;
+    currentPage.value = 1;
+    hasMoreProfiles.value = true;
     errorMessage.value = '';
-    successMessage.value = 'Showing demo profiles — not signed in.';
+    successMessage.value = '';
+    isLoading.value = false;
+    isLoadingMore.value = false;
+  }
 
-    return true;
+  /// Removes a person from the deck immediately (e.g. after blocking).
+  void removeProfile(String userId) {
+    profiles.removeWhere((p) => p.id == userId);
   }
 
   Future<bool> loadMoreProfiles() async {
@@ -173,25 +358,6 @@ class SwipeController extends GetxController {
     final removedProfile = profiles.removeAt(profileIndex);
     if (profiles.length <= preloadThreshold) {
       loadMoreProfiles();
-    }
-
-    // Demo deck isn't backed by the API — resolve the swipe locally instead of
-    // firing a request that would fail and bounce the card back.
-    if (isUsingDemoProfiles.value) {
-      if (action == SwipeAction.like) {
-        _prependUniqueProfile(likedProfiles, removedProfile);
-      } else {
-        _prependUniqueProfile(dislikedProfiles, removedProfile);
-      }
-
-      _pendingSwipeIds.remove(removedProfile.id);
-      successMessage.value =
-          action == SwipeAction.like ? 'Profile liked.' : 'Profile skipped.';
-
-      return SwipeSubmissionResult(
-        success: true,
-        message: successMessage.value,
-      );
     }
 
     try {

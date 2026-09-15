@@ -1,12 +1,16 @@
-import 'package:dating_app/utils/constants.dart';
+import 'dart:async';
+
+import 'package:dating_app/controllers/registration_controller.dart';
+import 'package:dating_app/services/auth_service.dart';
+import 'package:dating_app/utils/post_login.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:dio/dio.dart';
+import 'package:get/get.dart';
 import 'package:dating_app/utils/theme.dart';
 import 'profile_setup_screen.dart';
-import 'location_screen.dart';
 
 class OTPScreen extends StatefulWidget {
+  /// Full E.164 number, e.g. +919999999999.
   final String phoneNumber;
   final bool isLogin;
 
@@ -28,6 +32,12 @@ class _OTPScreenState extends State<OTPScreen> {
 
   final List<FocusNode> focusNodes = List.generate(4, (index) => FocusNode());
 
+  static const int _resendSeconds = 30;
+  int _resendIn = _resendSeconds;
+  Timer? _timer;
+  bool _verifying = false;
+  bool _resending = false;
+
   @override
   void initState() {
     super.initState();
@@ -38,10 +48,22 @@ class _OTPScreenState extends State<OTPScreen> {
         }
       });
     }
+    _startCooldown();
+  }
+
+  void _startCooldown() {
+    _timer?.cancel();
+    setState(() => _resendIn = _resendSeconds);
+    _timer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (!mounted) return t.cancel();
+      setState(() => _resendIn--);
+      if (_resendIn <= 0) t.cancel();
+    });
   }
 
   @override
   void dispose() {
+    _timer?.cancel();
     for (var c in controllers) {
       c.dispose();
     }
@@ -55,61 +77,64 @@ class _OTPScreenState extends State<OTPScreen> {
     return controllers.map((e) => e.text).join();
   }
 
-  void verifyOtp() async {
+  void _toast(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _resend() async {
+    if (_resending || _resendIn > 0) return;
+    setState(() => _resending = true);
+    final response = await AuthService().sendPhoneOtp(widget.phoneNumber);
+    if (!mounted) return;
+    setState(() => _resending = false);
+    if (response.success) {
+      for (final c in controllers) {
+        c.clear();
+      }
+      _startCooldown();
+      _toast('A new code has been requested');
+    } else {
+      _toast(response.message.isNotEmpty ? response.message : "Couldn't resend the code");
+    }
+  }
+
+  Future<void> verifyOtp() async {
+    if (_verifying) return;
     String otp = getOtp();
 
     if (otp.length != 4) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Please enter 4 digit OTP")));
+      _toast("Please enter 4 digit OTP");
       return;
     }
 
-    final dio = Dio();
+    setState(() => _verifying = true);
 
-    try {
-      /// 🔄 LOADER
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator()),
-      );
-
-      final response = await dio.post(
-        "${AppConstants.baseUrl}/users/otp/validate",
-        data: {"otp": otp, "number": widget.phoneNumber},
-      );
-
-      Navigator.pop(context);
-
-      print("VERIFY RESPONSE: ${response.data}");
-
-      if (response.statusCode == 200) {
-        if (widget.isLogin) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const LocationScreen()),
-          );
-        } else {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ProfileSetupScreen()),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text("Invalid OTP")));
+    if (widget.isLogin) {
+      // POST /users/login { phoneNumber, otp } validates the code itself.
+      final response = await AuthService().loginWithPhone(widget.phoneNumber, otp);
+      if (!mounted) return;
+      setState(() => _verifying = false);
+      if (!response.success) {
+        _toast(response.message.isNotEmpty ? response.message : 'Invalid or expired code');
+        return;
       }
-    } catch (e) {
-      Navigator.pop(context);
-
-      print(e);
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("OTP verification failed")));
+      await finishLogin(context);
+      return;
     }
+
+    final response = await AuthService().verifyPhoneOtp(widget.phoneNumber, otp);
+    if (!mounted) return;
+    setState(() => _verifying = false);
+    if (!response.success) {
+      _toast(response.message.isNotEmpty ? response.message : 'Invalid or expired code');
+      return;
+    }
+
+    Get.find<RegistrationController>().setPhoneNumber(widget.phoneNumber);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ProfileSetupScreen()),
+    );
   }
 
   void onChanged(String value, int index) {
@@ -185,7 +210,7 @@ class _OTPScreenState extends State<OTPScreen> {
 
                         /// Subtitle
                         Text(
-                          "Enter the 4-digit code sent to +91 ${widget.phoneNumber}",
+                          "Enter the 4-digit code sent to ${widget.phoneNumber}",
                           style: const TextStyle(
                             color: Colors.black54,
                             fontSize: 14,
@@ -267,15 +292,15 @@ class _OTPScreenState extends State<OTPScreen> {
                           ),
 
                           child: ElevatedButton(
-                            onPressed: verifyOtp,
+                            onPressed: _verifying ? null : verifyOtp,
 
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.transparent,
                               shadowColor: Colors.transparent,
                             ),
 
-                            child: const Text(
-                              "Verify & Proceed",
+                            child: Text(
+                              _verifying ? "Verifying..." : "Verify & Proceed",
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -285,6 +310,17 @@ class _OTPScreenState extends State<OTPScreen> {
                         ),
 
                         const SizedBox(height: 20),
+
+                        Center(
+                          child: TextButton(
+                            onPressed: _resendIn > 0 || _resending ? null : _resend,
+                            child: Text(
+                              _resendIn > 0
+                                  ? "Resend code in ${_resendIn}s"
+                                  : (_resending ? "Sending..." : "Resend code"),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),

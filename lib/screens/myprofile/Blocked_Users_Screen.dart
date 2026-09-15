@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:dating_app/controllers/user_controller.dart';
 import 'package:dating_app/utils/theme.dart';
 
 class BlockedUsersScreen extends StatefulWidget {
@@ -9,14 +11,26 @@ class BlockedUsersScreen extends StatefulWidget {
 }
 
 class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
-  // List of blocked users - in real app, this would come from API/local storage
-  final List<Map<String, dynamic>> _blockedUsers = [
-    {'id': '1', 'name': 'Rahul', 'avatar': 'R'},
-    {'id': '2', 'name': 'Rahul', 'avatar': 'R'},
-    {'id': '3', 'name': 'Rahul', 'avatar': 'R'},
-    {'id': '4', 'name': 'Rahul', 'avatar': 'R'},
-    {'id': '5', 'name': 'Rahul', 'avatar': 'R'},
-  ];
+  final UserController _userController = Get.find<UserController>();
+  String? _loadError;
+  String? _unblockingId;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _loadError = null);
+    final ok = await _userController.getBlockedUsers();
+    if (!mounted) return;
+    if (!ok) {
+      setState(() => _loadError = _userController.errorMessage.value.isNotEmpty
+          ? _userController.errorMessage.value
+          : 'Could not load blocked users');
+    }
+  }
 
   // Method to show unblock confirmation dialog
   void _showUnblockDialog(BuildContext context, String userId, String userName) {
@@ -126,17 +140,20 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
     );
   }
 
-  // Method to unblock a user
-  void _unblockUser(String userId, String userName) {
-    setState(() {
-      _blockedUsers.removeWhere((user) => user['id'] == userId);
-    });
-
-    // Show confirmation snackbar
+  // Unblock via DELETE /users/:id/unblock/:blockedUserId
+  Future<void> _unblockUser(String userId, String userName) async {
+    setState(() => _unblockingId = userId);
+    final ok = await _userController.unblockUser(userId);
+    if (!mounted) return;
+    setState(() => _unblockingId = null);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('$userName has been unblocked'),
-        backgroundColor: const Color(0xFFFF3D77),
+        content: Text(ok
+            ? '$userName has been unblocked'
+            : (_userController.errorMessage.value.isNotEmpty
+                ? _userController.errorMessage.value
+                : 'Could not unblock $userName')),
+        backgroundColor: ok ? const Color(0xFFFF3D77) : Colors.red,
         duration: const Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
       ),
@@ -182,24 +199,42 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
 
               // ✅ List of Users
               Expanded(
-                child: _blockedUsers.isEmpty
-                    ? _buildEmptyState()
-                    : ListView.builder(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _blockedUsers.length,
-                        itemBuilder: (context, index) {
-                          final user = _blockedUsers[index];
-                          return UserCard(
-                            name: user['name'],
-                            avatar: user['avatar'],
-                            onUnblock: () => _showUnblockDialog(
-                              context,
-                              user['id'],
-                              user['name'],
-                            ),
-                          );
-                        },
+                child: Obx(() {
+                  final users = _userController.blockedProfiles.toList();
+                  if (_userController.isLoadingBlocked.value && users.isEmpty) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (_loadError != null && users.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(_loadError!, style: const TextStyle(color: Colors.red)),
+                          TextButton(onPressed: _load, child: const Text('Retry')),
+                        ],
                       ),
+                    );
+                  }
+                  if (users.isEmpty) return _buildEmptyState();
+                  return RefreshIndicator(
+                    onRefresh: _load,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: users.length,
+                      itemBuilder: (context, index) {
+                        final user = users[index];
+                        final name = user.fullName.isEmpty ? 'Member' : user.fullName;
+                        return UserCard(
+                          name: name,
+                          avatar: name.substring(0, 1).toUpperCase(),
+                          onUnblock: _unblockingId != null
+                              ? () {}
+                              : () => _showUnblockDialog(context, user.id, name),
+                        );
+                      },
+                    ),
+                  );
+                }),
               ),
             ],
           ),
@@ -230,7 +265,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
           ),
           const SizedBox(height: 8),
           const Text(
-            'All users have been unblocked',
+            'People you block will appear here',
             style: TextStyle(
               fontSize: 14,
               color: Colors.black45,

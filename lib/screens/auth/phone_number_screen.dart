@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:country_code_picker/country_code_picker.dart';
-import 'package:dating_app/screens/auth/location_screen.dart';
-import 'package:dating_app/screens/auth/profile_setup_screen.dart';
+import 'package:dating_app/screens/auth/otp_screen.dart';
+import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/utils/theme.dart';
 import 'package:dating_app/widgets/common/gradient_button.dart';
 // 👉 import your email signup screen
@@ -29,7 +29,10 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
     super.dispose();
   }
 
-  void sendCode() {
+  bool _sending = false;
+
+  Future<void> sendCode() async {
+    if (_sending) return;
     String phone = phoneController.text.trim();
 
     if (phone.length != 10) {
@@ -39,14 +42,30 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
       return;
     }
 
-    // OTP verification is intentionally skipped — no SMS is sent and no code
-    // is checked. Go straight to the next step of the flow.
+    final e164 = '$countryCode$phone';
+    setState(() => _sending = true);
+    final response = await AuthService().sendPhoneOtp(e164);
+    if (!mounted) return;
+    setState(() => _sending = false);
+
+    if (!response.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response.message.isNotEmpty
+              ? response.message
+              : "Couldn't send the code. Please try again."),
+        ),
+      );
+      return;
+    }
+
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => widget.isLogin
-            ? const LocationScreen()
-            : const ProfileSetupScreen(),
+        builder: (context) => OTPScreen(
+          phoneNumber: e164,
+          isLogin: widget.isLogin,
+        ),
       ),
     );
   }
@@ -302,7 +321,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
 
                         GradientButton(
                           label: "Send Code",
-                          onPressed: isChecked ? sendCode : null,
+                          onPressed: isChecked && !_sending ? sendCode : null,
                         ),
 
                         const SizedBox(height: 20),

@@ -115,8 +115,19 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
 
-    _chatController.sendMessage(widget.chatId, text);
+    if (_chatController.isChatBlocked(widget.chatId)) {
+      _showToast('You blocked this user. Unblock them to send messages.');
+      return;
+    }
+
     _inputController.clear();
+    _chatController.sendMessage(widget.chatId, text).then((sent) {
+      if (!sent && mounted) {
+        _showToast(_chatController.errorMessage.value.isNotEmpty
+            ? _chatController.errorMessage.value
+            : 'Message could not be sent');
+      }
+    });
     _scrollToBottom();
   }
 
@@ -215,7 +226,11 @@ class _ChatScreenState extends State<ChatScreen> {
       case _ChatMenuOption.viewProfile:
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => const ProfileDetailsScreen()),
+          MaterialPageRoute(
+            builder: (_) => ProfileDetailsScreen(
+              userId: _chatController.currentConversation.value?.otherUserId,
+            ),
+          ),
         );
         break;
 
@@ -247,7 +262,14 @@ class _ChatScreenState extends State<ChatScreen> {
           message: 'Blocked users cannot contact you',
           confirmText: 'Block',
           onConfirm: () async {
-            await _chatController.blockUserInChat(widget.chatId);
+            final ok = await _chatController.blockUserInChat(widget.chatId);
+            if (!mounted) return;
+            if (!ok) {
+              _showToast(_chatController.errorMessage.value.isNotEmpty
+                  ? _chatController.errorMessage.value
+                  : 'Could not block user');
+              return;
+            }
             _showToast('User blocked and chat removed');
             Navigator.of(context).pushAndRemoveUntil(
               MaterialPageRoute(builder: (_) => const HomeScreen()),
@@ -258,13 +280,26 @@ class _ChatScreenState extends State<ChatScreen> {
         break;
 
       case _ChatMenuOption.report:
+        final otherUserId =
+            _chatController.currentConversation.value?.otherUserId;
         final didBlock = await Navigator.push<bool?>(
           context,
           MaterialPageRoute(
-            builder: (_) => ReportUserScreen(userName: widget.name),
+            builder: (_) => ReportUserScreen(
+              userName: widget.name,
+              reportedUserId: otherUserId,
+            ),
           ),
         );
-        if (didBlock == true) {
+        if (didBlock == true && mounted) {
+          final ok = await _chatController.blockUserInChat(widget.chatId);
+          if (!mounted) return;
+          if (!ok) {
+            _showToast(_chatController.errorMessage.value.isNotEmpty
+                ? _chatController.errorMessage.value
+                : 'Could not block user');
+            break;
+          }
           _showToast('User blocked successfully');
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const HomeScreen()),

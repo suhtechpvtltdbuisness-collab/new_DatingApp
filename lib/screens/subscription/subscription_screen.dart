@@ -237,9 +237,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
                     const SizedBox(height: 10),
 
-                    const Text(
-                      "Restore Purchase",
-                      style: TextStyle(color: Colors.grey),
+                    GestureDetector(
+                      onTap: () => _startCheckout(context, restore: true),
+                      child: const Text(
+                        "Restore Purchase",
+                        style: TextStyle(color: Colors.grey),
+                      ),
                     ),
 
                     const SizedBox(height: 20),
@@ -251,7 +254,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
             /// BOTTOM BUTTON
             Padding(
               padding: const EdgeInsets.all(16),
-              child: Container(
+              child: GestureDetector(
+                onTap: () => _startCheckout(context),
+                child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 18),
                 decoration: BoxDecoration(
@@ -268,9 +273,35 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   ),
                 ),
               ),
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  static const List<String> _planNames = ["3 Months", "1 Month", "1 Week"];
+
+  /// No payment provider (store billing, Razorpay, Stripe…) or subscription
+  /// endpoint exists in the app or backend yet, so there is no checkout to
+  /// open. Tell the user plainly — never simulate a purchase.
+  void _startCheckout(BuildContext context, {bool restore = false}) {
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(restore ? 'Restore purchase' : 'Checkout unavailable'),
+        content: Text(
+          restore
+              ? 'Purchases cannot be restored yet because payments are not enabled in this version of the app.'
+              : 'Payments for the ${_planNames[selectedIndex]} plan are not available in this version of the app yet. You have not been charged.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }

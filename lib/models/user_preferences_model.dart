@@ -41,27 +41,34 @@ class UserPreferencesModel {
     return UserPreferencesModel(
       id: json['id'] ?? '',
       userId: json['userId'] ?? '',
-      minAge: json['minAge'] ?? 18,
-      maxAge: json['maxAge'] ?? 70,
-      maxDistance: json['maxDistance'] ?? 50,
-      lookingFor: json['lookingFor'] != null
-          ? List<UserLookingFor>.from((json['lookingFor'] as List)
-              .map((e) => UserLookingFor.values.byName(e)))
+      minAge: (json['minAge'] as num?)?.toInt() ?? 18,
+      maxAge: (json['maxAge'] as num?)?.toInt() ?? 70,
+      maxDistance: (json['maxDistance'] as num?)?.toInt() ?? 50,
+      lookingFor: json['lookingFor'] is List
+          ? _parseEnums(json['lookingFor'] as List, UserLookingFor.values)
           : [UserLookingFor.dating],
       interests: json['interests'] != null
           ? List<String>.from(json['interests'])
           : [],
-      preferredGenders: json['preferredGenders'] != null
-          ? List<Gender>.from((json['preferredGenders'] as List)
-              .map((e) => Gender.values.byName(e)))
+      preferredGenders: json['preferredGenders'] is List
+          ? _parseEnums(json['preferredGenders'] as List, Gender.values)
           : [Gender.female],
       locationEnabled: json['locationEnabled'] ?? true,
       showOnline: json['showOnline'] ?? true,
       notificationsEnabled: json['notificationsEnabled'] ?? true,
       lastUpdated: json['lastUpdated'] != null
-          ? DateTime.parse(json['lastUpdated'])
+          ? DateTime.tryParse(json['lastUpdated'].toString()) ?? DateTime.now()
           : DateTime.now(),
     );
+  }
+
+  /// Unknown values from the server are skipped instead of throwing.
+  static List<T> _parseEnums<T extends Enum>(List raw, List<T> values) {
+    return raw
+        .map((e) => values.where((v) => v.name == e.toString().toLowerCase()))
+        .where((matches) => matches.isNotEmpty)
+        .map((matches) => matches.first)
+        .toList();
   }
 
   Map<String, dynamic> toJson() {

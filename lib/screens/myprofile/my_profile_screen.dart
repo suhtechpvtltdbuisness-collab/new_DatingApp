@@ -43,6 +43,11 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   void initState() {
     super.initState();
     _loadBreakState();
+    // After logout the controller is reset; load the new session's profile.
+    if (_userController.currentUser.value == null &&
+        !_userController.isLoading.value) {
+      _userController.refreshProfile();
+    }
   }
 
   Future<void> _loadBreakState() async {
@@ -326,6 +331,67 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     );
   }
 
+  bool _isClosingAccount = false;
+
+  /// Runs after the confirmation dialog is closed, so it uses this State's
+  /// context — the dialog's own context is already disposed by then.
+  Future<void> _deactivateAccount() async {
+    if (_isClosingAccount) return;
+    setState(() => _isClosingAccount = true);
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+    final success = await _userController.deactivateAccount();
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+    setState(() => _isClosingAccount = false);
+
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _userController.errorMessage.value.isNotEmpty
+                ? _userController.errorMessage.value
+                : 'Failed to deactivate account',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Account deactivated. Log in again to restore it.')),
+    );
+    await Get.find<AuthController>().logout();
+    AppRoutes.toLogin();
+  }
+
+  Future<void> _deleteAccount() async {
+    if (_isClosingAccount) return;
+    setState(() => _isClosingAccount = true);
+    final success = await _userController.deleteAccount();
+    if (!mounted) return;
+    setState(() => _isClosingAccount = false);
+    if (!success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _userController.errorMessage.value.isNotEmpty
+                ? _userController.errorMessage.value
+                : 'Failed to delete account',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    await Get.find<AuthController>().logout();
+    AppRoutes.toLogin();
+  }
+
   void _showDeactivateDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -400,28 +466,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: TextButton(
-                    onPressed: () async {
+                    onPressed: () {
                       Navigator.pop(context);
-                      final success = await _userController.updateMyProfile({
-                        'active': false,
-                      });
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            success
-                                ? 'Account deactivated'
-                                : (_userController.errorMessage.value.isNotEmpty
-                                    ? _userController.errorMessage.value
-                                    : 'Failed to deactivate account'),
-                          ),
-                        ),
-                      );
-                      if (success) {
-                        final auth = Get.find<AuthController>();
-                        await auth.logout();
-                        AppRoutes.toLogin();
-                      }
+                      _deactivateAccount();
                     },
                     child: const Text(
                       "Deactivate",
@@ -523,25 +570,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                     borderRadius: BorderRadius.circular(30),
                   ),
                   child: TextButton(
-                    onPressed: () async {
+                    onPressed: () {
                       Navigator.pop(context);
-                      final success = await _userController.deleteAccount();
-                      if (!mounted) return;
-                      if (success) {
-                        final auth = Get.find<AuthController>();
-                        await auth.logout();
-                        AppRoutes.toLogin();
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              _userController.errorMessage.value.isNotEmpty
-                                  ? _userController.errorMessage.value
-                                  : 'Failed to delete account',
-                            ),
-                          ),
-                        );
-                      }
+                      _deleteAccount();
                     },
                     child: const Text(
                       "Delete",
@@ -1336,9 +1367,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                         _buildTile(
                           Icons.person_off_outlined,
                           "Deactivate Account",
-                          onTap: () {
-                            _showDeactivateDialog(context);
-                          },
+                          onTap: _isClosingAccount
+                              ? null
+                              : () => _showDeactivateDialog(context),
                         ),
 
                         _buildTile(

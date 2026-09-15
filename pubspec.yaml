@@ -38,6 +38,7 @@ dependencies:
    # Logging
    logger: ^2.0.1
    camera: ^0.12.1
+   file_picker: ^13.1.0
 
 dev_dependencies:
   flutter_test:

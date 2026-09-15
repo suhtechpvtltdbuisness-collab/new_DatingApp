@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:dating_app/models/chat_model.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/services/chat_service.dart';
-import 'package:dating_app/data/mock_data.dart';
+import 'package:dating_app/controllers/user_controller.dart';
 import 'package:dating_app/utils/constants.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
@@ -47,38 +47,74 @@ class ChatController extends GetxController {
   }
 
   // ---------------------------------------------------------------------------
-  // Get conversations list — real API with mock fallback
+  // Get conversations list — GET /chats, minus users the viewer has blocked
   // ---------------------------------------------------------------------------
   Future<bool> getConversations({bool refresh = false}) async {
     try {
       isLoading.value = true;
       errorMessage.value = '';
 
-      final response = await _chatService.getConversations();
+      // GET /chats does not exclude blocked users, so the block list from
+      // GET /users/blocked is fetched alongside and applied here.
+      final conversationsFuture = _chatService.getConversations();
+      final blockListFuture = _userController.getBlockedUsers();
+      final response = await conversationsFuture;
+      final blockListLoaded = await blockListFuture;
 
-      if (response.success && response.data != null && response.data!.isNotEmpty) {
-        conversations.value = response.data!;
+      if (response.success && response.data != null) {
+        final blockedIds = _userController.blockedUsers.toSet();
+        conversations.value = response.data!
+            .where((c) => !blockedIds.contains(c.otherUserId))
+            .toList();
+        if (!blockListLoaded) {
+          _logger.w('Block list unavailable — chat list may include blocked users');
+        }
         _logger.i('Loaded ${conversations.length} conversations from API');
       } else {
-        // Fallback to mock data so the UI always shows something
-        _logger.w('API returned no conversations — using mock data');
-        conversations.value = MockData.sampleConversations;
+        conversations.clear();
+        errorMessage.value = response.message.isNotEmpty
+            ? response.message
+            : 'Failed to load conversations';
       }
 
-      // Calculate total unread count
       unreadCount.value =
           conversations.fold<int>(0, (sum, conv) => sum + conv.unreadCount);
 
-      return true;
+      return response.success;
     } catch (e) {
       errorMessage.value = 'Failed to load conversations';
       _logger.e('Get conversations error', error: e);
-      // Fallback
-      conversations.value = MockData.sampleConversations;
+      conversations.clear();
       return false;
     } finally {
       isLoading.value = false;
     }
+  }
+
+  UserController get _userController => Get.find<UserController>();
+
+  /// Whether the other participant of [chatId] is on the viewer's block list.
+  bool isChatBlocked(String chatId) {
+    final conv = currentConversation.value?.id == chatId
+        ? currentConversation.value
+        : conversations.firstWhereOrNull((c) => c.id == chatId);
+    if (conv == null) return false;
+    return conv.isBlocked ||
+        _userController.blockedUsers.contains(conv.otherUserId);
+  }
+
+  /// Clears everything tied to the signed-in user (called on logout).
+  void resetSession() {
+    conversations.clear();
+    messages.clear();
+    currentConversation.value = null;
+    chatUsers.clear();
+    unreadCount.value = 0;
+    errorMessage.value = '';
+    successMessage.value = '';
+    isLoading.value = false;
+    isLoadingMessages.value = false;
+    isSending.value = false;
   }
 
   // ---------------------------------------------------------------------------
@@ -105,15 +141,9 @@ class ChatController extends GetxController {
         _chatService.markConversationAsRead(chatId);
         return true;
       } else {
-        _logger.w('getConversation failed — trying mock fallback');
-        // Try mock fallback
-        final mockConv = MockData.getConversation(chatId);
-        if (mockConv != null) {
-          currentConversation.value = mockConv;
-          messages.value = MockData.getMessagesForConversation(chatId);
-          return true;
-        }
-        errorMessage.value = response.message;
+        errorMessage.value = response.message.isNotEmpty
+            ? response.message
+            : 'Failed to load conversation';
         return false;
       }
     } catch (e) {
@@ -139,11 +169,7 @@ class ChatController extends GetxController {
         _logger.i('Loaded ${messages.length} messages');
         return true;
       } else {
-        // Fallback to mock messages
-        final mockMessages = MockData.getMessagesForConversation(chatId);
-        if (mockMessages.isNotEmpty) {
-          messages.value = mockMessages;
-        }
+        errorMessage.value = response.message;
         _logger.w('Get messages failed: ${response.error}');
         return false;
       }
@@ -201,20 +227,18 @@ class ChatController extends GetxController {
         _logger.i('Message sent successfully');
         return true;
       } else {
-        // Update optimistic message to "sent" anyway for demo purposes
-        final idx = messages.indexWhere((m) => m.id == optimisticMsg.id);
-        if (idx != -1) {
-          messages[idx] = optimisticMsg.copyWith(status: MessageStatus.sent);
-        }
+        // Not delivered (e.g. the other user blocked this account) — drop the
+        // optimistic bubble instead of pretending it was sent.
+        messages.removeWhere((m) => m.id == optimisticMsg.id);
+        errorMessage.value = response.message.isNotEmpty
+            ? response.message
+            : 'Message could not be sent';
         _logger.w('Send message API failed: ${response.error}');
         return false;
       }
     } catch (e) {
-      // Keep optimistic message visible with sent status
-      final idx = messages.indexWhere((m) => m.id == optimisticMsg.id);
-      if (idx != -1) {
-        messages[idx] = optimisticMsg.copyWith(status: MessageStatus.sent);
-      }
+      messages.removeWhere((m) => m.id == optimisticMsg.id);
+      errorMessage.value = 'Message could not be sent';
       _logger.e('Send message error', error: e);
       return false;
     } finally {
@@ -304,17 +328,35 @@ class ChatController extends GetxController {
   }
 
   // ---------------------------------------------------------------------------
-  // Block user in chat
+  // Block the other participant of a chat — POST /users/:id/block
   // ---------------------------------------------------------------------------
   Future<bool> blockUserInChat(String chatId) async {
     try {
       isSending.value = true;
       errorMessage.value = '';
 
-      await _chatService.blockUserInChat(chatId);
+      final conv = currentConversation.value?.id == chatId
+          ? currentConversation.value
+          : conversations.firstWhereOrNull((c) => c.id == chatId);
+      final otherUserId = conv?.otherUserId ?? '';
+      if (otherUserId.isEmpty) {
+        errorMessage.value = 'Could not identify the user to block';
+        return false;
+      }
+
+      final ok = await _userController.blockUser(otherUserId);
+      if (!ok) {
+        errorMessage.value = _userController.errorMessage.value.isNotEmpty
+            ? _userController.errorMessage.value
+            : 'Failed to block user';
+        return false;
+      }
 
       successMessage.value = 'User blocked';
-      conversations.removeWhere((c) => c.id == chatId);
+      conversations.removeWhere((c) => c.otherUserId == otherUserId);
+      if (currentConversation.value?.otherUserId == otherUserId) {
+        clearCurrentConversation();
+      }
       return true;
     } catch (e) {
       errorMessage.value = 'Failed to block user';

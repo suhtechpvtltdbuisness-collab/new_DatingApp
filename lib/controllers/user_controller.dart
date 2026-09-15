@@ -18,6 +18,8 @@ class UserController extends GetxController {
   final currentUser = Rx<models.UserModel?>(null);
   final userPreferences = Rx<UserPreferencesModel?>(null);
   final blockedUsers = <String>[].obs;
+  final blockedProfiles = <models.UserModel>[].obs;
+  final isLoadingBlocked = false.obs;
   final errorMessage = ''.obs;
   final successMessage = ''.obs;
   final isUpdating = false.obs;
@@ -341,24 +343,26 @@ class UserController extends GetxController {
     }
   }
 
-  /// Block user
+  /// Block user — POST /users/:id/block. The backend is the source of
+  /// truth; the local list is refreshed from GET /users/blocked afterwards.
   Future<bool> blockUser(String blockUserId) async {
     try {
       isUpdating.value = true;
       errorMessage.value = '';
 
       final userId = _authService.getCurrentUserId();
-      if (userId == null) {
-        errorMessage.value = 'User not authenticated';
+      if (userId == null || userId.isEmpty) {
+        errorMessage.value = 'Please sign in to continue.';
         return false;
       }
 
       final response = await _userService.blockUser(userId, blockUserId);
 
       if (response.success) {
-        blockedUsers.add(blockUserId);
+        if (!blockedUsers.contains(blockUserId)) blockedUsers.add(blockUserId);
         successMessage.value = 'User blocked';
         _logger.i('User blocked');
+        getBlockedUsers();
         return true;
       } else {
         errorMessage.value = response.message;
@@ -374,15 +378,15 @@ class UserController extends GetxController {
     }
   }
 
-  /// Unblock user
+  /// Unblock user — DELETE /users/:id/unblock/:blockedUserId
   Future<bool> unblockUser(String blockedUserId) async {
     try {
       isUpdating.value = true;
       errorMessage.value = '';
 
       final userId = _authService.getCurrentUserId();
-      if (userId == null) {
-        errorMessage.value = 'User not authenticated';
+      if (userId == null || userId.isEmpty) {
+        errorMessage.value = 'Please sign in to continue.';
         return false;
       }
 
@@ -390,6 +394,7 @@ class UserController extends GetxController {
 
       if (response.success) {
         blockedUsers.remove(blockedUserId);
+        blockedProfiles.removeWhere((u) => u.id == blockedUserId);
         successMessage.value = 'User unblocked';
         _logger.i('User unblocked');
         return true;
@@ -407,15 +412,17 @@ class UserController extends GetxController {
     }
   }
 
-  /// Get blocked users
-  Future<bool> getBlockedUsers(String userId) async {
+  /// Load blocked users — GET /users/blocked
+  Future<bool> getBlockedUsers() async {
     try {
+      isLoadingBlocked.value = true;
       errorMessage.value = '';
 
-      final response = await _userService.getBlockedUsers(userId);
+      final response = await _userService.getBlockedUsers();
 
       if (response.success && response.data != null) {
-        blockedUsers.value = response.data ?? [];
+        blockedUsers.assignAll(response.data!.ids);
+        blockedProfiles.assignAll(response.data!.users);
         _logger.i('Blocked users loaded');
         return true;
       } else {
@@ -427,7 +434,28 @@ class UserController extends GetxController {
       errorMessage.value = 'Failed to load blocked users';
       _logger.e('Get blocked users error', error: e);
       return false;
+    } finally {
+      isLoadingBlocked.value = false;
     }
+  }
+
+  /// Deactivate — PUT /profile { active: false }. The backend hides inactive
+  /// accounts from discovery; data is kept so the account can be restored.
+  Future<bool> deactivateAccount() => updateMyProfile({'active': false});
+
+  /// Reactivate — PUT /profile { active: true }
+  Future<bool> reactivateAccount() => updateMyProfile({'active': true});
+
+  /// Clears everything tied to the signed-in user (called on logout).
+  void resetSession() {
+    currentUser.value = null;
+    userPreferences.value = null;
+    blockedUsers.clear();
+    blockedProfiles.clear();
+    errorMessage.value = '';
+    successMessage.value = '';
+    isLoading.value = false;
+    isUpdating.value = false;
   }
 
   /// Delete account
@@ -449,6 +477,7 @@ class UserController extends GetxController {
         currentUser.value = null;
         userPreferences.value = null;
         blockedUsers.clear();
+        blockedProfiles.clear();
         _logger.i('Account deleted');
         return true;
       } else {

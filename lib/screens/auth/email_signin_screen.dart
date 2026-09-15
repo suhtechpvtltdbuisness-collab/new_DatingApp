@@ -5,6 +5,7 @@ import 'package:dating_app/utils/theme.dart';
 import 'package:dating_app/utils/validators.dart';
 import 'package:dating_app/widgets/common/gradient_button.dart';
 import 'package:flutter/material.dart';
+import 'package:dating_app/utils/post_login.dart';
 import 'package:get/get.dart';
 
 class EmailSigninScreen extends StatefulWidget {
@@ -56,7 +57,7 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
     if (!mounted) return;
 
     if (success) {
-      AppRoutes.toHome();
+      await finishLogin(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

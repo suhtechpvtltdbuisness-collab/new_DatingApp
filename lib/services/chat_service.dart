@@ -356,39 +356,25 @@ class ChatService {
   }
 
   // ---------------------------------------------------------------------------
-  // Block user in chat (local state only until backend endpoint is confirmed)
-  // ---------------------------------------------------------------------------
-  Future<ApiResponse<void>> blockUserInChat(String chatId) async {
-    try {
-      _logger.i('Blocking user in chat: $chatId');
-      return ApiResponse<void>.success(
-        message: 'User blocked',
-        data: null,
-      );
-    } catch (e) {
-      _logger.e('Block user error', error: e);
-      return ApiResponse.error(
-        message: 'Failed to block user',
-        error: e.toString(),
-      );
-    }
-  }
-
-  // ---------------------------------------------------------------------------
   // POST /chats/messages/report
   // ---------------------------------------------------------------------------
   Future<ApiResponse<void>> reportMessage(
     String messageId,
-    String reason,
-  ) async {
+    String reason, {
+    String? reportedUserId,
+    String? details,
+  }) async {
     try {
       _logger.i('Reporting message: $messageId');
 
       final response = await _apiClient.post<void>(
         ApiEndpoints.reportMessage,
         data: {
-          'messageId': messageId,
+          if (messageId.isNotEmpty) 'messageId': messageId,
           'reason': reason,
+          if (reportedUserId != null && reportedUserId.isNotEmpty)
+            'reportedUserId': reportedUserId,
+          if (details != null && details.isNotEmpty) 'details': details,
         },
         fromJsonT: (_) {},
       );

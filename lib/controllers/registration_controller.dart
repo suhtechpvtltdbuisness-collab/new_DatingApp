@@ -16,6 +16,10 @@ class RegistrationController extends GetxController {
   final profile = ''.obs;
   final location = <String>[].obs;
 
+  /// OTP-verified phone number (E.164) from the phone signup flow.
+  final phoneNumber = ''.obs;
+  void setPhoneNumber(String value) => phoneNumber.value = value;
+
   // Loading state
   final isLoading = false.obs;
   final errorMessage = ''.obs;
@@ -50,8 +54,14 @@ class RegistrationController extends GetxController {
       isLoading.value = true;
       errorMessage.value = '';
 
-      // Generate unique phone number
-      final uniquePhone = '+91${DateTime.now().millisecondsSinceEpoch.toString().substring(0, 10)}';
+      // The backend requires a unique E.164 phoneNumber. Use the verified
+      // number from phone signup; email signups get a placeholder built from
+      // the last 10 millisecond digits (the old first-10-digits version
+      // repeated for every signup within the same second → 409 conflicts).
+      final ms = DateTime.now().millisecondsSinceEpoch.toString();
+      final uniquePhone = phoneNumber.value.isNotEmpty
+          ? phoneNumber.value
+          : '+91${ms.substring(ms.length - 10)}';
 
       final response = await _authService.registerUser(
         name: name.value,
@@ -102,6 +112,7 @@ class RegistrationController extends GetxController {
     interestedIn.value = '';
     profile.value = '';
     location.clear();
+    phoneNumber.value = '';
   }
 
   // Clear error message

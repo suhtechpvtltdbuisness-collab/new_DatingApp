@@ -4,6 +4,9 @@ import 'package:dating_app/utils/theme.dart';
 import 'package:dating_app/widgets/common/glass_card.dart';
 
 import '../../controllers/chat_controller.dart';
+import '../../controllers/user_controller.dart';
+import '../../services/swipe_service.dart';
+import '../myprofile/Edit_Profile_Screen.dart';
 import '../../models/chat_model.dart';
 import '../matches/matches_screen.dart';
 import 'chat_screen.dart';
@@ -19,6 +22,9 @@ class ChatListScreen extends StatefulWidget {
 
 class _ChatListScreenState extends State<ChatListScreen> {
   late final ChatController _chatController;
+  final UserController _userController = Get.find<UserController>();
+  int? _likesCount;
+  bool _likesLoading = true;
 
   @override
   void initState() {
@@ -26,6 +32,41 @@ class _ChatListScreenState extends State<ChatListScreen> {
     _chatController = Get.find<ChatController>();
     // Refresh conversations every time this screen is shown
     _chatController.getConversations(refresh: true);
+    _loadLikesCount();
+  }
+
+  /// Real count from GET /swipes/liked-you (no placeholder numbers).
+  Future<void> _loadLikesCount() async {
+    setState(() => _likesLoading = true);
+    final response = await SwipeService().getIncomingLikes();
+    if (!mounted) return;
+    setState(() {
+      _likesLoading = false;
+      _likesCount = response.success ? response.data?.allCount : null;
+    });
+  }
+
+  String get _likesLabel {
+    if (_likesLoading) return '…';
+    final count = _likesCount;
+    if (count == null) return '–';
+    return count > 50 ? '50+' : '$count';
+  }
+
+  void _openLikes() {
+    if (widget.onTabTapped != null) {
+      widget.onTabTapped!(0); // "Liked you" tab
+    }
+  }
+
+  Future<void> _openOpeningMoves() async {
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+    );
+    if (updated == true) {
+      await _userController.refreshProfile();
+    }
   }
 
   @override
@@ -115,7 +156,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         ),
 
                     /// Likes bubble
-                    Column(
+                    GestureDetector(
+                      onTap: _openLikes,
+                      child: Column(
                       children: [
                         Container(
                           width: 60,
@@ -124,9 +167,9 @@ class _ChatListScreenState extends State<ChatListScreen> {
                             gradient: AppTheme.heroGradient,
                             shape: BoxShape.circle,
                           ),
-                          child: const Center(
+                          child: Center(
                             child: Text(
-                              '50+',
+                              _likesLabel,
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -138,6 +181,7 @@ class _ChatListScreenState extends State<ChatListScreen> {
                         const Text('Likes', style: TextStyle(color: AppTheme.textPrimaryColor)),
                       ],
                     ),
+                    ),
                   ],
                 ),
               );
@@ -148,47 +192,59 @@ class _ChatListScreenState extends State<ChatListScreen> {
             /// Opening Moves Card
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: GlassCard(
-                padding: const EdgeInsets.all(15),
-                radius: 18,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 35,
-                      height: 35,
-                      decoration: const BoxDecoration(
-                        gradient: AppTheme.heroGradient,
-                        shape: BoxShape.circle,
+              child: GestureDetector(
+                onTap: _openOpeningMoves,
+                child: GlassCard(
+                  padding: const EdgeInsets.all(15),
+                  radius: 18,
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 35,
+                        height: 35,
+                        decoration: const BoxDecoration(
+                          gradient: AppTheme.heroGradient,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.lightbulb,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.lightbulb,
-                        color: Colors.white,
-                        size: 20,
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Obx(() {
+                          final user = _userController.currentUser.value;
+                          final moves = user?.openingMoves ?? const <String>[];
+                          final subtitle = _userController.isLoading.value && user == null
+                              ? 'Loading…'
+                              : moves.isEmpty
+                                  ? 'Add questions new matches can reply to'
+                                  : moves.first;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'YOUR OPENING MOVES',
+                                style: TextStyle(
+                                  color: AppTheme.primaryColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Text(
+                                subtitle,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(color: AppTheme.textPrimaryColor),
+                              ),
+                            ],
+                          );
+                        }),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'YOUR OPENING MOVES',
-                            style: TextStyle(
-                              color: AppTheme.primaryColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            "What's the best piece of advice you've received?",
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: AppTheme.textPrimaryColor),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const Icon(Icons.arrow_forward_ios, size: 16, color: AppTheme.textTertiaryColor),
-                  ],
+                      const Icon(Icons.arrow_forward_ios, size: 16, color: AppTheme.textTertiaryColor),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -205,6 +261,26 @@ class _ChatListScreenState extends State<ChatListScreen> {
                 }
 
                 final conversations = _chatController.conversations;
+
+                if (conversations.isEmpty &&
+                    _chatController.errorMessage.value.isNotEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _chatController.errorMessage.value,
+                          style: const TextStyle(color: Colors.red),
+                        ),
+                        TextButton(
+                          onPressed: () =>
+                              _chatController.getConversations(refresh: true),
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  );
+                }
 
                 if (conversations.isEmpty) {
                   return const Center(

@@ -27,7 +27,7 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
   Future<void> sendEmailCode() async {
     String email = emailController.text.trim();
 
-    if (!email.contains("@")) {
+    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Enter valid email")));
@@ -48,18 +48,28 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
           MaterialPageRoute(builder: (_) => EmailOtpScreen(email: email)),
         );
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(response.message)));
+        // GET /users/otp/email/:email currently fails server-side (HTTP 500)
+        // for every address; explain instead of a bare "Server error".
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              (response.statusCode ?? 0) >= 500
+                  ? "We couldn't send a verification code right now. Please try again later."
+                  : response.message,
+            ),
+          ),
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Network error. Please try again.")),
       );
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
     }
   }
 

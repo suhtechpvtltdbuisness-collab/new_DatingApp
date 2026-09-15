@@ -3,7 +3,10 @@ import 'package:dating_app/utils/languages.dart';
 import 'package:dating_app/utils/theme.dart';
 
 class LanguageScreen extends StatefulWidget {
-  const LanguageScreen({super.key});
+  const LanguageScreen({super.key, this.initialSelection = const []});
+
+  /// Languages already chosen; the updated list is returned on back.
+  final List<String> initialSelection;
 
   @override
   State<LanguageScreen> createState() => _LanguageScreenState();
@@ -17,7 +20,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
   /// Get languages from static class
   List<String> get allLanguages => Languages.all;
 
-  List<String> selectedLanguages = [];
+  late final List<String> selectedLanguages = [...widget.initialSelection];
 
   /// Get filtered languages based on search
   List<String> get filteredLanguages {
@@ -57,7 +60,7 @@ class _LanguageScreenState extends State<LanguageScreen> {
                     IconButton(
                       icon: const Icon(Icons.arrow_back),
                       onPressed: () {
-                        Navigator.pop(context);
+                        Navigator.pop(context, selectedLanguages);
                       },
                     ),
                     Expanded(

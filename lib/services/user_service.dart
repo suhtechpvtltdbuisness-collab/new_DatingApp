@@ -7,6 +7,13 @@ import 'package:logger/logger.dart';
 
 /// User Service
 /// Handles user profile, preferences, and related operations
+class BlockedUsersResult {
+  const BlockedUsersResult({required this.ids, required this.users});
+
+  final List<String> ids;
+  final List<UserModel> users;
+}
+
 Map<String, dynamic> _unwrapUser(Map<String, dynamic> raw) {
   for (final key in ['user', 'data']) {
     final value = raw[key];
@@ -412,32 +419,37 @@ class UserService {
     }
   }
 
-  // Get blocked users
-  Future<ApiResponse<List<String>>> getBlockedUsers(String userId) async {
+  // GET /users/blocked  →  { blockedUsers: [ids], users: [profiles] }
+  Future<ApiResponse<BlockedUsersResult>> getBlockedUsers() async {
     try {
       _logger.i('Fetching blocked users');
 
-      final endpoint = ApiEndpoints.getEndpoint(
-        ApiEndpoints.getBlockedUsers,
-        {'id': userId},
-      );
-
       final response = await _apiClient.get<Map<String, dynamic>>(
-        endpoint,
-        fromJsonT: (json) => json,
+        ApiEndpoints.getBlockedUsers,
+        fromJsonT: (json) => json is Map<String, dynamic>
+            ? json
+            : <String, dynamic>{},
       );
 
       if (response.success && response.data != null) {
-        final blockedUsers =
-            List<String>.from(response.data!['blockedUsers'] ?? []);
+        final raw = response.data!;
+        final ids = (raw['blockedUsers'] as List? ?? const [])
+            .map((id) => id.toString())
+            .where((id) => id.isNotEmpty)
+            .toList();
+        final users = (raw['users'] as List? ?? const [])
+            .whereType<Map>()
+            .map((u) => UserModel.fromJson(Map<String, dynamic>.from(u)))
+            .toList();
         return ApiResponse.success(
           message: 'Blocked users fetched successfully',
-          data: blockedUsers,
+          data: BlockedUsersResult(ids: ids, users: users),
         );
       } else {
         return ApiResponse.error(
           message: response.message,
           error: response.error ?? 'Failed to fetch blocked users',
+          statusCode: response.statusCode,
         );
       }
     } catch (e) {

@@ -109,6 +109,67 @@ class AuthService {
   }
 
   // ===============================
+  // PHONE OTP — GET /users/otp/:phoneNumber
+  // ===============================
+
+  /// Asks the backend to generate and deliver an SMS code. The response
+  /// body is deliberately discarded: the code must only reach the user by
+  /// SMS and is never surfaced in the app.
+  Future<ApiResponse<void>> sendPhoneOtp(String e164Phone) async {
+    try {
+      _logger.i('Requesting phone OTP');
+      return await _apiClient.get<void>(
+        '/users/otp/${Uri.encodeComponent(e164Phone)}',
+        fromJsonT: (_) {},
+      );
+    } catch (e) {
+      _logger.e('Send phone OTP error', error: e);
+      return ApiResponse.error(message: 'Failed to send code', error: e.toString());
+    }
+  }
+
+  /// POST /users/otp/validate { number, otp } — signup verification.
+  Future<ApiResponse<void>> verifyPhoneOtp(String e164Phone, String otp) async {
+    try {
+      return await _apiClient.post<void>(
+        '/users/otp/validate',
+        data: {'number': e164Phone, 'otp': otp},
+        fromJsonT: (_) {},
+      );
+    } catch (e) {
+      _logger.e('Verify phone OTP error', error: e);
+      return ApiResponse.error(message: 'Verification failed', error: e.toString());
+    }
+  }
+
+  /// POST /users/login { phoneNumber, otp } — signs in and stores tokens.
+  Future<ApiResponse<AuthResponse>> loginWithPhone(String e164Phone, String otp) async {
+    try {
+      final response = await _apiClient.post<AuthResponse>(
+        ApiEndpoints.login,
+        data: {'phoneNumber': e164Phone, 'otp': otp},
+        fromJsonT: (json) => AuthResponse.fromJson(json),
+      );
+      if (response.success &&
+          response.data != null &&
+          response.data!.accessToken.isNotEmpty) {
+        await _saveTokens(
+          response.data!.accessToken,
+          response.data!.refreshToken,
+          response.data!.userId,
+          response.data!.userEmail,
+        );
+      } else if (response.success) {
+        return ApiResponse.error(message: 'Login failed. Please try again.', error: 'No token');
+      }
+      return response;
+    } catch (e) {
+      _logger.e('Phone login error', error: e);
+      return ApiResponse.error(message: 'Login failed', error: e.toString());
+    }
+  }
+
+  // ===============================
   // ✅ VERIFY OTP
   // ===============================
 

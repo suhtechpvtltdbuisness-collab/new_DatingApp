@@ -1,7 +1,18 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 class ContactSupportScreen extends StatefulWidget {
-  const ContactSupportScreen({super.key});
+  const ContactSupportScreen({
+    super.key,
+    this.title = 'Contact support',
+    this.initialIssueType,
+  });
+
+  /// Header text — "Report a problem" reuses this form.
+  final String title;
+
+  /// Pre-selects an entry of the Issue Type dropdown.
+  final String? initialIssueType;
 
   @override
   State<ContactSupportScreen> createState() => _ContactSupportScreenState();
@@ -16,9 +27,15 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
   final _subjectController = TextEditingController();
   final _descriptionController = TextEditingController();
 
-  String? _selectedIssueType;
+  late String? _selectedIssueType = _issueTypes.contains(widget.initialIssueType)
+      ? widget.initialIssueType
+      : null;
   bool _consentGiven = false;
-  final List<String> _attachedFiles = [];
+  final List<({String name, int size})> _attachedFiles = [];
+  bool _picking = false;
+
+  static const int _maxAttachmentBytes = 10 * 1024 * 1024;
+  static const List<String> _allowedExtensions = ['png', 'jpg', 'jpeg', 'pdf'];
 
   final _accountEmailController = TextEditingController();
   final _txnIdController = TextEditingController();
@@ -321,6 +338,56 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
     }
   }
 
+  /// Opens the native file picker. Nothing is attached until the user
+  /// actually chooses a file.
+  Future<void> _pickAttachments() async {
+    if (_picking) return;
+    setState(() => _picking = true);
+    try {
+      final picked = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: _allowedExtensions,
+      );
+      if (!mounted || picked.isEmpty) return;
+
+      final rejected = <String>[];
+      setState(() {
+      });
+      for (final file in picked) {
+        final ext = file.name.split('.').last.toLowerCase();
+        final size = await file.xFile.length();
+        if (!_allowedExtensions.contains(ext) || size > _maxAttachmentBytes) {
+          rejected.add(file.name);
+        } else if (!_attachedFiles.any((f) => f.name == file.name && f.size == size)) {
+          _attachedFiles.add((name: file.name, size: size));
+        }
+      }
+      if (!mounted) return;
+      setState(() {});
+      if (rejected.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Not attached (PNG, JPG or PDF up to 10 MB only): ${rejected.join(', ')}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open the file picker.'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _picking = false);
+    }
+  }
+
+  String _fileLabel(({String name, int size}) f) {
+    final kb = f.size / 1024;
+    final size = kb >= 1024 ? '${(kb / 1024).toStringAsFixed(1)} MB' : '${kb.toStringAsFixed(0)} KB';
+    return '${f.name} · $size';
+  }
+
   void _handleSubmit() {
     if (!_consentGiven) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -329,8 +396,23 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
       return;
     }
     if (_formKey.currentState?.validate() ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Support request submitted!')),
+      // The backend has no support-ticket endpoint, so nothing can be sent or
+      // stored yet. Say that plainly instead of faking a submission.
+      showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text("Couldn't send request"),
+          content: const Text(
+            'In-app support requests are not available yet. Your details are '
+            'still here — please try again later.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
       );
     }
   }
@@ -357,8 +439,8 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                   children: [
                     const BackButton(color: Colors.black),
                     const SizedBox(width: 8),
-                    const Text(
-                      'Contact support',
+                    Text(
+                      widget.title,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -441,10 +523,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                 _sectionLabel('Attachments'),
                 _card([
                   GestureDetector(
-                    onTap: () {
-                      // TODO: Integrate file_picker package
-                      setState(() => _attachedFiles.add('screenshot.png'));
-                    },
+                    onTap: _picking ? null : _pickAttachments,
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(vertical: 20),
@@ -473,8 +552,8 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          const Text(
-                            'Tap to upload files',
+                          Text(
+                            _picking ? 'Opening files…' : 'Tap to attach files',
                             style: TextStyle(
                               fontSize: 13,
                               color: Color(0xFF7A5A6E),
@@ -501,7 +580,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                           .map(
                             (f) => Chip(
                               label: Text(
-                                f,
+                                _fileLabel(f),
                                 style: const TextStyle(
                                   fontSize: 12,
                                   color: Color(0xFF6B3F7A),

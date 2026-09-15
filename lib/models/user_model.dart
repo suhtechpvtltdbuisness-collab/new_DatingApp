@@ -30,6 +30,7 @@ class UserModel {
   final String? religion;
   final String? politics;
   final String? pronouns;
+  final String? interestedIn;
   final List<String> languages;
   final List<String> courses;
   final List<String> qualities;
@@ -72,6 +73,7 @@ class UserModel {
     this.religion,
     this.politics,
     this.pronouns,
+    this.interestedIn,
     this.languages = const [],
     this.courses = const [],
     this.qualities = const [],
@@ -185,6 +187,7 @@ class UserModel {
       religion: _nullableString(json['religion']),
       politics: _nullableString(json['politics']),
       pronouns: _nullableString(json['pronouns']),
+      interestedIn: _nullableString(json['interestedIn']),
       languages: _parseStringList(json['languages']),
       courses: _parseStringList(json['courses']),
       qualities: _parseStringList(json['qualities']),
@@ -283,6 +286,7 @@ class UserModel {
       'religion': religion,
       'politics': politics,
       'pronouns': pronouns,
+      'interestedIn': interestedIn,
       'languages': languages,
       'courses': courses,
       'qualities': qualities,
@@ -327,6 +331,7 @@ class UserModel {
     String? religion,
     String? politics,
     String? pronouns,
+    String? interestedIn,
     List<String>? languages,
     List<String>? courses,
     List<String>? qualities,
@@ -369,6 +374,7 @@ class UserModel {
       religion: religion ?? this.religion,
       politics: politics ?? this.politics,
       pronouns: pronouns ?? this.pronouns,
+      interestedIn: interestedIn ?? this.interestedIn,
       languages: languages ?? this.languages,
       courses: courses ?? this.courses,
       qualities: qualities ?? this.qualities,

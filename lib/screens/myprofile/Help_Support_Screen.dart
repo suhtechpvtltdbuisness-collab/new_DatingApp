@@ -94,7 +94,20 @@ class HelpSupportScreen extends StatelessWidget {
                 ),
 
 
-                buildTile("Report a problem"),
+                buildTile(
+                  "Report a problem",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ContactSupportScreen(
+                          title: 'Report a problem',
+                          initialIssueType: 'Technical Problem',
+                        ),
+                      ),
+                    );
+                  },
+                ),
 
                 buildTile(
                   "Community guidelines",

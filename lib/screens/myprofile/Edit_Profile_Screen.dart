@@ -186,9 +186,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (_isSaving) return;
     setState(() => _isSaving = true);
 
+    final fullName = [
+      _firstNameController.text.trim(),
+      _lastNameController.text.trim(),
+    ].where((part) => part.isNotEmpty).join(' ');
+    if (fullName.isEmpty) {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your name.'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    // The backend stores a single `name` and ignores firstName/lastName.
     final updateData = <String, dynamic>{
-      'firstName': _firstNameController.text.trim(),
-      'lastName': _lastNameController.text.trim(),
+      'name': fullName,
       'gender': _gender,
       'bio': _bioController.text.trim(),
       'city': _cityController.text.trim(),
@@ -218,22 +230,88 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     };
 
     final success = await _userController.updateMyProfile(updateData);
-    if (mounted) {
-      setState(() => _isSaving = false);
+    if (success) {
+      // Re-read from the server so the screen shows what was really stored.
+      await _userController.refreshProfile();
+    }
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+
+    if (!success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            success
-                ? 'Profile updated successfully!'
-                : (_userController.errorMessage.value.isNotEmpty
-                    ? _userController.errorMessage.value
-                    : 'Failed to update profile.'),
+            _userController.errorMessage.value.isNotEmpty
+                ? _userController.errorMessage.value
+                : 'Failed to update profile.',
           ),
-          backgroundColor: success ? AppTheme.primaryColor : Colors.red,
+          backgroundColor: Colors.red,
         ),
       );
-      if (success) Navigator.pop(context, true);
+      return;
     }
+
+    final notSaved = _unsavedFields(updateData, _userController.currentUser.value);
+    if (notSaved.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Profile updated successfully!'),
+          backgroundColor: AppTheme.primaryColor,
+        ),
+      );
+      Navigator.pop(context, true);
+    } else {
+      // The request succeeded, but the server silently dropped some fields —
+      // say so instead of claiming everything was saved.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 6),
+          backgroundColor: Colors.orange.shade800,
+          content: Text(
+            'Some changes were saved, but the server did not store: '
+            '${notSaved.join(', ')}.',
+          ),
+        ),
+      );
+    }
+  }
+
+  /// Compares what was sent with what GET /profile returned afterwards.
+  List<String> _unsavedFields(Map<String, dynamic> sent, UserModel? saved) {
+    if (saved == null) return const ['your changes'];
+    String norm(Object? v) => (v ?? '').toString().trim().toLowerCase();
+    bool sameList(List<String> a, Object? b) {
+      final bl = (b as List? ?? const []).map(norm).toSet();
+      return a.map(norm).toSet().containsAll(bl) && bl.containsAll(a.map(norm));
+    }
+
+    final checks = <String, bool>{
+      'Name': norm(saved.fullName) == norm(sent['name']),
+      'Bio': norm(saved.bio) == norm(sent['bio']),
+      'City': norm(saved.city) == norm(sent['city']),
+      'Country': norm(saved.country) == norm(sent['country']),
+      'Hometown': norm(saved.hometown) == norm(sent['hometown']),
+      'Work': norm(saved.work) == norm(sent['work']),
+      'Education': norm(saved.education) == norm(sent['education']),
+      'Education level': norm(saved.educationLevel) == norm(sent['educationLevel']),
+      'Height': norm(saved.height) == norm(sent['height']),
+      'Exercise': norm(saved.exercise) == norm(sent['exercise']),
+      'Star sign': norm(saved.starSign) == norm(sent['starSign']),
+      'Drinking': norm(saved.drinking) == norm(sent['drinking']),
+      'Smoking': norm(saved.smoking) == norm(sent['smoking']),
+      'Looking for': norm(saved.lookingFor) == norm(sent['lookingFor']),
+      'Kids': norm(saved.kids) == norm(sent['kids']),
+      'Have kids': norm(saved.haveKids) == norm(sent['haveKids']),
+      'Religion': norm(saved.religion) == norm(sent['religion']),
+      'Politics': norm(saved.politics) == norm(sent['politics']),
+      'Pronouns': norm(saved.pronouns) == norm(sent['pronouns']),
+      'Interests': sameList(saved.interests, sent['interests']),
+      'Causes': sameList(saved.courses, sent['courses']),
+      'Qualities': sameList(saved.qualities, sent['qualities']),
+      'Languages': sameList(saved.languages, sent['languages']),
+      'Opening moves': sameList(saved.openingMoves, sent['openingMoves']),
+    };
+    return checks.entries.where((e) => !e.value).map((e) => e.key).toList();
   }
 
   Future<void> _pickImage() async {

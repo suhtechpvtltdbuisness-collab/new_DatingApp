@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:dating_app/services/chat_service.dart';
 import 'package:dating_app/utils/theme.dart';
 
 class ReportUserScreen extends StatefulWidget {
   final String userName;
+  final String? reportedUserId;
 
-  const ReportUserScreen({super.key, required this.userName});
+  const ReportUserScreen({
+    super.key,
+    required this.userName,
+    this.reportedUserId,
+  });
 
   @override
   State<ReportUserScreen> createState() => _ReportUserScreenState();
@@ -20,8 +26,32 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
     'Harassment',
   ];
 
+  bool _submitting = false;
+
   void _submitReport() async {
+    if (_submitting) return;
     final selectedReason = _reasons[_selectedReasonIndex];
+    setState(() => _submitting = true);
+    final response = await ChatService().reportMessage(
+      '',
+      selectedReason,
+      reportedUserId: widget.reportedUserId,
+      details: _commentController.text.trim(),
+    );
+    if (!mounted) return;
+    setState(() => _submitting = false);
+
+    if (!response.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(response.message.isNotEmpty
+              ? response.message
+              : 'Could not submit report. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -56,6 +86,7 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
       },
     );
 
+    if (!mounted) return;
     Navigator.of(context).pop(shouldBlock == true);
   }
 
@@ -149,7 +180,7 @@ class _ReportUserScreenState extends State<ReportUserScreen> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                 ),
-                onPressed: _submitReport,
+                onPressed: _submitting ? null : _submitReport,
                 child: const Text(
                   'Submit Report',
                   style: TextStyle(fontSize: 16),

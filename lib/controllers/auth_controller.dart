@@ -1,6 +1,8 @@
 import 'package:dating_app/models/api_models.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/controllers/chat_controller.dart';
+import 'package:dating_app/controllers/swipe_controller.dart';
+import 'package:dating_app/controllers/user_controller.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 
@@ -139,16 +141,12 @@ class AuthController extends GetxController {
       userEmail.value = '';
       successMessage.value = 'Logged out successfully';
 
-      // Clear chat state so stale data isn't shown on next login
-      try {
-        Get.find<ChatController>().clearCurrentConversation();
-      } catch (_) {
-        // ChatController may not be initialised yet — ignore
-      }
+      _resetSessionControllers();
 
       return true;
     } catch (e) {
       // Even on unexpected error, clear local state
+      _resetSessionControllers();
       isLoggedIn.value = false;
       userId.value = '';
       userEmail.value = '';
@@ -157,6 +155,23 @@ class AuthController extends GetxController {
       return true; // Local logout always succeeds
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  /// Clears per-user controller state so the next session starts from
+  /// fresh backend data instead of the previous user's profile, deck and
+  /// chats. Screens reload their data when they are mounted again.
+  void _resetSessionControllers() {
+    // isPrepared = registered lazily but never built; nothing to reset and
+    // building it now would fire unauthenticated requests.
+    if (Get.isRegistered<ChatController>() && !Get.isPrepared<ChatController>()) {
+      Get.find<ChatController>().resetSession();
+    }
+    if (Get.isRegistered<SwipeController>() && !Get.isPrepared<SwipeController>()) {
+      Get.find<SwipeController>().resetSession();
+    }
+    if (Get.isRegistered<UserController>() && !Get.isPrepared<UserController>()) {
+      Get.find<UserController>().resetSession();
     }
   }
 
