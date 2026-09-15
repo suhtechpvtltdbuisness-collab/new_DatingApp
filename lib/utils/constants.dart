@@ -12,6 +12,16 @@ class AppConstants {
     return _defaultBaseUrl;
   }
 
+  static String get supabaseUrl {
+    if (!dotenv.isInitialized) return '';
+    return dotenv.env['SUPABASE_URL'] ?? '';
+  }
+
+  static String get supabaseAnonKey {
+    if (!dotenv.isInitialized) return '';
+    return dotenv.env['SUPABASE_ANON_KEY'] ?? '';
+  }
+
   static const Duration apiTimeout = Duration(seconds: 30);
   static const int maxRetries = 3;
 

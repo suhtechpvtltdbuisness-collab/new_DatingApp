@@ -38,6 +38,8 @@ class _ChatScreenState extends State<ChatScreen> {
   late final ChatController _chatController;
   final TextEditingController _inputController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  Worker? _messagesWorker;
+  String? _lastMessageId;
 
   // ---- contact-info guard ----
   final List<String> _numberWords = [
@@ -70,15 +72,34 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _chatController = Get.find<ChatController>();
-    // Load real messages from API
-    _chatController.getConversation(widget.chatId);
+    _scrollController.addListener(_onScroll);
+    _chatController.openConversation(widget.chatId).then((_) {
+      if (mounted) _scrollToBottom();
+    });
+    _messagesWorker = ever<List<ChatMessageModel>>(_chatController.messages, (msgs) {
+      if (!mounted || msgs.isEmpty) return;
+      final latestId = msgs.last.id;
+      if (latestId == _lastMessageId) return;
+      _lastMessageId = latestId;
+      _scrollToBottom();
+    });
   }
 
   @override
   void dispose() {
+    _messagesWorker?.dispose();
+    _scrollController.removeListener(_onScroll);
     _inputController.dispose();
     _scrollController.dispose();
+    _chatController.leaveConversation();
     super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    if (_scrollController.position.pixels <= 80) {
+      _chatController.loadOlderMessages(widget.chatId);
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -313,9 +334,17 @@ class _ChatScreenState extends State<ChatScreen> {
           title: 'Delete Conversation',
           message: 'This will delete all messages permanently',
           confirmText: 'Delete',
-          onConfirm: () {
-            _chatController.clearCurrentConversation();
+          onConfirm: () async {
+            final ok = await _chatController.deleteChat(widget.chatId);
+            if (!mounted) return;
+            if (!ok) {
+              _showToast(_chatController.errorMessage.value.isNotEmpty
+                  ? _chatController.errorMessage.value
+                  : 'Could not delete conversation');
+              return;
+            }
             _showToast('Conversation deleted');
+            Navigator.pop(context);
           },
         );
         break;
@@ -588,13 +617,14 @@ class _ChatScreenState extends State<ChatScreen> {
 
                   // Last item: typing indicator
                   if (index == msgs.length + 1) {
+                    if (!_chatController.isTyping.value) {
+                      return const SizedBox.shrink();
+                    }
                     return const _TypingIndicator();
                   }
 
                   final msg = msgs[index - 1];
-                  final isMe =
-                      msg.senderId == _chatController.currentUserId ||
-                      msg.senderId == 'user123'; // mock fallback
+                  final isMe = msg.senderId == _chatController.currentUserId;
 
                   return _MessageBubble(
                     msg: msg,
@@ -625,6 +655,8 @@ class _ChatScreenState extends State<ChatScreen> {
                           child: TextField(
                             controller: _inputController,
                             onSubmitted: (_) => _sendMessage(),
+                            onChanged: (value) => _chatController
+                                .onComposerChanged(widget.chatId, value),
                             textAlignVertical: TextAlignVertical.center,
                             cursorColor: AppTheme.primaryColor,
                             decoration: AppTheme.borderlessInputDecoration(

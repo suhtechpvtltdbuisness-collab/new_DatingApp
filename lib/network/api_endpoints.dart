@@ -77,6 +77,7 @@ class ApiEndpoints {
   static const String uploadChatMedia = '/chats/:chatId/upload';
   static const String typingIndicator = '/chats/:chatId/typing';
   static const String reportMessage = '/chats/messages/report';
+  static const String realtimeConfig = '/chats/realtime-config';
   static const String getChatUsers = '/chat-users';               // GET /chat-users
   static const String getChatByRecipient = '/chats/recipient/:recipientId'; // GET /chats/recipient/:recipientId
   static const String chatHistory = '/chat-history/:userId';      // GET /chat-history/:userId

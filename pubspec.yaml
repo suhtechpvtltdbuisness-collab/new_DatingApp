@@ -8,37 +8,38 @@ environment:
   sdk: ^3.7.0
 
 dependencies:
-   flutter:
+  flutter:
     sdk: flutter
 
-   swipable_stack: ^2.0.0
+  swipable_stack: ^2.0.0
 
-   image_picker: ^1.0.7
-   dotted_border: ^2.1.0
+  image_picker: ^1.0.7
+  dotted_border: ^2.1.0
 
-   geolocator: ^10.1.0
-   permission_handler: ^11.3.0
-   country_code_picker: ^3.0.0
-   # UI & Design
-   cupertino_icons: ^1.0.8
-   google_fonts: ^6.1.0
-   flutter_screenutil: ^5.9.0
-   # State Management & Architecture
-   get: ^4.6.6
-   # HTTP & Networking
-   dio: ^5.3.1
-   flutter_dotenv: ^5.2.1
-   # Local Storage
-   shared_preferences: ^2.2.2
-   # Image & Media
-   cached_network_image: ^3.3.1
-   flutter_svg: ^2.2.0
-   # Date & Time
-   intl: ^0.19.0
-   # Logging
-   logger: ^2.0.1
-   camera: ^0.12.1
-   file_picker: ^13.1.0
+  geolocator: ^10.1.0
+  permission_handler: ^11.3.0
+  country_code_picker: ^3.0.0
+  # UI & Design
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.1.0
+  flutter_screenutil: ^5.9.0
+  # State Management & Architecture
+  get: ^4.6.6
+  # HTTP & Networking
+  dio: ^5.3.1
+  flutter_dotenv: ^5.2.1
+  # Local Storage
+  shared_preferences: ^2.2.2
+  # Image & Media
+  cached_network_image: ^3.3.1
+  flutter_svg: ^2.2.0
+  # Date & Time
+  intl: ^0.19.0
+  # Logging
+  logger: ^2.0.1
+  camera: ^0.12.1
+  file_picker: ^13.1.0
+  supabase_flutter: ^2.9.1
 
 dev_dependencies:
   flutter_test:

@@ -4,6 +4,20 @@ import 'package:dating_app/network/api_client.dart';
 import 'package:dating_app/network/api_endpoints.dart';
 import 'package:logger/logger.dart';
 
+class MessagePage {
+  final List<ChatMessageModel> messages;
+  final int page;
+  final int limit;
+  final bool hasMore;
+
+  const MessagePage({
+    required this.messages,
+    required this.page,
+    required this.limit,
+    required this.hasMore,
+  });
+}
+
 /// Chat Service
 /// Handles messaging and chat-related operations
 class ChatService {
@@ -124,7 +138,7 @@ class ChatService {
   // ---------------------------------------------------------------------------
   // GET /chats/:chatId/messages  →  messages for a chat
   // ---------------------------------------------------------------------------
-  Future<ApiResponse<List<ChatMessageModel>>> getMessages(
+  Future<ApiResponse<MessagePage>> getMessages(
     String chatId, {
     int page = 1,
     int limit = 50,
@@ -160,7 +174,12 @@ class ChatService {
 
         return ApiResponse.success(
           message: 'Messages fetched successfully',
-          data: messages,
+          data: MessagePage(
+            messages: messages,
+            page: (raw['page'] as num?)?.toInt() ?? page,
+            limit: (raw['limit'] as num?)?.toInt() ?? limit,
+            hasMore: raw['hasMore'] == true,
+          ),
         );
       } else {
         return ApiResponse.error(
@@ -208,8 +227,18 @@ class ChatService {
 
       if (response.success && response.data != null) {
         final raw = response.data!;
-        final Map<String, dynamic> msgJson =
-            (raw['message'] ?? raw['data'] ?? raw) as Map<String, dynamic>;
+        // ApiClient unwraps { data: <messageObject> }. Prefer the object itself;
+        // never treat the string body field "message" as the envelope.
+        final Map<String, dynamic> msgJson;
+        if (raw['id'] != null && raw['senderId'] != null) {
+          msgJson = raw;
+        } else if (raw['data'] is Map<String, dynamic>) {
+          msgJson = raw['data'] as Map<String, dynamic>;
+        } else if (raw['message'] is Map<String, dynamic>) {
+          msgJson = raw['message'] as Map<String, dynamic>;
+        } else {
+          msgJson = raw;
+        }
         final chatMessage = ChatMessageModel.fromJson(msgJson);
         return ApiResponse.success(
           message: 'Message sent successfully',
