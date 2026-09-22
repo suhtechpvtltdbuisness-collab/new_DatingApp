@@ -26,6 +26,12 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
   int calculateAge() {
     final now = DateTime.now();
     int age = now.year - selectedYear;
+    // Not had their birthday yet this year.
+    final birthdayMonth = selectedMonth + 1;
+    if (now.month < birthdayMonth ||
+        (now.month == birthdayMonth && now.day < selectedDay)) {
+      age--;
+    }
     return age;
   }
 
@@ -88,7 +94,7 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
       context: context,
       step: 4,
       totalSteps: 8,
-      title: "birthday",
+      title: "Birthday",
       onContinue: goNext,
       child: Column(
         children: [

@@ -222,6 +222,50 @@ class UserService {
     }
   }
 
+  /// Upload a profile photo the caller already holds in memory. Used by the
+  /// signup flow, where the picked image lives as bytes so the same code works
+  /// on web as well as Android/iOS.
+  Future<ApiResponse<List<String>>> uploadProfilePhotoBytes(
+    String userId,
+    List<int> bytes, {
+    String filename = 'photo.jpg',
+  }) async {
+    try {
+      _logger.i('Uploading profile photo bytes for user: $userId');
+
+      final endpoint = ApiEndpoints.getEndpoint(
+        ApiEndpoints.uploadProfilePhoto,
+        {'id': userId},
+      );
+
+      final response = await _apiClient.uploadBytes<Map<String, dynamic>>(
+        endpoint,
+        bytes: bytes,
+        filename: filename,
+        fromJsonT: (json) => json,
+      );
+
+      if (response.success && response.data != null) {
+        final photoUrls = List<String>.from(response.data!['photoUrls'] ?? []);
+        return ApiResponse.success(
+          message: 'Photo uploaded successfully',
+          data: photoUrls,
+        );
+      }
+
+      return ApiResponse.error(
+        message: response.message,
+        error: response.error ?? 'Failed to upload photo',
+      );
+    } catch (e) {
+      _logger.e('Upload profile photo bytes error', error: e);
+      return ApiResponse.error(
+        message: 'Failed to upload photo',
+        error: e.toString(),
+      );
+    }
+  }
+
   // Upload multiple profile photos
   Future<ApiResponse<List<String>>> uploadMultipleProfilePhotos(
     String userId,

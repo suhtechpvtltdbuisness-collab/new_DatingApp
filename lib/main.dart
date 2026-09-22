@@ -16,13 +16,21 @@ Future<void> main() async {
     await dotenv.load(fileName: '.env.example');
   }
 
-  await AuthService().initialize();
+  final authService = AuthService();
+  await authService.initialize();
 
-  runApp(const MyApp());
+  // A stored session must survive a restart, otherwise a logged-in user is
+  // sent back through onboarding every time the app is reopened.
+  final startRoute =
+      authService.isLoggedIn() ? AppRoutes.home : AppRoutes.onboarding;
+
+  runApp(MyApp(initialRoute: startRoute));
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final String initialRoute;
+
+  const MyApp({super.key, required this.initialRoute});
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +42,7 @@ class MyApp extends StatelessWidget {
       themeMode: ThemeMode.light,
       
       // Routes
-      initialRoute: AppRoutes.onboarding,
+      initialRoute: initialRoute,
       getPages: AppRoutes.pages,
       
       // Bindings

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:dating_app/app/app_routes.dart';
 import 'package:get/get.dart';
 import 'package:dating_app/controllers/registration_controller.dart';
+import 'package:dating_app/screens/auth/email_signup_screen.dart';
 
 class FinalStepScreen extends StatefulWidget {
   /// Bytes rather than a dart:io File so the preview renders on web too.
@@ -28,11 +29,31 @@ class _FinalStepScreenState extends State<FinalStepScreen> {
 
     if (response.success) {
       AppRoutes.toHome();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response.message)),
-      );
+      return;
     }
+
+    // Same as the location step: a taken email has to be fixed on the email
+    // screen, not here.
+    if (RegistrationController.isDuplicateEmailFailure(response)) {
+      registrationController.clearEmailCredentials();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'That email is already registered. Sign in, or use a different email.',
+          ),
+          duration: Duration(seconds: 4),
+        ),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const EmailSignupScreen()),
+      );
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(response.message)),
+    );
   }
 
   @override

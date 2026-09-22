@@ -361,6 +361,50 @@ class ApiClient {
     return MultipartFile.fromBytes(bytes, filename: name);
   }
 
+  /// Upload already-read bytes. The signup flow holds the picked image as
+  /// bytes (a dart:io File path is unusable on web), so it uploads this way.
+  Future<ApiResponse<T>> uploadBytes<T>(
+    String endpoint, {
+    required List<int> bytes,
+    required String filename,
+    String fieldName = 'file',
+    Map<String, dynamic>? additionalData,
+    T Function(dynamic)? fromJsonT,
+    void Function(int, int)? onSendProgress,
+    CancelToken? cancelToken,
+  }) async {
+    try {
+      final formData = FormData.fromMap({
+        fieldName: MultipartFile.fromBytes(bytes, filename: filename),
+        ...?additionalData,
+      });
+
+      _logger.i('Upload bytes: $endpoint');
+      final response = await _dio.post(
+        endpoint,
+        data: formData,
+        options: Options(
+          sendTimeout: const Duration(minutes: 2),
+          receiveTimeout: const Duration(minutes: 2),
+          extra: {'skipRetry': true},
+        ),
+        onSendProgress: onSendProgress,
+        cancelToken: cancelToken,
+      );
+
+      return _parseResponse(response, fromJsonT);
+    } on DioError catch (e) {
+      return _handleError(e);
+    } catch (e) {
+      _logger.e('Unexpected error', error: e);
+      return ApiResponse.error(
+        message: AppConstants.serverError,
+        error: e.toString(),
+        statusCode: 500,
+      );
+    }
+  }
+
   // Upload file
   Future<ApiResponse<T>> uploadFile<T>(
     String endpoint, {

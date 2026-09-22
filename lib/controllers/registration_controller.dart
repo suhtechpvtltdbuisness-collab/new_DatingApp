@@ -1,10 +1,14 @@
+import 'dart:typed_data';
+
 import 'package:get/get.dart';
 import 'package:dating_app/controllers/auth_controller.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/models/api_models.dart';
+import 'package:dating_app/services/user_service.dart';
 
 class RegistrationController extends GetxController {
   final AuthService _authService = AuthService();
+  final UserService _userService = UserService();
 
   // Observable registration data
   final email = ''.obs;
@@ -15,6 +19,16 @@ class RegistrationController extends GetxController {
   final interestedIn = ''.obs;
   final profile = ''.obs;
   final location = <String>[].obs;
+
+  /// Profile picture picked during signup, held as bytes so the same flow
+  /// works on web (a dart:io File path is unusable there).
+  final Rxn<Uint8List> profilePhotoBytes = Rxn<Uint8List>();
+  final profilePhotoName = 'photo.jpg'.obs;
+
+  void setProfilePhoto(Uint8List bytes, {String filename = 'photo.jpg'}) {
+    profilePhotoBytes.value = bytes;
+    profilePhotoName.value = filename.isNotEmpty ? filename : 'photo.jpg';
+  }
 
   /// OTP-verified phone number (E.164) from the phone signup flow.
   final phoneNumber = ''.obs;
@@ -76,6 +90,12 @@ class RegistrationController extends GetxController {
       );
 
       if (response.success) {
+        // Upload before clearData() wipes the picked bytes. A failed upload
+        // must not fail the signup itself - the account already exists.
+        final newUserId =
+            response.data?.userId ?? _authService.getCurrentUserId() ?? '';
+        await _uploadProfilePhotoIfAny(newUserId);
+
         if (Get.isRegistered<AuthController>()) {
           final auth = Get.find<AuthController>();
           auth.isLoggedIn.value = true;
@@ -102,6 +122,40 @@ class RegistrationController extends GetxController {
     }
   }
 
+  /// Signup is only POSTed at the very end of the flow, so a taken email
+  /// comes back as a failure on the last step. Callers use this to send the
+  /// user back to the email step instead of showing the error where it can't
+  /// be acted on.
+  static bool isDuplicateEmailFailure(ApiResponse response) {
+    if (response.success) return false;
+    final text = '${response.message} ${response.error ?? ''}'.toLowerCase();
+    if (!text.contains('email')) return false;
+    return response.statusCode == 409 ||
+        text.contains('already') ||
+        text.contains('exists') ||
+        text.contains('taken') ||
+        text.contains('registered') ||
+        text.contains('duplicate');
+  }
+
+  /// Drop just the email/password so the user can retry with a different
+  /// address without re-entering their whole profile.
+  void clearEmailCredentials() {
+    email.value = '';
+    password.value = '';
+  }
+
+  Future<void> _uploadProfilePhotoIfAny(String userId) async {
+    final bytes = profilePhotoBytes.value;
+    if (bytes == null || bytes.isEmpty || userId.isEmpty) return;
+
+    await _userService.uploadProfilePhotoBytes(
+      userId,
+      bytes,
+      filename: profilePhotoName.value,
+    );
+  }
+
   // Clear all registration data
   void clearData() {
     email.value = '';
@@ -113,6 +167,8 @@ class RegistrationController extends GetxController {
     profile.value = '';
     location.clear();
     phoneNumber.value = '';
+    profilePhotoBytes.value = null;
+    profilePhotoName.value = 'photo.jpg';
   }
 
   // Clear error message

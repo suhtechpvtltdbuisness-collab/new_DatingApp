@@ -7,6 +7,7 @@ import '../../utils/constants.dart';
 import '../../utils/theme.dart';
 import '../home/home_screen.dart';
 import '../profile/profile_screen.dart';
+import '../../widgets/chat/emoji_picker_panel.dart';
 import 'report_user_screen.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -37,6 +38,8 @@ enum _ChatMenuOption {
 class _ChatScreenState extends State<ChatScreen> {
   late final ChatController _chatController;
   final TextEditingController _inputController = TextEditingController();
+  final FocusNode _inputFocusNode = FocusNode();
+  bool _showEmojiPicker = false;
   final ScrollController _scrollController = ScrollController();
   Worker? _messagesWorker;
   String? _lastMessageId;
@@ -90,6 +93,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _messagesWorker?.dispose();
     _scrollController.removeListener(_onScroll);
     _inputController.dispose();
+    _inputFocusNode.dispose();
     _scrollController.dispose();
     _chatController.leaveConversation();
     super.dispose();
@@ -120,6 +124,56 @@ class _ChatScreenState extends State<ChatScreen> {
   // -------------------------------------------------------------------------
   // Send message
   // -------------------------------------------------------------------------
+  /// Swap the keyboard for the emoji panel (and back) rather than stacking
+  /// both, which would leave no room for the conversation.
+  void _toggleEmojiPicker() {
+    if (_showEmojiPicker) {
+      setState(() => _showEmojiPicker = false);
+      _inputFocusNode.requestFocus();
+    } else {
+      _inputFocusNode.unfocus();
+      setState(() => _showEmojiPicker = true);
+    }
+  }
+
+  /// Insert at the caret, not blindly at the end, so emoji land where the
+  /// user is actually typing.
+  void _insertEmoji(String emoji) {
+    final text = _inputController.text;
+    final selection = _inputController.selection;
+    final start = selection.start >= 0 ? selection.start : text.length;
+    final end = selection.end >= 0 ? selection.end : text.length;
+
+    final updated = text.replaceRange(start, end, emoji);
+    _inputController.value = TextEditingValue(
+      text: updated,
+      selection: TextSelection.collapsed(offset: start + emoji.length),
+    );
+    _chatController.onComposerChanged(widget.chatId, updated);
+  }
+
+  void _backspace() {
+    final text = _inputController.text;
+    if (text.isEmpty) return;
+
+    final selection = _inputController.selection;
+    final end = selection.end >= 0 ? selection.end : text.length;
+    if (end == 0) return;
+
+    // For a collapsed caret, step back one full grapheme so a multi-code-unit
+    // emoji is deleted in one press instead of breaking into pieces.
+    final start = selection.start >= 0 && selection.start != end
+        ? selection.start
+        : text.substring(0, end).characters.skipLast(1).string.length;
+
+    final updated = text.replaceRange(start, end, '');
+    _inputController.value = TextEditingValue(
+      text: updated,
+      selection: TextSelection.collapsed(offset: start),
+    );
+    _chatController.onComposerChanged(widget.chatId, updated);
+  }
+
   void _sendMessage() {
     final text = _inputController.text.trim();
     if (text.isEmpty) return;
@@ -638,74 +692,134 @@ class _ChatScreenState extends State<ChatScreen> {
 
           /// INPUT BAR
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            color: Colors.white,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 15),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: _inputController,
-                            onSubmitted: (_) => _sendMessage(),
-                            onChanged: (value) => _chatController
-                                .onComposerChanged(widget.chatId, value),
-                            textAlignVertical: TextAlignVertical.center,
-                            cursorColor: AppTheme.primaryColor,
-                            decoration: AppTheme.borderlessInputDecoration(
-                              hintText: 'Type your message..',
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Colors.grey.shade200)),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Container(
+                        constraints: const BoxConstraints(minHeight: 48),
+                        padding: const EdgeInsets.only(left: 18, right: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(24),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Expanded(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                child: TextField(
+                                  controller: _inputController,
+                                  focusNode: _inputFocusNode,
+                                  onTap: () {
+                                    if (_showEmojiPicker) {
+                                      setState(
+                                          () => _showEmojiPicker = false);
+                                    }
+                                  },
+                                  onSubmitted: (_) => _sendMessage(),
+                                  onChanged: (value) =>
+                                      _chatController.onComposerChanged(
+                                          widget.chatId, value),
+                                  minLines: 1,
+                                  maxLines: 5,
+                                  textInputAction: TextInputAction.send,
+                                  keyboardType: TextInputType.multiline,
+                                  textCapitalization:
+                                      TextCapitalization.sentences,
+                                  cursorColor: AppTheme.primaryColor,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    height: 1.3,
+                                  ),
+                                  // isCollapsed drops the decorator's reserved
+                                  // vertical space, which was pushing the hint
+                                  // below the centre of the pill.
+                                  decoration:
+                                      AppTheme.borderlessInputDecoration(
+                                    hintText: 'Type your message..',
+                                    isCollapsed: true,
+                                  ),
+                                ),
+                              ),
                             ),
+                            IconButton(
+                              tooltip: _showEmojiPicker
+                                  ? 'Hide emoji'
+                                  : 'Emoji',
+                              onPressed: _toggleEmojiPicker,
+                              splashRadius: 20,
+                              icon: Icon(
+                                _showEmojiPicker
+                                    ? Icons.keyboard_outlined
+                                    : Icons.emoji_emotions_outlined,
+                                color: _showEmojiPicker
+                                    ? AppTheme.primaryColor
+                                    : Colors.grey.shade600,
+                                size: 22,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Obx(
+                      () => GestureDetector(
+                        onTap: _chatController.isSending.value
+                            ? null
+                            : _sendMessage,
+                        child: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: _chatController.isSending.value
+                                ? AppTheme.primaryColor.withOpacity(0.25)
+                                : AppTheme.primaryColor,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Center(
+                            child: _chatController.isSending.value
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(
+                                    Icons.send_rounded,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
                           ),
                         ),
-                        const Icon(
-                          Icons.emoji_emotions_outlined,
-                          color: Colors.grey,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Obx(
-                  () => GestureDetector(
-                    onTap: _chatController.isSending.value
-                        ? null
-                        : _sendMessage,
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: _chatController.isSending.value
-                            ? AppTheme.primaryColor.withOpacity(0.25)
-                            : AppTheme.primaryColor,
-                        borderRadius: BorderRadius.circular(14),
                       ),
-                      child: _chatController.isSending.value
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                color: Colors.white,
-                                strokeWidth: 2,
-                              ),
-                            )
-                          : const Icon(
-                              Icons.send,
-                              color: Colors.white,
-                              size: 20,
-                            ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
+
+          /// EMOJI PANEL
+          if (_showEmojiPicker)
+            EmojiPickerPanel(
+              onEmojiSelected: _insertEmoji,
+              onBackspace: _backspace,
+            ),
         ],
       ),
     );

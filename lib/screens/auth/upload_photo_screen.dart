@@ -5,6 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'location_screen.dart';
 import 'package:dating_app/utils/theme.dart';
+import 'package:get/get.dart';
+import 'package:dating_app/controllers/registration_controller.dart';
 
 class UploadPhotoScreen extends StatefulWidget {
   const UploadPhotoScreen({super.key});
@@ -18,6 +20,7 @@ class _UploadPhotoScreenState extends State<UploadPhotoScreen> {
   /// Kept as bytes rather than a dart:io File so the same code path works on
   /// web (where dart:io File throws) as well as Android/iOS.
   Uint8List? imageBytes;
+  String imageName = 'photo.jpg';
 
   Future<void> pickImage() async {
     try {
@@ -33,6 +36,7 @@ class _UploadPhotoScreenState extends State<UploadPhotoScreen> {
 
       setState(() {
         imageBytes = bytes;
+        imageName = picked.name.trim().isNotEmpty ? picked.name : 'photo.jpg';
       });
     } catch (e) {
       if (!mounted) return;
@@ -50,6 +54,11 @@ class _UploadPhotoScreenState extends State<UploadPhotoScreen> {
       );
       return;
     }
+
+    // Hand the picked bytes to the controller; registerUser() uploads them
+    // once the account exists. Without this the photo never leaves the device.
+    Get.find<RegistrationController>()
+        .setProfilePhoto(imageBytes!, filename: imageName);
 
     Navigator.push(
       context,

@@ -311,8 +311,10 @@ class AuthService {
   String? getAccessToken() =>
       _prefs?.getString(StorageKeys.userToken);
 
+  /// An empty string counts as no session — a blank token would otherwise
+  /// route a signed-out user straight into the app.
   bool isLoggedIn() =>
-      _prefs?.getString(StorageKeys.userToken) != null;
+      (_prefs?.getString(StorageKeys.userToken) ?? '').isNotEmpty;
 
   String? getCurrentUserId() =>
       _prefs?.getString(StorageKeys.userId);

@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:dating_app/app/app_routes.dart';
 import 'package:dating_app/controllers/registration_controller.dart';
 import 'package:dating_app/screens/auth/email_signin_screen.dart';
+import 'package:dating_app/screens/auth/email_signup_screen.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:dating_app/utils/theme.dart';
@@ -101,6 +102,25 @@ class _LocationScreenState extends State<LocationScreen> {
       if (!mounted) return;
 
       if (!response.success) {
+        // A taken email can't be fixed from the location step, so send the
+        // user back to the email screen with the reason.
+        if (RegistrationController.isDuplicateEmailFailure(response)) {
+          registrationController.clearEmailCredentials();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'That email is already registered. Sign in, or use a different email.',
+              ),
+              duration: Duration(seconds: 4),
+            ),
+          );
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const EmailSignupScreen()),
+          );
+          return;
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

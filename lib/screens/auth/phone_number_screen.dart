@@ -7,6 +7,7 @@ import 'package:dating_app/utils/theme.dart';
 import 'package:dating_app/widgets/common/gradient_button.dart';
 // 👉 import your email signup screen
 import 'package:dating_app/screens/auth/email_signup_screen.dart';
+import 'package:dating_app/screens/auth/email_signin_screen.dart';
 
 class PhoneNumberScreen extends StatefulWidget {
   final bool isLogin;
@@ -119,8 +120,10 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                         const SizedBox(height: 24),
 
                         /// TITLE
-                        const Text(
-                          "Enter your phone number",
+                        Text(
+                          widget.isLogin
+                              ? "Sign in with your phone number"
+                              : "Enter your phone number",
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.bold,
@@ -244,23 +247,26 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      const EmailSignupScreen(),
+                                  builder: (context) => widget.isLogin
+                                      ? const EmailSigninScreen()
+                                      : const EmailSignupScreen(),
                                 ),
                               );
                             },
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.mail_outline,
                                   color: AppTheme.accentColor,
                                   size: 18,
                                 ),
-                                SizedBox(width: 6),
+                                const SizedBox(width: 6),
                                 Text(
-                                  "Use email instead",
-                                  style: TextStyle(
+                                  widget.isLogin
+                                      ? "Sign in with email instead"
+                                      : "Use email instead",
+                                  style: const TextStyle(
                                     color: AppTheme.accentColor,
                                     fontWeight: FontWeight.w500,
                                   ),
