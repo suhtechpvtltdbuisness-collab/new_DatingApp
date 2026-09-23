@@ -3,6 +3,7 @@ import 'package:dating_app/network/api_client.dart';
 import 'package:dating_app/network/api_endpoints.dart';
 import 'package:dating_app/utils/constants.dart';
 import 'package:dio/dio.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -210,6 +211,7 @@ class AuthService {
     required String interestedIn,
     String? email,
     String? password,
+    String? googleSignupToken,
     required List<String> coordinates,
   }) async {
     try {
@@ -232,6 +234,9 @@ class AuthService {
       }
       if (password != null && password.isNotEmpty) {
         data["password"] = password;
+      }
+      if (googleSignupToken != null && googleSignupToken.isNotEmpty) {
+        data["googleSignupToken"] = googleSignupToken;
       }
 
       final response = await _apiClient.post<AuthResponse>(
@@ -383,6 +388,59 @@ class AuthService {
       _logger.e('Login error', error: e);
       return ApiResponse.error(
         message: 'Login failed',
+        error: e.toString(),
+      );
+    }
+  }
+
+  // ===============================
+  // GOOGLE SIGN-IN
+  // ===============================
+
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: const ['email', 'profile'],
+    serverClientId: AppConstants.googleServerClientId.isEmpty
+        ? null
+        : AppConstants.googleServerClientId,
+  );
+
+  /// Returns null when the user cancels the Google account picker.
+  Future<ApiResponse<GoogleAuthResult>?> loginWithGoogle() async {
+    try {
+      await _googleSignIn.signOut();
+      final account = await _googleSignIn.signIn();
+      if (account == null) return null;
+
+      final idToken = (await account.authentication).idToken;
+      if (idToken == null) {
+        return ApiResponse.error(
+          message: 'Google sign-in failed. Please try again.',
+          error: 'No idToken',
+        );
+      }
+
+      final response = await _apiClient.post<GoogleAuthResult>(
+        ApiEndpoints.googleLogin,
+        data: {'idToken': idToken},
+        fromJsonT: (json) => GoogleAuthResult.fromJson(
+          json is Map<String, dynamic> ? json : <String, dynamic>{},
+        ),
+      );
+
+      final auth = response.data?.auth;
+      if (response.success && auth != null) {
+        await _saveTokens(
+          auth.accessToken,
+          auth.refreshToken,
+          auth.userId,
+          auth.userEmail,
+        );
+      }
+      return response;
+    } catch (e) {
+      _logger.e('Google login error', error: e);
+      return ApiResponse.error(
+        message: 'Google sign-in failed',
         error: e.toString(),
       );
     }

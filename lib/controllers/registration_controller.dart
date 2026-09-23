@@ -34,6 +34,10 @@ class RegistrationController extends GetxController {
   final phoneNumber = ''.obs;
   void setPhoneNumber(String value) => phoneNumber.value = value;
 
+  /// Backend-issued token proving a verified Google account (replaces password).
+  final googleSignupToken = ''.obs;
+  void setGoogleSignupToken(String value) => googleSignupToken.value = value;
+
   // Loading state
   final isLoading = false.obs;
   final errorMessage = ''.obs;
@@ -86,6 +90,9 @@ class RegistrationController extends GetxController {
         interestedIn: interestedIn.value,
         email: email.value.isNotEmpty ? email.value : null,
         password: password.value.isNotEmpty ? password.value : null,
+        googleSignupToken: googleSignupToken.value.isNotEmpty
+            ? googleSignupToken.value
+            : null,
         coordinates: location,
       );
 
@@ -169,6 +176,7 @@ class RegistrationController extends GetxController {
     phoneNumber.value = '';
     profilePhotoBytes.value = null;
     profilePhotoName.value = 'photo.jpg';
+    googleSignupToken.value = '';
   }
 
   // Clear error message

@@ -1,5 +1,7 @@
 import 'package:dating_app/app/app_routes.dart';
 import 'package:dating_app/controllers/auth_controller.dart';
+import 'package:dating_app/controllers/registration_controller.dart';
+import 'package:dating_app/screens/auth/profile_setup_screen.dart';
 import 'package:dating_app/services/user_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -61,4 +63,41 @@ Future<void> finishLogin(BuildContext context) async {
   }
 
   AppRoutes.toHome();
+}
+
+/// Existing Google users go home; new ones continue into profile onboarding.
+Future<void> continueWithGoogle(BuildContext context) async {
+  final auth = Get.find<AuthController>();
+  final result = await auth.loginWithGoogle();
+  if (!context.mounted) return;
+
+  if (result == null) {
+    if (auth.errorMessage.value.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.errorMessage.value),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+    return;
+  }
+
+  if (!result.isNewUser) {
+    await finishLogin(context);
+    return;
+  }
+
+  final registration = Get.isRegistered<RegistrationController>()
+      ? Get.find<RegistrationController>()
+      : Get.put(RegistrationController());
+  registration.clearData();
+  registration.setEmail(result.email);
+  registration.setName(result.name);
+  registration.setGoogleSignupToken(result.signupToken);
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => const ProfileSetupScreen()),
+  );
 }

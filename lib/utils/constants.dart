@@ -22,6 +22,11 @@ class AppConstants {
     return dotenv.env['SUPABASE_ANON_KEY'] ?? '';
   }
 
+  static String get googleServerClientId {
+    if (!dotenv.isInitialized) return '';
+    return dotenv.env['GOOGLE_SERVER_CLIENT_ID'] ?? '';
+  }
+
   static const Duration apiTimeout = Duration(seconds: 30);
   static const int maxRetries = 3;
 

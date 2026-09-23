@@ -136,13 +136,7 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
                     icon: null,
                     imageAsset: 'assets/images/google.png',
                     label: 'Continue with Google',
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Google login is not available yet.'),
-                        ),
-                      );
-                    },
+                    onTap: () => continueWithGoogle(context),
                   ),
                 ] else ...[
                   const Text(

@@ -282,3 +282,30 @@ class AuthResponse {
     };
   }
 }
+
+class GoogleAuthResult {
+  final bool isNewUser;
+  final String email;
+  final String name;
+  final String signupToken;
+  final AuthResponse? auth;
+
+  GoogleAuthResult({
+    required this.isNewUser,
+    required this.email,
+    required this.name,
+    required this.signupToken,
+    this.auth,
+  });
+
+  factory GoogleAuthResult.fromJson(Map<String, dynamic> json) {
+    final isNewUser = json['isNewUser'] == true;
+    return GoogleAuthResult(
+      isNewUser: isNewUser,
+      email: json['email'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      signupToken: json['signupToken'] as String? ?? '',
+      auth: isNewUser ? null : AuthResponse.fromJson(json),
+    );
+  }
+}

@@ -89,6 +89,36 @@ class AuthController extends GetxController {
   }
 
   /// Login
+  /// Returns null on cancel or failure (see [errorMessage]).
+  Future<GoogleAuthResult?> loginWithGoogle() async {
+    try {
+      isLoading.value = true;
+      errorMessage.value = '';
+
+      final response = await _authService.loginWithGoogle();
+      if (response == null) return null;
+
+      if (!response.success || response.data == null) {
+        errorMessage.value = response.message;
+        return null;
+      }
+
+      final auth = response.data!.auth;
+      if (auth != null) {
+        isLoggedIn.value = true;
+        userId.value = auth.userId;
+        userEmail.value = auth.userEmail;
+      }
+      return response.data;
+    } catch (e) {
+      errorMessage.value = 'Google sign-in failed';
+      _logger.e('Google login error', error: e);
+      return null;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
   Future<bool> login({
     required String email,
     required String password,

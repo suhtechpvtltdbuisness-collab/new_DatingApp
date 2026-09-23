@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:dating_app/screens/auth/email_signin_screen.dart';
 import 'package:dating_app/services/auth_service.dart';
+import 'package:dating_app/utils/post_login.dart';
 import 'package:dating_app/utils/theme.dart';
 import 'package:dating_app/widgets/common/gradient_button.dart';
 import 'email_otp_screen.dart';
@@ -256,9 +257,7 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
                         borderRadius: BorderRadius.circular(30),
                       ),
                       child: ElevatedButton(
-                        onPressed: () {
-                          // TODO: Google login
-                        },
+                        onPressed: () => continueWithGoogle(context),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
                           shadowColor: Colors.transparent,

@@ -28,6 +28,7 @@ class _SetPasswordScreenState extends State<SetPasswordScreen> {
     super.initState();
     // Set email in controller
     registrationController.setEmail(widget.email);
+    registrationController.setGoogleSignupToken('');
   }
 
   @override
