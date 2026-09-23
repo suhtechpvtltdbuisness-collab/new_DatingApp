@@ -3,6 +3,7 @@ import 'package:dating_app/network/api_client.dart';
 import 'package:dating_app/network/api_endpoints.dart';
 import 'package:dating_app/utils/constants.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -397,12 +398,16 @@ class AuthService {
   // GOOGLE SIGN-IN
   // ===============================
 
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: const ['email', 'profile'],
-    serverClientId: AppConstants.googleServerClientId.isEmpty
+  late final GoogleSignIn _googleSignIn = () {
+    final id = AppConstants.googleServerClientId.isEmpty
         ? null
-        : AppConstants.googleServerClientId,
-  );
+        : AppConstants.googleServerClientId;
+    return GoogleSignIn(
+      scopes: const ['email', 'profile'],
+      clientId: kIsWeb ? id : null,
+      serverClientId: kIsWeb ? null : id,
+    );
+  }();
 
   /// Returns null when the user cancels the Google account picker.
   Future<ApiResponse<GoogleAuthResult>?> loginWithGoogle() async {
@@ -411,17 +416,19 @@ class AuthService {
       final account = await _googleSignIn.signIn();
       if (account == null) return null;
 
-      final idToken = (await account.authentication).idToken;
-      if (idToken == null) {
+      final tokens = await account.authentication;
+      if (tokens.idToken == null && tokens.accessToken == null) {
         return ApiResponse.error(
           message: 'Google sign-in failed. Please try again.',
-          error: 'No idToken',
+          error: 'No Google token',
         );
       }
 
       final response = await _apiClient.post<GoogleAuthResult>(
         ApiEndpoints.googleLogin,
-        data: {'idToken': idToken},
+        data: tokens.idToken != null
+            ? {'idToken': tokens.idToken}
+            : {'accessToken': tokens.accessToken},
         fromJsonT: (json) => GoogleAuthResult.fromJson(
           json is Map<String, dynamic> ? json : <String, dynamic>{},
         ),
