@@ -71,7 +71,7 @@ Currently registered pages in `AppRoutes.pages` include onboarding, login, signu
 
 ## API Backend
 Backend base URL:
-- `https://dating-backend-rust.vercel.app`
+- `https://new-dating-app-backend.vercel.app`
 
 ### Auth Endpoints
 - `POST /users/register`

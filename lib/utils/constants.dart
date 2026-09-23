@@ -3,7 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class AppConstants {
   // API Configuration
   static const String _defaultBaseUrl =
-      'https://dating-backend-rust.vercel.app';
+      'https://new-dating-app-backend.vercel.app';
 
   static String get baseUrl {
     if (!dotenv.isInitialized) return _defaultBaseUrl;
