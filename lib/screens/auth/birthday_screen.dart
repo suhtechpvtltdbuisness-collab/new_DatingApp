@@ -19,7 +19,7 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
   ];
 
   int selectedMonth = 5;
-  int selectedDay = 14;
+  int selectedDay = 15;
   int selectedYear = 1999;
   final RegistrationController registrationController = Get.find<RegistrationController>();
 
@@ -36,6 +36,8 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
   }
 
   void goNext() {
+    final daysInMonth = DateTime(selectedYear, selectedMonth + 2, 0).day;
+    selectedDay = selectedDay.clamp(1, daysInMonth);
     // Format DOB as YYYY-MM-DD
     String dob = '${selectedYear.toString().padLeft(4, '0')}-${(selectedMonth + 1).toString().padLeft(2, '0')}-${selectedDay.toString().padLeft(2, '0')}';
     registrationController.setDob(dob);
@@ -137,10 +139,10 @@ class _BirthdayScreenState extends State<BirthdayScreen> {
 
                   wheelPicker(
                     items: List.generate(31, (i) => i + 1),
-                    selectedIndex: selectedDay,
+                    selectedIndex: selectedDay - 1,
                     onChanged: (index) {
                       setState(() {
-                        selectedDay = index;
+                        selectedDay = index + 1;
                       });
                     },
                     width: 70,

@@ -41,6 +41,7 @@ class UserModel {
   final bool isVerified;
   final bool isOnline;
   final bool active;
+  final bool isHidden;
   final List<String>? blockedUsers;
 
   UserModel({
@@ -84,6 +85,7 @@ class UserModel {
     this.isVerified = false,
     this.isOnline = false,
     this.active = true,
+    this.isHidden = false,
     this.blockedUsers,
   });
 
@@ -202,6 +204,7 @@ class UserModel {
       isVerified: json['isVerified'] ?? false,
       isOnline: json['isOnline'] ?? false,
       active: json['active'] != false,
+      isHidden: json['isHidden'] == true,
       blockedUsers: json['blockedUsers'] != null
           ? List<String>.from(json['blockedUsers'])
           : null,
@@ -342,6 +345,7 @@ class UserModel {
     bool? isVerified,
     bool? isOnline,
     bool? active,
+    bool? isHidden,
     List<String>? blockedUsers,
   }) {
     return UserModel(
@@ -385,6 +389,7 @@ class UserModel {
       isVerified: isVerified ?? this.isVerified,
       isOnline: isOnline ?? this.isOnline,
       active: active ?? this.active,
+      isHidden: isHidden ?? this.isHidden,
       blockedUsers: blockedUsers ?? this.blockedUsers,
     );
   }

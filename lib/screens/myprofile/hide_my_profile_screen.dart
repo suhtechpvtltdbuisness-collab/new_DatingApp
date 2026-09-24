@@ -1,3 +1,4 @@
+import 'package:dating_app/services/user_service.dart';
 import 'package:flutter/material.dart';
 
 class HideMyProfileScreen extends StatefulWidget {
@@ -8,7 +9,21 @@ class HideMyProfileScreen extends StatefulWidget {
 }
 
 class _HideMyProfileScreenState extends State<HideMyProfileScreen> {
+  final UserService _userService = UserService();
   bool _isProfileHidden = false;
+  bool _isSaving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStatus();
+  }
+
+  Future<void> _loadStatus() async {
+    final response = await _userService.getMyProfile();
+    if (!mounted || !response.success || response.data == null) return;
+    setState(() => _isProfileHidden = response.data!.isHidden);
+  }
 
   // ─── CONFIRMATION MODAL ──────────────────────────────────────────────────────
   Future<bool> _showConfirmDialog() async {
@@ -120,16 +135,28 @@ class _HideMyProfileScreenState extends State<HideMyProfileScreen> {
 
   // ─── TOGGLE HANDLER ──────────────────────────────────────────────────────────
   Future<void> _handleToggle(bool value) async {
+    if (_isSaving) return;
     if (value) {
       final confirmed = await _showConfirmDialog();
       if (!confirmed) return;
     }
-    setState(() => _isProfileHidden = value);
+    setState(() {
+      _isProfileHidden = value;
+      _isSaving = true;
+    });
+    final response = await _userService.updateMyProfile({'isHidden': value});
+    if (!mounted) return;
+    setState(() {
+      _isSaving = false;
+      if (!response.success) _isProfileHidden = !value;
+    });
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            value
+            !response.success
+                ? 'Could not update your profile visibility. Please try again.'
+                : value
                 ? 'Your profile is now hidden'
                 : 'Your profile is now visible',
             style: const TextStyle(color: Colors.white, fontSize: 13.5),

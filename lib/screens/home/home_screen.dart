@@ -2,7 +2,9 @@ import 'package:dating_app/app/app_routes.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/utils/constants.dart';
 import 'package:dating_app/utils/theme.dart';
+import 'package:dating_app/controllers/chat_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import '../chat/chat_list_screen.dart';
 import '../filter/filter_screen.dart';
 import '../myprofile/my_profile_screen.dart';
@@ -29,14 +31,25 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!AuthService().isLoggedIn()) {
         AppRoutes.toOnboarding();
+        return;
       }
+      Get.find<ChatController>().setChatListVisible(_currentIndex == 2);
     });
+  }
+
+  @override
+  void dispose() {
+    if (Get.isRegistered<ChatController>()) {
+      Get.find<ChatController>().setChatListVisible(false);
+    }
+    super.dispose();
   }
 
   void _onTabTapped(int index) {
     setState(() {
       _currentIndex = index;
     });
+    Get.find<ChatController>().setChatListVisible(index == 2);
   }
 
   @override
@@ -137,11 +150,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
     final isActive = _currentIndex == index;
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _currentIndex = index;
-        });
-      },
+      onTap: () => _onTabTapped(index),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),

@@ -36,7 +36,7 @@ class ChatMessageModel {
       senderImage: json['senderImage'] ?? '',
       message: json['message'] ?? '',
       timestamp: json['timestamp'] != null
-          ? DateTime.parse(json['timestamp'])
+          ? DateTime.parse(json['timestamp']).toLocal()
           : DateTime.now(),
       status: MessageStatus.values.byName(json['status'] ?? 'sent'),
       isRead: json['isRead'] ?? false,
@@ -128,12 +128,12 @@ class ConversationModel {
       otherUserImage: json['otherUserImage'] ?? '',
       lastMessage: json['lastMessage'] ?? '',
       lastMessageTime: json['lastMessageTime'] != null
-          ? DateTime.parse(json['lastMessageTime'])
+          ? DateTime.parse(json['lastMessageTime']).toLocal()
           : DateTime.now(),
       unreadCount: json['unreadCount'] ?? 0,
       isOnline: json['isOnline'] ?? false,
       lastSeenTime: json['lastSeenTime'] != null
-          ? DateTime.parse(json['lastSeenTime'])
+          ? DateTime.parse(json['lastSeenTime']).toLocal()
           : null,
       messages: json['messages'] != null
           ? List<ChatMessageModel>.from(

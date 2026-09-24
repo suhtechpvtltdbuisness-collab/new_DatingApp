@@ -67,8 +67,23 @@ class ChatController extends GetxController {
         userId: userId,
         onEvent: _onInboxEvent,
       );
-    } else {
+    } else if (_chatListVisible) {
       _startPolling();
+    }
+  }
+
+  bool _chatListVisible = false;
+
+  /// Without realtime, polling runs only while the chat list or a thread is on screen.
+  void setChatListVisible(bool visible) {
+    _chatListVisible = visible;
+    if (_realtime.isEnabled) return;
+    final threadOpen = currentConversation.value?.id.isNotEmpty ?? false;
+    if (visible || threadOpen) {
+      if (visible) getConversations(refresh: true, silent: true);
+      _startPolling();
+    } else {
+      _stopPolling();
     }
   }
 
@@ -110,7 +125,7 @@ class ChatController extends GetxController {
     final lastMessageAtRaw = payload['lastMessageAt'];
     DateTime? lastMessageAt;
     if (lastMessageAtRaw != null) {
-      lastMessageAt = DateTime.tryParse(lastMessageAtRaw.toString());
+      lastMessageAt = DateTime.tryParse(lastMessageAtRaw.toString())?.toLocal();
     }
 
     final openId = currentConversation.value?.id;
@@ -194,7 +209,8 @@ class ChatController extends GetxController {
       }
 
       final conversationsFuture = _chatService.getConversations();
-      final blockListFuture = _userController.getBlockedUsers();
+      final blockListFuture =
+          silent ? Future.value(true) : _userController.getBlockedUsers();
       final response = await conversationsFuture;
       final blockListLoaded = await blockListFuture;
 
@@ -301,8 +317,7 @@ class ChatController extends GetxController {
     await _realtime.unsubscribeConversation();
     clearCurrentConversation();
     if (!_realtime.isEnabled) {
-      // Keep list polling when not inside a thread.
-      _startPolling();
+      _chatListVisible ? _startPolling() : _stopPolling();
     }
   }
 
