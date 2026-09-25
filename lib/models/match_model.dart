@@ -1,6 +1,8 @@
+import 'package:dating_app/models/user_model.dart';
 import 'package:dating_app/utils/constants.dart';
 
 class MatchModel {
+  final UserModel? matchedUser;
   final String id;
   final String userId;
   final String targetUserId;
@@ -23,6 +25,7 @@ class MatchModel {
     this.isNew = true,
     this.likeCount = 0,
     this.superLikeCount = 0,
+    this.matchedUser,
   });
 
   bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
@@ -60,6 +63,7 @@ class MatchModel {
       isNew: json['isNew'] ?? true,
       likeCount: json['likeCount'] ?? 0,
       superLikeCount: json['superLikeCount'] ?? 0,
+      matchedUser: targetUser != null ? UserModel.fromJson(targetUser) : null,
     );
   }
 
@@ -101,6 +105,7 @@ class MatchModel {
       isNew: isNew ?? this.isNew,
       likeCount: likeCount ?? this.likeCount,
       superLikeCount: superLikeCount ?? this.superLikeCount,
+      matchedUser: matchedUser,
     );
   }
 

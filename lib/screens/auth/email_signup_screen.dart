@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:dating_app/controllers/registration_controller.dart';
 import 'package:dating_app/screens/auth/email_signin_screen.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/utils/post_login.dart';
@@ -47,6 +48,19 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => EmailOtpScreen(email: email)),
+        );
+      } else if (RegistrationController.isDuplicateEmailFailure(response)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text("An account with this email already exists."),
+            action: SnackBarAction(
+              label: "Sign in",
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const EmailSigninScreen()),
+              ),
+            ),
+          ),
         );
       } else {
         // GET /users/otp/email/:email currently fails server-side (HTTP 500)

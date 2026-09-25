@@ -65,6 +65,7 @@ class _MatchesScreenState extends State<MatchesScreen> {
                         separatorBuilder: (_, _) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final match = swipeController.matches[index];
+                          final user = match.matchedUser;
                           return GlassCard(
                             radius: 20,
                             child: Row(
@@ -72,17 +73,29 @@ class _MatchesScreenState extends State<MatchesScreen> {
                                 CircleAvatar(
                                   radius: 24,
                                   backgroundColor: AppTheme.primaryColor.withOpacity(0.15),
-                                  child: const Icon(Icons.person, color: AppTheme.primaryColor),
+                                  backgroundImage: user != null && user.profileImage.isNotEmpty
+                                      ? NetworkImage(user.profileImage)
+                                      : null,
+                                  child: user != null && user.profileImage.isNotEmpty
+                                      ? null
+                                      : const Icon(Icons.person, color: AppTheme.primaryColor),
                                 ),
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(match.userId, style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.textPrimaryColor)),
+                                      Text(
+                                        user == null
+                                            ? 'Unknown user'
+                                            : user.age > 0
+                                                ? '${user.fullName}, ${user.age}'
+                                                : user.fullName,
+                                        style: const TextStyle(fontWeight: FontWeight.w700, color: AppTheme.textPrimaryColor),
+                                      ),
                                       const SizedBox(height: 2),
                                       Text(
-                                        match.status.name,
+                                        user?.locationLabel.isNotEmpty == true ? user!.locationLabel : match.status.name,
                                         style: const TextStyle(color: AppTheme.textSecondaryColor, fontSize: 13),
                                       ),
                                     ],

@@ -38,6 +38,7 @@ class ChatController extends GetxController {
   static const int PAGE_SIZE = 50;
   int _messagePage = 1;
   Timer? _pollTimer;
+  Timer? _presenceTimer;
   Timer? _typingDebounce;
 
   @override
@@ -50,6 +51,7 @@ class ChatController extends GetxController {
   @override
   void onClose() {
     _pollTimer?.cancel();
+    _presenceTimer?.cancel();
     _typingDebounce?.cancel();
     _realtime.disposeAll();
     messageController.value.dispose();
@@ -256,6 +258,7 @@ class ChatController extends GetxController {
 
   void resetSession() {
     _stopPolling();
+    _presenceTimer?.cancel();
     _realtime.disposeAll();
     conversations.clear();
     messages.clear();
@@ -309,10 +312,22 @@ class ChatController extends GetxController {
       _startPolling();
     }
 
+    _presenceTimer?.cancel();
+    _presenceTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      final response = await _chatService.getConversation(chatId);
+      final current = currentConversation.value;
+      if (!response.success || response.data == null || current?.id != chatId) return;
+      currentConversation.value = current!.copyWith(
+        isOnline: response.data!.isOnline,
+        lastSeenTime: response.data!.lastSeenTime,
+      );
+    });
+
     return true;
   }
 
   Future<void> leaveConversation() async {
+    _presenceTimer?.cancel();
     isTyping.value = false;
     await _realtime.unsubscribeConversation();
     clearCurrentConversation();
