@@ -511,7 +511,7 @@ class AuthService {
       _logger.i('Resetting password for: $email');
 
       final response = await _apiClient.post<void>(
-        '/users/forgot-password', // Assuming this endpoint exists
+        '/auth/forgot-password',
         data: {"email": email},
         fromJsonT: (_) {},
       );
@@ -523,6 +523,31 @@ class AuthService {
         message: 'Failed to reset password',
         error: e.toString(),
       );
+    }
+  }
+
+  Future<ApiResponse<void>> verifyResetOtp(String email, String otp) async {
+    try {
+      return await _apiClient.post<void>(
+        '/auth/verify-reset-otp',
+        data: {"email": email, "otp": otp},
+        fromJsonT: (_) {},
+      );
+    } catch (e) {
+      return ApiResponse.error(message: 'Failed to verify code', error: e.toString());
+    }
+  }
+
+  Future<ApiResponse<void>> confirmPasswordReset(
+      String email, String otp, String newPassword) async {
+    try {
+      return await _apiClient.post<void>(
+        '/auth/reset-password',
+        data: {"email": email, "otp": otp, "newPassword": newPassword},
+        fromJsonT: (_) {},
+      );
+    } catch (e) {
+      return ApiResponse.error(message: 'Failed to reset password', error: e.toString());
     }
   }
 

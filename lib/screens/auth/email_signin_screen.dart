@@ -1,6 +1,7 @@
 import 'package:dating_app/app/app_routes.dart';
 import 'package:dating_app/controllers/auth_controller.dart';
 import 'package:dating_app/screens/auth/email_signup_screen.dart';
+import 'package:dating_app/screens/auth/forgot_password_screen.dart';
 import 'package:dating_app/utils/theme.dart';
 import 'package:dating_app/utils/validators.dart';
 import 'package:dating_app/widgets/common/gradient_button.dart';
@@ -191,7 +192,24 @@ class _EmailSigninScreenState extends State<EmailSigninScreen> {
                           ),
                     ),
                   ),
-                  const SizedBox(height: 30),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => Get.to(
+                        () => ForgotPasswordScreen(
+                          initialEmail: emailController.text.trim(),
+                        ),
+                      ),
+                      child: const Text(
+                        'Forgot password?',
+                        style: TextStyle(
+                          color: AppTheme.accentColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
                   Obx(
                     () => GradientButton(
                       label: 'Login',
