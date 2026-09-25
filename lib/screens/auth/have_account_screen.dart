@@ -59,7 +59,7 @@ class HaveAccountScreen extends StatelessWidget {
                           const SizedBox(width: 8),
 
                           const Text(
-                            "Velora",
+                            "Vellora",
                             style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
