@@ -110,6 +110,22 @@ class AuthService {
     }
   }
 
+  /// Lightweight preflight so signup fails on the email step, not Location.
+  Future<ApiResponse<void>> checkEmailAvailable(String email) async {
+    try {
+      return await _apiClient.get<void>(
+        ApiEndpoints.emailAvailable(Uri.encodeComponent(email)),
+        fromJsonT: (_) {},
+      );
+    } catch (e) {
+      _logger.e('Email availability check error', error: e);
+      return ApiResponse.error(
+        message: 'Could not verify email',
+        error: e.toString(),
+      );
+    }
+  }
+
   // ===============================
   // PHONE OTP — GET /users/otp/:phoneNumber
   // ===============================

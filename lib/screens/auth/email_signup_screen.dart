@@ -8,7 +8,10 @@ import 'package:dating_app/widgets/common/gradient_button.dart';
 import 'email_otp_screen.dart';
 
 class EmailSignupScreen extends StatefulWidget {
-  const EmailSignupScreen({super.key});
+  /// Shown once on open (e.g. after redirect from a later signup step).
+  final String? bannerMessage;
+
+  const EmailSignupScreen({super.key, this.bannerMessage});
 
   @override
   State<EmailSignupScreen> createState() => _EmailSignupScreenState();
@@ -19,6 +22,30 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
   final AuthService _authService = AuthService();
   bool isChecked = false;
   bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final banner = widget.bannerMessage?.trim();
+    if (banner != null && banner.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(banner),
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Sign in',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const EmailSigninScreen()),
+              ),
+            ),
+          ),
+        );
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -41,6 +68,35 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
     });
 
     try {
+      final availability = await _authService.checkEmailAvailable(email);
+      if (!availability.success) {
+        if (RegistrationController.isDuplicateEmailFailure(availability)) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text("An account with this email already exists."),
+              action: SnackBarAction(
+                label: "Sign in",
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const EmailSigninScreen()),
+                ),
+              ),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                availability.message.isNotEmpty
+                    ? availability.message
+                    : "Could not verify email. Please try again.",
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
       final response = await _authService.sendEmailOtp(email);
 
       if (response.success) {

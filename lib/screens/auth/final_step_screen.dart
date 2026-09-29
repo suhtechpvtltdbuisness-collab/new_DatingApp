@@ -36,17 +36,14 @@ class _FinalStepScreenState extends State<FinalStepScreen> {
     // screen, not here.
     if (RegistrationController.isDuplicateEmailFailure(response)) {
       registrationController.clearEmailCredentials();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'That email is already registered. Sign in, or use a different email.',
-          ),
-          duration: Duration(seconds: 4),
-        ),
-      );
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const EmailSignupScreen()),
+        MaterialPageRoute(
+          builder: (_) => const EmailSignupScreen(
+            bannerMessage:
+                'That email is already registered. Sign in, or use a different email.',
+          ),
+        ),
       );
       return;
     }

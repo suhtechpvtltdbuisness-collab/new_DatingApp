@@ -22,10 +22,41 @@ class _LocationScreenState extends State<LocationScreen> {
   bool isLoading = false;
   int denyCount = 0;
 
+  Future<void> _redirectToEmailStep(String message) async {
+    registrationController.clearEmailCredentials();
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EmailSignupScreen(bannerMessage: message),
+      ),
+    );
+  }
+
+  /// Catch a taken email before location permission / register, so the
+  /// Location step never surfaces "Email already exists".
+  Future<bool> _ensureEmailStillAvailable() async {
+    final email = registrationController.email.value.trim();
+    if (email.isEmpty) return true;
+
+    final check = await AuthService().checkEmailAvailable(email);
+    if (check.success) return true;
+
+    if (RegistrationController.isDuplicateEmailFailure(check)) {
+      await _redirectToEmailStep(
+        'That email is already registered. Sign in, or use a different email.',
+      );
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _checkLocation(BuildContext context) async {
     setState(() => isLoading = true);
 
     try {
+      if (!await _ensureEmailStillAvailable()) return;
+
       bool serviceEnabled;
       LocationPermission permission;
 
@@ -98,25 +129,17 @@ class _LocationScreenState extends State<LocationScreen> {
         registrationController.email.value.isNotEmpty;
 
     if (hasSignupData && !authService.isLoggedIn()) {
+      if (!await _ensureEmailStillAvailable()) return;
+
       final response = await registrationController.registerUser();
       if (!mounted) return;
 
       if (!response.success) {
-        // A taken email can't be fixed from the location step, so send the
-        // user back to the email screen with the reason.
+        // Never keep the user on Location for a taken email — send them back
+        // to the email step where they can fix it.
         if (RegistrationController.isDuplicateEmailFailure(response)) {
-          registrationController.clearEmailCredentials();
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'That email is already registered. Sign in, or use a different email.',
-              ),
-              duration: Duration(seconds: 4),
-            ),
-          );
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const EmailSignupScreen()),
+          await _redirectToEmailStep(
+            'That email is already registered. Sign in, or use a different email.',
           );
           return;
         }

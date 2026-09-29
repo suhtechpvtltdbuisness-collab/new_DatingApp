@@ -1,8 +1,11 @@
 import 'dart:math' as math;
 
+import 'package:dating_app/controllers/chat_controller.dart';
 import 'package:dating_app/controllers/swipe_controller.dart';
+import 'package:dating_app/controllers/user_controller.dart';
 import 'package:dating_app/models/swipe_models.dart';
 import 'package:dating_app/models/user_model.dart';
+import 'package:dating_app/screens/chat/chat_screen.dart';
 import 'package:dating_app/screens/profile/profile_screen.dart';
 import 'package:dating_app/utils/constants.dart';
 import 'package:dating_app/utils/theme.dart';
@@ -100,15 +103,35 @@ class _SwipeScreenState extends State<SwipeScreen>
         ),
       );
     } else if (direction == SwipeAction.like && result.isMatch) {
+      if (!Get.isRegistered<UserController>()) {
+        Get.put(UserController());
+      }
+      final userController = Get.find<UserController>();
+      if (userController.currentUser.value == null) {
+        await userController.getMyProfile();
+      }
+      if (!mounted) return;
+
+      final myPhoto =
+          userController.currentUser.value?.profileImage ?? '';
+      final matchedFromApi = result.match?.matchedUser;
+      final theirPhotos = matchedFromApi?.photoUrls.isNotEmpty == true
+          ? matchedFromApi!.photoUrls
+          : profile.photoUrls;
+      final theirPhoto = theirPhotos.isNotEmpty ? theirPhotos.first : '';
+
       await Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => MatchScreen(
-            userName: profile.fullName,
-            image1: 'assets/images/profile.png',
-            image2: profile.profileImage.isNotEmpty
-                ? profile.profileImage
-                : 'assets/images/profile.png',
+            matchedUserId: matchedFromApi?.id.isNotEmpty == true
+                ? matchedFromApi!.id
+                : profile.id,
+            userName: (matchedFromApi?.fullName.trim().isNotEmpty == true)
+                ? matchedFromApi!.fullName
+                : profile.fullName,
+            myImage: myPhoto,
+            theirImage: theirPhoto,
           ),
         ),
       );
@@ -637,17 +660,102 @@ class _EmptyDeckState extends StatelessWidget {
   }
 }
 
-class MatchScreen extends StatelessWidget {
+class MatchScreen extends StatefulWidget {
   const MatchScreen({
     super.key,
+    required this.matchedUserId,
     required this.userName,
-    required this.image1,
-    required this.image2,
+    required this.myImage,
+    required this.theirImage,
   });
 
+  final String matchedUserId;
   final String userName;
-  final String image1;
-  final String image2;
+  final String myImage;
+  final String theirImage;
+
+  @override
+  State<MatchScreen> createState() => _MatchScreenState();
+}
+
+class _MatchScreenState extends State<MatchScreen> {
+  bool _openingChat = false;
+
+  Future<void> _sayHello() async {
+    if (_openingChat) return;
+    setState(() => _openingChat = true);
+
+    final chatController = Get.find<ChatController>();
+    final conv = await chatController.createChat(
+      recipientId: widget.matchedUserId,
+      initialMessage: 'Hello 👋',
+    );
+
+    if (!mounted) return;
+    setState(() => _openingChat = false);
+
+    if (conv == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            chatController.errorMessage.value.isNotEmpty
+                ? chatController.errorMessage.value
+                : 'Could not start a chat. Please try again.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ChatScreen(
+          chatId: conv.id,
+          name: widget.userName,
+          image: widget.theirImage.isNotEmpty
+              ? widget.theirImage
+              : 'assets/images/profile.png',
+        ),
+      ),
+    );
+  }
+
+  Widget _photoCard(String imageUrl, {required double angle}) {
+    return Transform.rotate(
+      angle: angle,
+      child: Container(
+        width: 180,
+        height: 240,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white, width: 4),
+          boxShadow: const [
+            BoxShadow(color: Colors.black26, blurRadius: 20, offset: Offset(0, 10)),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: imageUrl.startsWith('http')
+              ? Image.network(
+                  imageUrl,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  height: double.infinity,
+                  errorBuilder: (_, _, _) => Image.asset(
+                    'assets/images/profile.png',
+                    fit: BoxFit.cover,
+                  ),
+                )
+              : Image.asset(
+                  imageUrl.isNotEmpty ? imageUrl : 'assets/images/profile.png',
+                  fit: BoxFit.cover,
+                ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -672,54 +780,33 @@ class MatchScreen extends StatelessWidget {
               Stack(
                 alignment: Alignment.center,
                 children: [
-                  Transform.rotate(
-                    angle: -0.25,
-                    child: Container(
-                      width: 180,
-                      height: 240,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.white, width: 4),
-                        image: DecorationImage(
-                          image: _imageProvider(image1),
-                          fit: BoxFit.cover,
-                        ),
-                        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 20, offset: Offset(0, 10))],
-                      ),
-                    ),
-                  ),
+                  // You (self) — left
+                  _photoCard(widget.myImage, angle: -0.25),
+                  // Matched person — right, on top
                   Transform.translate(
                     offset: const Offset(80, -40),
-                    child: Transform.rotate(
-                      angle: 0.25,
-                      child: Container(
-                        width: 180,
-                        height: 240,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.white, width: 4),
-                          image: DecorationImage(
-                            image: _imageProvider(image2),
-                            fit: BoxFit.cover,
-                          ),
-                          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 20, offset: Offset(0, 10))],
-                        ),
-                      ),
-                    ),
+                    child: _photoCard(widget.theirImage, angle: 0.25),
                   ),
                   Positioned(
                     top: 0,
                     child: Container(
                       padding: const EdgeInsets.all(14),
-                      decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white),
-                      child: const Icon(Icons.favorite, color: AppTheme.primaryColor, size: 26),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                      ),
+                      child: const Icon(
+                        Icons.favorite,
+                        color: AppTheme.primaryColor,
+                        size: 26,
+                      ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 40),
               Text(
-                "You and $userName liked\neach other!",
+                "You and ${widget.userName} liked\neach other!",
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 26,
@@ -747,11 +834,20 @@ class MatchScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(30),
                       ),
                     ),
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      'Say hello',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                    ),
+                    onPressed: _openingChat ? null : _sayHello,
+                    child: _openingChat
+                        ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text(
+                            'Say hello',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                   ),
                 ),
               ),
@@ -771,7 +867,10 @@ class MatchScreen extends StatelessWidget {
                     onPressed: () => Navigator.pop(context),
                     child: const Text(
                       'Keep swiping',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
@@ -781,12 +880,5 @@ class MatchScreen extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  ImageProvider _imageProvider(String imagePath) {
-    if (imagePath.startsWith('http')) {
-      return NetworkImage(imagePath);
-    }
-    return AssetImage(imagePath);
   }
 }

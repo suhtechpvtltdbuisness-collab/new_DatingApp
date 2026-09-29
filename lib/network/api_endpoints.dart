@@ -18,6 +18,9 @@ class ApiEndpoints {
   static String sendEmailOtp(String email) =>
       '/users/otp/email/$email';
 
+  static String emailAvailable(String email) =>
+      '/users/email-available/$email';
+
   static const String verifyEmailOtp =
       '/users/otp/email/validate';
 

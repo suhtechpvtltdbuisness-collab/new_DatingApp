@@ -4,8 +4,10 @@ import 'package:dating_app/models/chat_model.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/services/chat_realtime_service.dart';
 import 'package:dating_app/services/chat_service.dart';
+import 'package:dating_app/services/notification_service.dart';
 import 'package:dating_app/controllers/user_controller.dart';
 import 'package:dating_app/utils/constants.dart';
+import 'package:dating_app/utils/content_moderation.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 
@@ -135,8 +137,10 @@ class ChatController extends GetxController {
     final unreadDelta = (payload['unreadDelta'] as num?)?.toInt() ?? 0;
 
     final idx = conversations.indexWhere((c) => c.id == conversationId);
+    String previewName = payload['senderName']?.toString() ?? '';
     if (idx != -1) {
       final existing = conversations[idx];
+      if (previewName.isEmpty) previewName = existing.otherUserName;
       conversations[idx] = existing.copyWith(
         lastMessage: lastMessage.isNotEmpty ? lastMessage : existing.lastMessage,
         lastMessageTime: lastMessageAt ?? existing.lastMessageTime,
@@ -159,6 +163,12 @@ class ChatController extends GetxController {
       _upsertMessage(msg);
       _sortMessages();
       markConversationAsRead(conversationId);
+    } else if (!isOpen && unreadDelta > 0 && lastMessage.isNotEmpty) {
+      NotificationService.instance.showMessageNotification(
+        conversationId: conversationId,
+        title: previewName.isNotEmpty ? previewName : 'New message',
+        body: lastMessage,
+      );
     }
   }
 
@@ -421,6 +431,12 @@ class ChatController extends GetxController {
     if (messageText.trim().isEmpty) return false;
 
     final trimmed = messageText.trim();
+    final abusive = ContentModeration.abusiveWarning(trimmed);
+    if (abusive != null) {
+      errorMessage.value = abusive;
+      return false;
+    }
+
     if (trimmed.length > AppConstants.maxChatMessageLength) {
       errorMessage.value =
           'Message must be at most ${AppConstants.maxChatMessageLength} characters';

@@ -110,6 +110,8 @@ class StorageKeys {
   // App Settings
   static const String isDarkMode = 'is_dark_mode';
   static const String notificationsEnabled = 'notifications_enabled';
+  static const String messageNotifications = 'message_notifications';
+  static const String matchNotifications = 'match_notifications';
   static const String locationEnabled = 'location_enabled';
   static const String isFirstLaunch = 'is_first_launch';
 

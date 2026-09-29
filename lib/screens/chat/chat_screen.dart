@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../controllers/chat_controller.dart';
 import '../../models/chat_model.dart';
 import '../../utils/constants.dart';
+import '../../utils/content_moderation.dart';
 import '../../utils/theme.dart';
 import '../home/home_screen.dart';
 import '../profile/profile_screen.dart';
@@ -177,6 +178,12 @@ class _ChatScreenState extends State<ChatScreen> {
   void _sendMessage() {
     final text = _inputController.text.trim();
     if (text.isEmpty) return;
+
+    final abusive = ContentModeration.abusiveWarning(text);
+    if (abusive != null) {
+      _showToast(abusive);
+      return;
+    }
 
     final warning = _contactWarningForText(text);
     if (warning != null) {

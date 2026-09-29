@@ -18,11 +18,13 @@ class SwipeSubmissionResult {
   final bool success;
   final bool isMatch;
   final String message;
+  final MatchModel? match;
 
   const SwipeSubmissionResult({
     required this.success,
     this.isMatch = false,
     this.message = '',
+    this.match,
   });
 }
 
@@ -398,6 +400,7 @@ class SwipeController extends GetxController {
         success: true,
         isMatch: isMatch,
         message: successMessage.value,
+        match: match,
       );
     } catch (e) {
       _restoreProfile(removedProfile, profileIndex);
