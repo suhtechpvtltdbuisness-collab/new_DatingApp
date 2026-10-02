@@ -31,6 +31,12 @@ void main() {
         ),
         isTrue,
       );
+      expect(
+        RegistrationController.isDuplicateEmailFailure(
+          _fail('This exception was thrown because the response has a status code of 409', statusCode: 409),
+        ),
+        isTrue,
+      );
     });
 
     test('ignores unrelated failures', () {

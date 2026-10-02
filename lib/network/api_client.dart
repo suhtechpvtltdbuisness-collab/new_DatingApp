@@ -187,18 +187,31 @@ class ApiClient {
     _logger.i('Tokens cleared');
   }
 
-  // Get Dio error message
+  // Get Dio error message — prefer the backend JSON `message` when present.
   String _getDioErrorMessage(DioException error) {
-    if (error.response?.statusCode == 401) {
+    final body = error.response?.data;
+    if (body is Map && body['message'] != null) {
+      final backendMessage = body['message'].toString().trim();
+      if (backendMessage.isNotEmpty) return backendMessage;
+    }
+
+    final status = error.response?.statusCode;
+    if (status == 401) {
       return 'Unauthorized. Please login again.';
-    } else if (error.response?.statusCode == 403) {
+    } else if (status == 403) {
       return 'Access forbidden.';
-    } else if (error.response?.statusCode == 404) {
+    } else if (status == 404) {
       return 'Resource not found.';
-    } else if (error.response?.statusCode == 500) {
+    } else if (status == 409) {
+      return 'Already exists. Please try a different value.';
+    } else if (status != null && status >= 500) {
       return 'Server error. Please try again later.';
     }
-    return error.message ?? AppConstants.serverError;
+    // Never surface Dio's validateStatus essay in the UI.
+    if (error.type == DioExceptionType.badResponse) {
+      return 'Request failed. Please try again.';
+    }
+    return AppConstants.networkError;
   }
 
   // GET request
@@ -216,12 +229,12 @@ class ApiClient {
         cancelToken: cancelToken,
       );
       return _parseResponse(response, fromJsonT);
-    } catch (e) {
+      } catch (e) {
       _logger.e('Error in GET request', error: e);
       if (e is DioException) {
         return ApiResponse.error(
           message: _getDioErrorMessage(e),
-          error: e.toString(),
+          error: e.response?.data?.toString() ?? e.toString(),
           statusCode: e.response?.statusCode ?? 0,
         );
       }
@@ -564,10 +577,12 @@ class ApiClient {
           message = "You don't have access to this.";
         } else if (status == 404) {
           message = 'Not found.';
+        } else if (status == 409) {
+          message = 'Already exists. Please try a different value.';
         } else if (status != null && status >= 500) {
           message = 'The server had a problem. Please try again shortly.';
         } else {
-          message = error.response?.statusMessage ?? 'Server error occurred';
+          message = 'Request failed. Please try again.';
         }
 
         errorDetails = body?.toString() ?? 'Unknown error';

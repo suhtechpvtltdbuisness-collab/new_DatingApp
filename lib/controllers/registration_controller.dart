@@ -136,9 +136,15 @@ class RegistrationController extends GetxController {
   static bool isDuplicateEmailFailure(ApiResponse response) {
     if (response.success) return false;
     final text = '${response.message} ${response.error ?? ''}'.toLowerCase();
+
+    // Email-available / register / OTP endpoints return 409 for a taken address.
+    if (response.statusCode == 409) {
+      if (text.contains('phone') && !text.contains('email')) return false;
+      return true;
+    }
+
     if (!text.contains('email')) return false;
-    return response.statusCode == 409 ||
-        text.contains('already') ||
+    return text.contains('already') ||
         text.contains('exists') ||
         text.contains('taken') ||
         text.contains('registered') ||
