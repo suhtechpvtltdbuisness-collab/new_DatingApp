@@ -1,7 +1,10 @@
 import 'package:dating_app/utils/theme.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:dating_app/screens/auth/phone_number_screen.dart';
 import 'package:dating_app/screens/auth/have_account_screen.dart';
+import 'package:dating_app/screens/legal/terms_screen.dart';
+import 'package:dating_app/screens/legal/privacy_policy_screen.dart';
 
 class CreateAccountScreen extends StatelessWidget {
   const CreateAccountScreen({super.key});
@@ -211,10 +214,55 @@ class CreateAccountScreen extends StatelessWidget {
                   const SizedBox(height: 20),
 
                   /// Terms Text
-                  const Text(
-                    "By signing up, you agree to our Terms.\nSee how we use your data in our Privacy Policy",
+                  RichText(
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                    text: TextSpan(
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                      children: [
+                        const TextSpan(
+                          text: "By creating an account, you agree to our ",
+                        ),
+                        TextSpan(
+                          text: "Terms & Conditions",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            decoration: TextDecoration.underline,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const TermsScreen(),
+                                ),
+                              );
+                            },
+                        ),
+                        const TextSpan(text: " and acknowledge our "),
+                        TextSpan(
+                          text: "Privacy Policy",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            decoration: TextDecoration.underline,
+                            fontWeight: FontWeight.w600,
+                          ),
+                          recognizer: TapGestureRecognizer()
+                            ..onTap = () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const PrivacyPolicyScreen(),
+                                ),
+                              );
+                            },
+                        ),
+                        const TextSpan(text: "."),
+                      ],
+                    ),
                   ),
 
                   const SizedBox(height: 30),
