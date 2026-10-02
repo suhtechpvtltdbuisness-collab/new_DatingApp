@@ -10,7 +10,7 @@ void main() {
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
-    dotenv.testLoad(fileInput: 'BASE_URL=https://new-dating-app-backend.vercel.app\n');
+    dotenv.testLoad(fileInput: 'BASE_URL=https://newdatingappbackend-production.up.railway.app\n');
     Get.reset();
   });
 
