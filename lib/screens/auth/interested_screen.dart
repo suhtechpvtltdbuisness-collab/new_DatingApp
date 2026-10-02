@@ -20,7 +20,7 @@ class _InterestedScreenState extends State<InterestedScreen> {
     if (selected == null) return;
 
     // Store interestedIn in controller
-    registrationController.setInterestedIn(selected!.toLowerCase());
+    registrationController.setInterestedIn(_normalizeOption(selected!));
 
     Navigator.push(
       context,
@@ -28,6 +28,14 @@ class _InterestedScreenState extends State<InterestedScreen> {
         builder: (_) => const ProfileTextScreen(),
       ),
     );
+  }
+
+  String _normalizeOption(String value) {
+    final lower = value.trim().toLowerCase();
+    if (lower == 'non-binary' || lower == 'nonbinary' || lower == 'gay') {
+      return 'non-binary';
+    }
+    return lower;
   }
 
   Widget option(String value, IconData icon) {
@@ -164,7 +172,7 @@ class _InterestedScreenState extends State<InterestedScreen> {
 
                 option("Men", Icons.male),
                 option("Women", Icons.female),
-                option("Gay", Icons.group),
+                option("Non-binary", Icons.group),
                 option("Other", Icons.person),
 
                 const Spacer(),

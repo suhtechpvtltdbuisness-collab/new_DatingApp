@@ -20,7 +20,7 @@ class _DescribeScreenState extends State<DescribeScreen> {
     if (selected == null) return;
 
     // Store gender in controller
-    registrationController.setGender(selected!.toLowerCase());
+    registrationController.setGender(_normalizeOption(selected!));
 
     Navigator.push(
       context,
@@ -28,6 +28,14 @@ class _DescribeScreenState extends State<DescribeScreen> {
         builder: (_) => const InterestedScreen(),
       ),
     );
+  }
+
+  String _normalizeOption(String value) {
+    final lower = value.trim().toLowerCase();
+    if (lower == 'non-binary' || lower == 'nonbinary' || lower == 'gay') {
+      return 'non-binary';
+    }
+    return lower;
   }
 
   Widget option(String value, IconData icon) {
@@ -174,7 +182,7 @@ class _DescribeScreenState extends State<DescribeScreen> {
 
                       option("Men", Icons.male),
                       option("Women", Icons.female),
-                      option("Gay", Icons.group),
+                      option("Non-binary", Icons.group),
                       option("Other", Icons.person),
 
                       const Spacer(),

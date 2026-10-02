@@ -39,7 +39,8 @@ void main() {
     });
 
     test('unknown values stay unset so server matching is untouched', () {
-      expect(DiscoveryFilters.normalizeInterestedIn('gay'), '');
+      expect(DiscoveryFilters.normalizeInterestedIn('gay'), 'other');
+      expect(DiscoveryFilters.normalizeInterestedIn('non-binary'), 'other');
       expect(const DiscoveryFilters(interestedIn: '').toQuery().containsKey('gender'), isFalse);
     });
   });

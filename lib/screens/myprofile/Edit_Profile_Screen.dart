@@ -978,7 +978,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           _gender.isEmpty ? 'Add' : _gender,
                           () => _pickOption(
                             title: 'Gender',
-                            options: const ['male', 'female', 'other'],
+                            options: const ['male', 'female', 'non-binary', 'other'],
                             current: _gender,
                             onSelected: (v) => _gender = v,
                           ),

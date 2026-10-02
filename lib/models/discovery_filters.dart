@@ -59,6 +59,8 @@ class DiscoveryFilters {
         return 'women';
       case 'other':
       case 'nonbinary':
+      case 'non-binary':
+      case 'gay':
         return 'other';
       default:
         return '';
