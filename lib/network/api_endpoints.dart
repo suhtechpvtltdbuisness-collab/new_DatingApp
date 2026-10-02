@@ -15,14 +15,11 @@ class ApiEndpoints {
   static const String refreshToken = '/auth/refresh-token';
 
   /// ✅ EMAIL OTP FLOW (CORRECT)
-  static String sendEmailOtp(String email) =>
-      '/users/otp/email/$email';
+  static String sendEmailOtp(String email) => '/users/otp/email/$email';
 
-  static String emailAvailable(String email) =>
-      '/users/email-available/$email';
+  static String emailAvailable(String email) => '/users/email-available/$email';
 
-  static const String verifyEmailOtp =
-      '/users/otp/email/validate';
+  static const String verifyEmailOtp = '/users/otp/email/validate';
 
   // ===============================
   // USER
@@ -32,13 +29,14 @@ class ApiEndpoints {
   static const String updateUserProfile = '/users/:id';
   static const String deleteAccount = '/users/:id';
   static const String uploadProfilePhoto = '/users/upload-photo';
+  static const String verifySelfie = '/users/verify-selfie';
   static const String deleteProfilePhoto = '/users/delete-photo/:photoId';
   static const String getUserPreferences = '/users/preferences';
   static const String updateUserPreferences = '/users/preferences';
 
   // My own profile (no user-id in path)
-  static const String getMyProfile = '/profile';       // GET /profile
-  static const String updateMyProfile = '/profile';    // PUT /profile
+  static const String getMyProfile = '/profile'; // GET /profile
+  static const String updateMyProfile = '/profile'; // PUT /profile
 
   // ===============================
   // SWIPE & MATCHES
@@ -71,9 +69,9 @@ class ApiEndpoints {
 
   static const String getConversations = '/chats';
   static const String getConversation = '/chats/:chatId';
-  static const String createChat = '/chats';             // POST /chats
-  static const String updateChat = '/chats/:chatId';    // PUT  /chats/:chatId
-  static const String deleteChat = '/chats/:chatId';    // DELETE /chats/:chatId
+  static const String createChat = '/chats'; // POST /chats
+  static const String updateChat = '/chats/:chatId'; // PUT  /chats/:chatId
+  static const String deleteChat = '/chats/:chatId'; // DELETE /chats/:chatId
   static const String getMessages = '/chats/:chatId/messages';
   static const String sendMessage = '/chats/:chatId/messages';
   static const String markAsRead = '/chats/:chatId/read';
@@ -82,9 +80,11 @@ class ApiEndpoints {
   static const String typingIndicator = '/chats/:chatId/typing';
   static const String reportMessage = '/chats/messages/report';
   static const String realtimeConfig = '/chats/realtime-config';
-  static const String getChatUsers = '/chat-users';               // GET /chat-users
-  static const String getChatByRecipient = '/chats/recipient/:recipientId'; // GET /chats/recipient/:recipientId
-  static const String chatHistory = '/chat-history/:userId';      // GET /chat-history/:userId
+  static const String getChatUsers = '/chat-users'; // GET /chat-users
+  static const String getChatByRecipient =
+      '/chats/recipient/:recipientId'; // GET /chats/recipient/:recipientId
+  static const String chatHistory =
+      '/chat-history/:userId'; // GET /chat-history/:userId
 
   // ===============================
   // BLOCKING
@@ -111,7 +111,9 @@ class ApiEndpoints {
   }
 
   static String getFullUrlWithParams(
-      String endpoint, Map<String, String> params) {
+    String endpoint,
+    Map<String, String> params,
+  ) {
     return getFullUrl(getEndpoint(endpoint, params));
   }
 }

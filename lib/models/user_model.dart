@@ -39,6 +39,9 @@ class UserModel {
   final DateTime createdAt;
   final DateTime lastActive;
   final bool isVerified;
+  final String selfieVerificationStatus;
+  final String? selfieVerificationReason;
+  final double? selfieVerificationScore;
   final bool isOnline;
   final bool active;
   final bool isHidden;
@@ -83,6 +86,9 @@ class UserModel {
     required this.createdAt,
     required this.lastActive,
     this.isVerified = false,
+    this.selfieVerificationStatus = 'not_started',
+    this.selfieVerificationReason,
+    this.selfieVerificationScore,
     this.isOnline = false,
     this.active = true,
     this.isHidden = false,
@@ -94,7 +100,8 @@ class UserModel {
   int get age {
     final now = DateTime.now();
     var years = now.year - dateOfBirth.year;
-    final hadBirthday = now.month > dateOfBirth.month ||
+    final hadBirthday =
+        now.month > dateOfBirth.month ||
         (now.month == dateOfBirth.month && now.day >= dateOfBirth.day);
     if (!hadBirthday) years -= 1;
     return years < 0 ? 0 : years;
@@ -138,24 +145,32 @@ class UserModel {
     final rawPhotos =
         json['photoUrls'] ?? json['photos'] ?? json['images'] ?? const [];
     final location = json['location'];
-    final coordinates = location is Map<String, dynamic>
-        ? (location['coordinates'] as List?)
-        : null;
+    final coordinates =
+        location is Map<String, dynamic>
+            ? (location['coordinates'] as List?)
+            : null;
     final dateOfBirthRaw = json['dateOfBirth'] ?? json['dob'];
+    final verification = json['selfieVerification'];
+    final verificationMap =
+        verification is Map
+            ? Map<String, dynamic>.from(verification)
+            : const <String, dynamic>{};
 
     return UserModel(
       id: resolvedId,
       email: json['email'] ?? '',
-      firstName: (json['firstName'] ??
-              (nameParts.isNotEmpty ? nameParts.first : ''))
-          .toString(),
-      lastName: (json['lastName'] ??
-              (nameParts.length > 1 ? nameParts.sublist(1).join(' ') : ''))
-          .toString(),
+      firstName:
+          (json['firstName'] ?? (nameParts.isNotEmpty ? nameParts.first : ''))
+              .toString(),
+      lastName:
+          (json['lastName'] ??
+                  (nameParts.length > 1 ? nameParts.sublist(1).join(' ') : ''))
+              .toString(),
       phoneNumber: json['phoneNumber'],
-      dateOfBirth: dateOfBirthRaw != null
-          ? DateTime.tryParse(dateOfBirthRaw.toString()) ?? DateTime.now()
-          : DateTime.now(),
+      dateOfBirth:
+          dateOfBirthRaw != null
+              ? DateTime.tryParse(dateOfBirthRaw.toString()) ?? DateTime.now()
+              : DateTime.now(),
       gender: _parseGender(json['gender']),
       photoUrls: _parsePhotoUrls(rawPhotos),
       bio: json['bio']?.toString(),
@@ -195,19 +210,30 @@ class UserModel {
       qualities: _parseStringList(json['qualities']),
       openingMoves: _parseStringList(json['openingMoves']),
       relationshipStatus: _parseRelationshipStatus(json['relationshipStatus']),
-      createdAt: json['createdAt'] != null
-          ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()
-          : DateTime.now(),
-      lastActive: json['lastActive'] != null
-          ? DateTime.tryParse(json['lastActive'].toString()) ?? DateTime.now()
-          : DateTime.now(),
+      createdAt:
+          json['createdAt'] != null
+              ? DateTime.tryParse(json['createdAt'].toString()) ??
+                  DateTime.now()
+              : DateTime.now(),
+      lastActive:
+          json['lastActive'] != null
+              ? DateTime.tryParse(json['lastActive'].toString()) ??
+                  DateTime.now()
+              : DateTime.now(),
       isVerified: json['isVerified'] ?? false,
+      selfieVerificationStatus:
+          (verificationMap['status'] ??
+                  (json['isVerified'] == true ? 'verified' : 'not_started'))
+              .toString(),
+      selfieVerificationReason: _nullableString(verificationMap['reason']),
+      selfieVerificationScore: _nullableDouble(verificationMap['score']),
       isOnline: json['isOnline'] ?? false,
       active: json['active'] != false,
       isHidden: json['isHidden'] == true,
-      blockedUsers: json['blockedUsers'] != null
-          ? List<String>.from(json['blockedUsers'])
-          : null,
+      blockedUsers:
+          json['blockedUsers'] != null
+              ? List<String>.from(json['blockedUsers'])
+              : null,
     );
   }
 
@@ -220,6 +246,12 @@ class UserModel {
   static double _toDouble(dynamic value) {
     if (value is num) return value.toDouble();
     return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  static double? _nullableDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toDouble();
+    return double.tryParse(value.toString());
   }
 
   static List<String> _parsePhotoUrls(dynamic value) {
@@ -298,6 +330,11 @@ class UserModel {
       'createdAt': createdAt.toIso8601String(),
       'lastActive': lastActive.toIso8601String(),
       'isVerified': isVerified,
+      'selfieVerification': {
+        'status': selfieVerificationStatus,
+        'reason': selfieVerificationReason,
+        'score': selfieVerificationScore,
+      },
       'isOnline': isOnline,
       'active': active,
       'blockedUsers': blockedUsers,
@@ -343,6 +380,9 @@ class UserModel {
     DateTime? createdAt,
     DateTime? lastActive,
     bool? isVerified,
+    String? selfieVerificationStatus,
+    String? selfieVerificationReason,
+    double? selfieVerificationScore,
     bool? isOnline,
     bool? active,
     bool? isHidden,
@@ -387,6 +427,12 @@ class UserModel {
       createdAt: createdAt ?? this.createdAt,
       lastActive: lastActive ?? this.lastActive,
       isVerified: isVerified ?? this.isVerified,
+      selfieVerificationStatus:
+          selfieVerificationStatus ?? this.selfieVerificationStatus,
+      selfieVerificationReason:
+          selfieVerificationReason ?? this.selfieVerificationReason,
+      selfieVerificationScore:
+          selfieVerificationScore ?? this.selfieVerificationScore,
       isOnline: isOnline ?? this.isOnline,
       active: active ?? this.active,
       isHidden: isHidden ?? this.isHidden,

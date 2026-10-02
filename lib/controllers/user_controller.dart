@@ -246,6 +246,48 @@ class UserController extends GetxController {
     }
   }
 
+  Future<bool> verifySelfie(String filePath) async {
+    try {
+      isUpdating.value = true;
+      errorMessage.value = '';
+      successMessage.value = '';
+
+      final response = await _userService.verifySelfie(filePath);
+
+      if (response.success && response.data != null) {
+        final result = response.data!;
+        if (result.user != null) {
+          currentUser.value = result.user;
+        } else if (currentUser.value != null) {
+          currentUser.value = currentUser.value!.copyWith(
+            isVerified: result.isVerified,
+            selfieVerificationStatus: result.status,
+            selfieVerificationReason: result.reason,
+            selfieVerificationScore: result.score,
+          );
+        }
+        successMessage.value =
+            result.reason.isNotEmpty
+                ? result.reason
+                : result.isVerified
+                ? 'Selfie verified'
+                : 'Selfie could not be verified';
+        _logger.i('Selfie verification completed');
+        return result.isVerified;
+      }
+
+      errorMessage.value = response.message;
+      _logger.w('Selfie verification failed: ${response.error}');
+      return false;
+    } catch (e) {
+      errorMessage.value = 'Selfie verification failed';
+      _logger.e('Selfie verification error', error: e);
+      return false;
+    } finally {
+      isUpdating.value = false;
+    }
+  }
+
   /// Delete profile photo
   Future<bool> deleteProfilePhoto(String photoId) async {
     try {
@@ -262,9 +304,10 @@ class UserController extends GetxController {
 
       if (response.success) {
         if (currentUser.value != null) {
-          final updatedPhotos = currentUser.value!.photoUrls
-              .where((url) => url != photoId && !url.contains(photoId))
-              .toList();
+          final updatedPhotos =
+              currentUser.value!.photoUrls
+                  .where((url) => url != photoId && !url.contains(photoId))
+                  .toList();
           currentUser.value = currentUser.value!.copyWith(
             photoUrls: updatedPhotos,
           );
@@ -322,7 +365,10 @@ class UserController extends GetxController {
         return false;
       }
 
-      final response = await _userService.updateUserPreferences(userId, preferences);
+      final response = await _userService.updateUserPreferences(
+        userId,
+        preferences,
+      );
 
       if (response.success && response.data != null) {
         userPreferences.value = response.data;

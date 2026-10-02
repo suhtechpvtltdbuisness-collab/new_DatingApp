@@ -14,6 +14,47 @@ class BlockedUsersResult {
   final List<UserModel> users;
 }
 
+class SelfieVerificationResult {
+  const SelfieVerificationResult({
+    required this.isVerified,
+    required this.status,
+    required this.reason,
+    this.score,
+    this.threshold,
+    this.user,
+  });
+
+  final bool isVerified;
+  final String status;
+  final String reason;
+  final double? score;
+  final double? threshold;
+  final UserModel? user;
+
+  factory SelfieVerificationResult.fromJson(Map<String, dynamic> json) {
+    final rawUser = json['user'];
+    return SelfieVerificationResult(
+      isVerified: json['isVerified'] == true,
+      status: (json['status'] ?? 'failed').toString(),
+      reason: (json['reason'] ?? '').toString(),
+      score: _toNullableDouble(json['score']),
+      threshold: _toNullableDouble(json['threshold']),
+      user:
+          rawUser is Map<String, dynamic>
+              ? UserModel.fromJson(rawUser)
+              : rawUser is Map
+              ? UserModel.fromJson(Map<String, dynamic>.from(rawUser))
+              : null,
+    );
+  }
+}
+
+double? _toNullableDouble(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  return double.tryParse(value.toString());
+}
+
 Map<String, dynamic> _unwrapUser(Map<String, dynamic> raw) {
   for (final key in ['user', 'data']) {
     final value = raw[key];
@@ -111,10 +152,9 @@ class UserService {
     try {
       _logger.i('Fetching user profile: $userId');
 
-      final endpoint = ApiEndpoints.getEndpoint(
-        ApiEndpoints.getUserProfile,
-        {'id': userId},
-      );
+      final endpoint = ApiEndpoints.getEndpoint(ApiEndpoints.getUserProfile, {
+        'id': userId,
+      });
 
       final response = await _apiClient.get<Map<String, dynamic>>(
         endpoint,
@@ -272,18 +312,21 @@ class UserService {
     List<String> filePaths,
   ) async {
     try {
-      _logger.i('Uploading ${filePaths.length} profile photos for user: $userId');
+      _logger.i(
+        'Uploading ${filePaths.length} profile photos for user: $userId',
+      );
 
       final endpoint = ApiEndpoints.getEndpoint(
         ApiEndpoints.uploadProfilePhoto,
         {'id': userId},
       );
 
-      final response = await _apiClient.uploadMultipleFiles<Map<String, dynamic>>(
-        endpoint,
-        filePaths: filePaths,
-        fromJsonT: (json) => json,
-      );
+      final response = await _apiClient
+          .uploadMultipleFiles<Map<String, dynamic>>(
+            endpoint,
+            filePaths: filePaths,
+            fromJsonT: (json) => json,
+          );
 
       if (response.success && response.data != null) {
         final photoUrls = List<String>.from(response.data!['photoUrls'] ?? []);
@@ -306,6 +349,40 @@ class UserService {
     }
   }
 
+  Future<ApiResponse<SelfieVerificationResult>> verifySelfie(
+    String filePath,
+  ) async {
+    try {
+      _logger.i('Uploading live selfie for verification');
+
+      final response = await _apiClient.uploadFile<Map<String, dynamic>>(
+        ApiEndpoints.verifySelfie,
+        filePath: filePath,
+        fieldName: 'selfie',
+        fromJsonT: (json) => json,
+      );
+
+      if (response.success && response.data != null) {
+        return ApiResponse.success(
+          message: response.message,
+          data: SelfieVerificationResult.fromJson(response.data!),
+        );
+      }
+
+      return ApiResponse.error(
+        message: response.message,
+        error: response.error ?? 'Selfie verification failed',
+        statusCode: response.statusCode,
+      );
+    } catch (e) {
+      _logger.e('Selfie verification error', error: e);
+      return ApiResponse.error(
+        message: 'Selfie verification failed',
+        error: e.toString(),
+      );
+    }
+  }
+
   // Delete profile photo
   Future<ApiResponse<void>> deleteProfilePhoto(
     String userId,
@@ -316,10 +393,7 @@ class UserService {
 
       final response = await _apiClient.delete<void>(
         '/users/delete-photo',
-        data: {
-          'photoUrl': photoId,
-          'photoId': photoId,
-        },
+        data: {'photoUrl': photoId, 'photoId': photoId},
         fromJsonT: (_) {},
       );
 
@@ -334,7 +408,9 @@ class UserService {
   }
 
   // Get user preferences
-  Future<ApiResponse<UserPreferencesModel>> getUserPreferences(String userId) async {
+  Future<ApiResponse<UserPreferencesModel>> getUserPreferences(
+    String userId,
+  ) async {
     try {
       _logger.i('Fetching user preferences: $userId');
 
@@ -389,7 +465,9 @@ class UserService {
       );
 
       if (response.success && response.data != null) {
-        final updatedPreferences = UserPreferencesModel.fromJson(response.data!);
+        final updatedPreferences = UserPreferencesModel.fromJson(
+          response.data!,
+        );
         return ApiResponse.success(
           message: 'Preferences updated successfully',
           data: updatedPreferences,
@@ -414,10 +492,9 @@ class UserService {
     try {
       _logger.i('Blocking user: $blockUserId');
 
-      final endpoint = ApiEndpoints.getEndpoint(
-        ApiEndpoints.blockUser,
-        {'id': userId},
-      );
+      final endpoint = ApiEndpoints.getEndpoint(ApiEndpoints.blockUser, {
+        'id': userId,
+      });
 
       final response = await _apiClient.post<void>(
         endpoint,
@@ -443,10 +520,10 @@ class UserService {
     try {
       _logger.i('Unblocking user: $blockedUserId');
 
-      final endpoint = ApiEndpoints.getEndpoint(
-        ApiEndpoints.unblockUser,
-        {'id': userId, 'blockedUserId': blockedUserId},
-      );
+      final endpoint = ApiEndpoints.getEndpoint(ApiEndpoints.unblockUser, {
+        'id': userId,
+        'blockedUserId': blockedUserId,
+      });
 
       final response = await _apiClient.delete<void>(
         endpoint,
@@ -470,21 +547,22 @@ class UserService {
 
       final response = await _apiClient.get<Map<String, dynamic>>(
         ApiEndpoints.getBlockedUsers,
-        fromJsonT: (json) => json is Map<String, dynamic>
-            ? json
-            : <String, dynamic>{},
+        fromJsonT:
+            (json) => json is Map<String, dynamic> ? json : <String, dynamic>{},
       );
 
       if (response.success && response.data != null) {
         final raw = response.data!;
-        final ids = (raw['blockedUsers'] as List? ?? const [])
-            .map((id) => id.toString())
-            .where((id) => id.isNotEmpty)
-            .toList();
-        final users = (raw['users'] as List? ?? const [])
-            .whereType<Map>()
-            .map((u) => UserModel.fromJson(Map<String, dynamic>.from(u)))
-            .toList();
+        final ids =
+            (raw['blockedUsers'] as List? ?? const [])
+                .map((id) => id.toString())
+                .where((id) => id.isNotEmpty)
+                .toList();
+        final users =
+            (raw['users'] as List? ?? const [])
+                .whereType<Map>()
+                .map((u) => UserModel.fromJson(Map<String, dynamic>.from(u)))
+                .toList();
         return ApiResponse.success(
           message: 'Blocked users fetched successfully',
           data: BlockedUsersResult(ids: ids, users: users),
@@ -510,10 +588,9 @@ class UserService {
     try {
       _logger.i('Deleting account: $userId');
 
-      final endpoint = ApiEndpoints.getEndpoint(
-        ApiEndpoints.deleteAccount,
-        {'id': userId},
-      );
+      final endpoint = ApiEndpoints.getEndpoint(ApiEndpoints.deleteAccount, {
+        'id': userId,
+      });
 
       final response = await _apiClient.delete<void>(
         endpoint,

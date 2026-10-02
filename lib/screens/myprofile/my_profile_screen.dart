@@ -34,6 +34,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   bool _isUpdatingBreak = false;
   String? _breakLabel;
   bool _isUploadingPhoto = false;
+  bool _isVerifyingSelfie = false;
   final ImagePicker _picker = ImagePicker();
 
   // Access the UserController (registered in app bindings)
@@ -101,6 +102,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
       if (success) {
         await _userController.refreshProfile();
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Photo uploaded'),
@@ -129,6 +131,61 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
       );
     } finally {
       if (mounted) setState(() => _isUploadingPhoto = false);
+    }
+  }
+
+  Future<void> _verifyWithSelfie() async {
+    if (_isVerifyingSelfie) return;
+
+    final user = _userController.currentUser.value;
+    if (user == null || user.photoUrls.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Upload a profile photo first'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final image = await pickProfilePhoto(
+        context,
+        _picker,
+        ImageSource.camera,
+      );
+      if (image == null || !mounted) return;
+
+      setState(() => _isVerifyingSelfie = true);
+      final verified = await _userController.verifySelfie(image.path);
+      await _userController.refreshProfile();
+      if (!mounted) return;
+
+      final message =
+          verified
+              ? (_userController.successMessage.value.isNotEmpty
+                  ? _userController.successMessage.value
+                  : 'Selfie verified')
+              : (_userController.errorMessage.value.isNotEmpty
+                  ? _userController.errorMessage.value
+                  : 'Selfie did not match your profile photos');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: verified ? AppTheme.primaryColor : Colors.red,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Selfie verification error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isVerifyingSelfie = false);
     }
   }
 
@@ -363,7 +420,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Account deactivated. Log in again to restore it.')),
+      const SnackBar(
+        content: Text('Account deactivated. Log in again to restore it.'),
+      ),
     );
     await Get.find<AuthController>().logout();
     AppRoutes.toLogin();
@@ -786,6 +845,13 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                             ? 'Complete your profile'
                             : '${user.firstName.isEmpty ? 'Member' : user.firstName}, ${user.age}';
                     final location = user?.locationLabel ?? '';
+                    final isVerified = user?.isVerified ?? false;
+                    final verificationText =
+                        isVerified
+                            ? 'Selfie verified'
+                            : user?.selfieVerificationStatus == 'failed'
+                            ? 'Try selfie again'
+                            : 'Verify with selfie';
 
                     return Column(
                       children: [
@@ -848,6 +914,77 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                         Text(
                           location.isNotEmpty ? location : 'Location not set',
                           style: const TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(height: 10),
+                        Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(24),
+                            onTap:
+                                _isVerifyingSelfie
+                                    ? null
+                                    : isVerified
+                                    ? null
+                                    : _verifyWithSelfie,
+                            child: Ink(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    isVerified
+                                        ? const Color(0xFFE9F8EF)
+                                        : Colors.white.withOpacity(0.8),
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color:
+                                      isVerified
+                                          ? const Color(0xFF2EAD62)
+                                          : const Color(0xFFFF6F91),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (_isVerifyingSelfie)
+                                    const SizedBox(
+                                      width: 16,
+                                      height: 16,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppTheme.primaryColor,
+                                      ),
+                                    )
+                                  else
+                                    Icon(
+                                      isVerified
+                                          ? Icons.verified_rounded
+                                          : Icons.camera_alt_rounded,
+                                      size: 18,
+                                      color:
+                                          isVerified
+                                              ? const Color(0xFF2EAD62)
+                                              : const Color(0xFFFF3D77),
+                                    ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    _isVerifyingSelfie
+                                        ? 'Checking selfie...'
+                                        : verificationText,
+                                    style: TextStyle(
+                                      color:
+                                          isVerified
+                                              ? const Color(0xFF247F4A)
+                                              : const Color(0xFFFF3D77),
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                         if ((user?.bio ?? '').trim().isNotEmpty) ...[
                           const SizedBox(height: 10),
@@ -1367,9 +1504,10 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                         _buildTile(
                           Icons.person_off_outlined,
                           "Deactivate Account",
-                          onTap: _isClosingAccount
-                              ? null
-                              : () => _showDeactivateDialog(context),
+                          onTap:
+                              _isClosingAccount
+                                  ? null
+                                  : () => _showDeactivateDialog(context),
                         ),
 
                         _buildTile(

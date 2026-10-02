@@ -101,6 +101,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   String _pronouns = '';
   bool _isSaving = false;
   bool _isUploadingPhoto = false;
+  bool _isVerifyingSelfie = false;
 
   @override
   void initState() {
@@ -193,7 +194,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     if (fullName.isEmpty) {
       setState(() => _isSaving = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your name.'), backgroundColor: Colors.red),
+        const SnackBar(
+          content: Text('Please enter your name.'),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
@@ -226,7 +230,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       'languages': _languages,
       'openingMoves': _openingMoves,
       if (_uploadedImages.any((p) => p.startsWith('http')))
-        'photoUrls': _uploadedImages.where((p) => p.startsWith('http')).toList(),
+        'photoUrls':
+            _uploadedImages.where((p) => p.startsWith('http')).toList(),
     };
 
     final success = await _userController.updateMyProfile(updateData);
@@ -251,7 +256,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       return;
     }
 
-    final notSaved = _unsavedFields(updateData, _userController.currentUser.value);
+    final notSaved = _unsavedFields(
+      updateData,
+      _userController.currentUser.value,
+    );
     if (notSaved.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -293,7 +301,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       'Hometown': norm(saved.hometown) == norm(sent['hometown']),
       'Work': norm(saved.work) == norm(sent['work']),
       'Education': norm(saved.education) == norm(sent['education']),
-      'Education level': norm(saved.educationLevel) == norm(sent['educationLevel']),
+      'Education level':
+          norm(saved.educationLevel) == norm(sent['educationLevel']),
       'Height': norm(saved.height) == norm(sent['height']),
       'Exercise': norm(saved.exercise) == norm(sent['exercise']),
       'Star sign': norm(saved.starSign) == norm(sent['starSign']),
@@ -317,29 +326,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Future<void> _pickImage() async {
     showModalBottomSheet(
       context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library, color: AppTheme.primaryColor),
-              title: const Text('Choose from Gallery'),
-              onTap: () async {
-                Navigator.pop(context);
-                await _addImage(ImageSource.gallery);
-              },
+      builder:
+          (context) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(
+                    Icons.photo_library,
+                    color: AppTheme.primaryColor,
+                  ),
+                  title: const Text('Choose from Gallery'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _addImage(ImageSource.gallery);
+                  },
+                ),
+                ListTile(
+                  leading: const Icon(
+                    Icons.camera_alt,
+                    color: AppTheme.primaryColor,
+                  ),
+                  title: const Text('Take a Photo'),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _addImage(ImageSource.camera);
+                  },
+                ),
+              ],
             ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt, color: AppTheme.primaryColor),
-              title: const Text('Take a Photo'),
-              onTap: () async {
-                Navigator.pop(context);
-                await _addImage(ImageSource.camera);
-              },
-            ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -372,11 +388,68 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error adding photo: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Error adding photo: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
       if (mounted) setState(() => _isUploadingPhoto = false);
+    }
+  }
+
+  Future<void> _verifyWithSelfie() async {
+    if (_isVerifyingSelfie) return;
+    if (_uploadedImages.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Upload a profile photo first'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      final XFile? image = await pickProfilePhoto(
+        context,
+        _picker,
+        ImageSource.camera,
+      );
+      if (image == null) return;
+
+      setState(() => _isVerifyingSelfie = true);
+      final verified = await _userController.verifySelfie(image.path);
+      await _userController.refreshProfile();
+      if (!mounted) return;
+
+      final message =
+          verified
+              ? (_userController.successMessage.value.isNotEmpty
+                  ? _userController.successMessage.value
+                  : 'Selfie verified')
+              : (_userController.errorMessage.value.isNotEmpty
+                  ? _userController.errorMessage.value
+                  : 'Selfie did not match your profile photos');
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: verified ? AppTheme.primaryColor : Colors.red,
+        ),
+      );
+      setState(() {});
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Selfie verification error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isVerifyingSelfie = false);
     }
   }
 
@@ -416,18 +489,25 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final draft = TextEditingController(text: controller.text);
     final saved = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: TextField(
-          controller: draft,
-          autofocus: true,
-          decoration: InputDecoration(hintText: 'Enter $title'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Save')),
-        ],
-      ),
+      builder:
+          (context) => AlertDialog(
+            title: Text(title),
+            content: TextField(
+              controller: draft,
+              autofocus: true,
+              decoration: InputDecoration(hintText: 'Enter $title'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Save'),
+              ),
+            ],
+          ),
     );
     if (saved == true) {
       setState(() => controller.text = draft.text.trim());
@@ -443,26 +523,37 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }) async {
     final selected = await showModalBottomSheet<String>(
       context: context,
-      builder: (context) => SafeArea(
-        child: ListView(
-          shrinkWrap: true,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+      builder:
+          (context) => SafeArea(
+            child: ListView(
+              shrinkWrap: true,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                ...options.map(
+                  (option) => ListTile(
+                    title: Text(option),
+                    trailing:
+                        option == current
+                            ? const Icon(
+                              Icons.check,
+                              color: AppTheme.primaryColor,
+                            )
+                            : null,
+                    onTap: () => Navigator.pop(context, option),
+                  ),
+                ),
+              ],
             ),
-            ...options.map(
-              (option) => ListTile(
-                title: Text(option),
-                trailing: option == current
-                    ? const Icon(Icons.check, color: AppTheme.primaryColor)
-                    : null,
-                onTap: () => Navigator.pop(context, option),
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
     );
     if (selected != null) setState(() => onSelected(selected));
   }
@@ -479,84 +570,105 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       builder: (context) {
         final temp = List<String>.from(selected);
         return StatefulBuilder(
-          builder: (context, setModalState) => SafeArea(
-            child: SizedBox(
-              height: MediaQuery.of(context).size.height * 0.6,
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          builder:
+              (context, setModalState) => SafeArea(
+                child: SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.6,
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                title,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  selected
+                                    ..clear()
+                                    ..addAll(temp);
+                                });
+                                Navigator.pop(context);
+                              },
+                              child: const Text('Done'),
+                            ),
+                          ],
                         ),
-                        TextButton(
-                          onPressed: () {
-                            setState(() {
-                              selected
-                                ..clear()
-                                ..addAll(temp);
-                            });
-                            Navigator.pop(context);
-                          },
-                          child: const Text('Done'),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: GridView.builder(
-                      padding: const EdgeInsets.all(16),
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio: 2.4,
                       ),
-                      itemCount: available.length,
-                      itemBuilder: (context, index) {
-                        final item = available[index];
-                        final isSelected = temp.contains(item);
-                        return GestureDetector(
-                          onTap: () {
-                            setModalState(() {
-                              if (isSelected) {
-                                temp.remove(item);
-                              } else if (maxItems == null || temp.length < maxItems) {
-                                temp.add(item);
-                              }
-                            });
+                      Expanded(
+                        child: GridView.builder(
+                          padding: const EdgeInsets.all(16),
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
+                                childAspectRatio: 2.4,
+                              ),
+                          itemCount: available.length,
+                          itemBuilder: (context, index) {
+                            final item = available[index];
+                            final isSelected = temp.contains(item);
+                            return GestureDetector(
+                              onTap: () {
+                                setModalState(() {
+                                  if (isSelected) {
+                                    temp.remove(item);
+                                  } else if (maxItems == null ||
+                                      temp.length < maxItems) {
+                                    temp.add(item);
+                                  }
+                                });
+                              },
+                              child: Container(
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color:
+                                        isSelected
+                                            ? AppTheme.primaryColor
+                                            : Colors.grey.shade300,
+                                  ),
+                                  color:
+                                      isSelected
+                                          ? AppTheme.primaryColor.withOpacity(
+                                            0.08,
+                                          )
+                                          : Colors.white,
+                                ),
+                                child: Text(
+                                  item,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color:
+                                        isSelected
+                                            ? AppTheme.primaryColor
+                                            : Colors.black,
+                                    fontWeight:
+                                        isSelected
+                                            ? FontWeight.bold
+                                            : FontWeight.normal,
+                                  ),
+                                ),
+                              ),
+                            );
                           },
-                          child: Container(
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: isSelected ? AppTheme.primaryColor : Colors.grey.shade300,
-                              ),
-                              color: isSelected
-                                  ? AppTheme.primaryColor.withOpacity(0.08)
-                                  : Colors.white,
-                            ),
-                            child: Text(
-                              item,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: isSelected ? AppTheme.primaryColor : Colors.black,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                        ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
         );
       },
     );
@@ -568,21 +680,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
     final saved = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(index == null ? 'Add opening move' : 'Edit opening move'),
-        content: TextField(
-          controller: draft,
-          maxLines: 3,
-          autofocus: true,
-          decoration: const InputDecoration(
-            hintText: 'Write a conversation starter...',
+      builder:
+          (context) => AlertDialog(
+            title: Text(
+              index == null ? 'Add opening move' : 'Edit opening move',
+            ),
+            content: TextField(
+              controller: draft,
+              maxLines: 3,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: 'Write a conversation starter...',
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Save'),
+              ),
+            ],
           ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Save')),
-        ],
-      ),
     );
     if (saved == true) {
       final text = draft.text.trim();
@@ -628,39 +749,45 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                           const Text(
                             'Edit Profile',
-                            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           const Spacer(),
                           _isSaving
                               ? const Padding(
-                                  padding: EdgeInsets.only(right: 16),
-                                  child: SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2.5,
-                                      color: AppTheme.primaryColor,
-                                    ),
-                                  ),
-                                )
-                              : TextButton(
-                                  onPressed: _saveProfile,
-                                  child: const Text(
-                                    'Save',
-                                    style: TextStyle(
-                                      color: AppTheme.primaryColor,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
+                                padding: EdgeInsets.only(right: 16),
+                                child: SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: AppTheme.primaryColor,
                                   ),
                                 ),
+                              )
+                              : TextButton(
+                                onPressed: _saveProfile,
+                                child: const Text(
+                                  'Save',
+                                  style: TextStyle(
+                                    color: AppTheme.primaryColor,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
                         ],
                       ),
                       const SizedBox(height: 12),
                       const Text('Profile strength'),
                       const SizedBox(height: 10),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.8),
                           borderRadius: BorderRadius.circular(30),
@@ -686,7 +813,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       const SizedBox(height: 20),
                       const Text(
                         'Photos',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       const Text(
@@ -697,7 +827,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       if (_isUploadingPhoto)
                         const Padding(
                           padding: EdgeInsets.only(bottom: 12),
-                          child: LinearProgressIndicator(color: AppTheme.primaryColor),
+                          child: LinearProgressIndicator(
+                            color: AppTheme.primaryColor,
+                          ),
                         ),
                       GridView.count(
                         shrinkWrap: true,
@@ -708,7 +840,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         children: [
                           ...List.generate(
                             _uploadedImages.length,
-                            (index) => _imageCard(_uploadedImages[index], index),
+                            (index) =>
+                                _imageCard(_uploadedImages[index], index),
                           ),
                           if (_uploadedImages.length < 6)
                             GestureDetector(
@@ -719,7 +852,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: const Center(
-                                  child: Icon(Icons.add, size: 30, color: AppTheme.primaryColor),
+                                  child: Icon(
+                                    Icons.add,
+                                    size: 30,
+                                    color: AppTheme.primaryColor,
+                                  ),
                                 ),
                               ),
                             ),
@@ -727,27 +864,66 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ),
                       const SizedBox(height: 16),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.8),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Row(
-                              children: [
-                                Icon(Icons.verified, color: AppTheme.primaryColor),
-                                SizedBox(width: 10),
-                                Text('Verification'),
-                              ],
-                            ),
-                            Text(
-                              (user?.isVerified ?? false) ? 'ID Verified' : 'Not ID Verified',
-                              style: const TextStyle(color: Colors.grey),
-                            ),
-                          ],
-                        ),
+                        child: Obx(() {
+                          final verified =
+                              _userController.currentUser.value?.isVerified ??
+                              false;
+                          return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(
+                                    verified
+                                        ? Icons.verified_rounded
+                                        : Icons.camera_alt_rounded,
+                                    color:
+                                        verified
+                                            ? const Color(0xFF2EAD62)
+                                            : AppTheme.primaryColor,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  const Text('Selfie verification'),
+                                ],
+                              ),
+                              TextButton.icon(
+                                onPressed:
+                                    verified || _isVerifyingSelfie
+                                        ? null
+                                        : _verifyWithSelfie,
+                                icon:
+                                    _isVerifyingSelfie
+                                        ? const SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                        : Icon(
+                                          verified
+                                              ? Icons.check_circle
+                                              : Icons.camera_front,
+                                        ),
+                                label: Text(
+                                  _isVerifyingSelfie
+                                      ? 'Checking'
+                                      : verified
+                                      ? 'Verified'
+                                      : 'Verify',
+                                ),
+                              ),
+                            ],
+                          );
+                        }),
                       ),
                       const SizedBox(height: 20),
                     ],
@@ -757,26 +933,44 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   width: double.infinity,
                   decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(30),
+                    ),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Basic info', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text(
+                          'Basic info',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 10),
                         _aboutTile(
                           Icons.person,
                           'First name',
-                          _firstNameController.text.isEmpty ? 'Add' : _firstNameController.text,
-                          () => _editTextField(title: 'First name', controller: _firstNameController),
+                          _firstNameController.text.isEmpty
+                              ? 'Add'
+                              : _firstNameController.text,
+                          () => _editTextField(
+                            title: 'First name',
+                            controller: _firstNameController,
+                          ),
                         ),
                         _aboutTile(
                           Icons.person_outline,
                           'Last name',
-                          _lastNameController.text.isEmpty ? 'Add' : _lastNameController.text,
-                          () => _editTextField(title: 'Last name', controller: _lastNameController),
+                          _lastNameController.text.isEmpty
+                              ? 'Add'
+                              : _lastNameController.text,
+                          () => _editTextField(
+                            title: 'Last name',
+                            controller: _lastNameController,
+                          ),
                         ),
                         _aboutTile(
                           Icons.wc,
@@ -790,14 +984,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        const Text('Interests', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text(
+                          'Interests',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 8),
                         Wrap(
                           spacing: 10,
                           runSpacing: 10,
                           children: [
                             ..._interests.map(
-                              (item) => _chip(item, () => setState(() => _interests.remove(item))),
+                              (item) => _chip(
+                                item,
+                                () => setState(() => _interests.remove(item)),
+                              ),
                             ),
                             _addChip(
                               () => _multiSelect(
@@ -813,29 +1016,39 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           title: 'My courses and communities',
                           subtitle: 'Add up to 3 causes close to your heart',
                           items: _courses,
-                          onAdd: () => _multiSelect(
-                            title: 'Courses & communities',
-                            available: _availableCourses,
-                            selected: _courses,
-                            maxItems: 3,
-                          ),
-                          onRemove: (item) => setState(() => _courses.remove(item)),
+                          onAdd:
+                              () => _multiSelect(
+                                title: 'Courses & communities',
+                                available: _availableCourses,
+                                selected: _courses,
+                                maxItems: 3,
+                              ),
+                          onRemove:
+                              (item) => setState(() => _courses.remove(item)),
                         ),
                         const SizedBox(height: 20),
                         _dynamicSectionCard(
                           title: 'Qualities I value',
                           subtitle: 'Choose up to 3 qualities',
                           items: _qualities,
-                          onAdd: () => _multiSelect(
-                            title: 'Qualities',
-                            available: _availableQualities,
-                            selected: _qualities,
-                            maxItems: 3,
-                          ),
-                          onRemove: (item) => setState(() => _qualities.remove(item)),
+                          onAdd:
+                              () => _multiSelect(
+                                title: 'Qualities',
+                                available: _availableQualities,
+                                selected: _qualities,
+                                maxItems: 3,
+                              ),
+                          onRemove:
+                              (item) => setState(() => _qualities.remove(item)),
                         ),
                         const SizedBox(height: 20),
-                        const Text('Opening Moves', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text(
+                          'Opening Moves',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 4),
                         const Text(
                           'Add up to 3 messages new matches can reply to.',
@@ -858,7 +1071,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     Expanded(child: Text(_openingMoves[index])),
                                     IconButton(
                                       icon: const Icon(Icons.close, size: 18),
-                                      onPressed: () => setState(() => _openingMoves.removeAt(index)),
+                                      onPressed:
+                                          () => setState(
+                                            () => _openingMoves.removeAt(index),
+                                          ),
                                     ),
                                   ],
                                 ),
@@ -869,11 +1085,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         if (_openingMoves.length < 3)
                           TextButton.icon(
                             onPressed: () => _editOpeningMove(null),
-                            icon: const Icon(Icons.add, color: AppTheme.primaryColor),
-                            label: const Text('Add opening move', style: TextStyle(color: AppTheme.primaryColor)),
+                            icon: const Icon(
+                              Icons.add,
+                              color: AppTheme.primaryColor,
+                            ),
+                            label: const Text(
+                              'Add opening move',
+                              style: TextStyle(color: AppTheme.primaryColor),
+                            ),
                           ),
                         const SizedBox(height: 16),
-                        const Text('Bio', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text(
+                          'Bio',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 10),
                         Container(
                           padding: const EdgeInsets.all(16),
@@ -894,7 +1122,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                         ),
                         const SizedBox(height: 24),
-                        const Text('About you', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text(
+                          'About you',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 10),
                         _aboutTile(
                           Icons.cake,
@@ -905,35 +1139,66 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         _aboutTile(
                           Icons.work,
                           'Work',
-                          _workController.text.isEmpty ? 'Add' : _workController.text,
-                          () => _editTextField(title: 'Work', controller: _workController),
+                          _workController.text.isEmpty
+                              ? 'Add'
+                              : _workController.text,
+                          () => _editTextField(
+                            title: 'Work',
+                            controller: _workController,
+                          ),
                         ),
                         _aboutTile(
                           Icons.school,
                           'Education',
-                          _educationController.text.isEmpty ? 'Add' : _educationController.text,
-                          () => _editTextField(title: 'Education', controller: _educationController),
+                          _educationController.text.isEmpty
+                              ? 'Add'
+                              : _educationController.text,
+                          () => _editTextField(
+                            title: 'Education',
+                            controller: _educationController,
+                          ),
                         ),
                         _aboutTile(
                           Icons.location_on,
                           'City',
-                          _cityController.text.isEmpty ? 'Add' : _cityController.text,
-                          () => _editTextField(title: 'City', controller: _cityController),
+                          _cityController.text.isEmpty
+                              ? 'Add'
+                              : _cityController.text,
+                          () => _editTextField(
+                            title: 'City',
+                            controller: _cityController,
+                          ),
                         ),
                         _aboutTile(
                           Icons.public,
                           'Country',
-                          _countryController.text.isEmpty ? 'Add' : _countryController.text,
-                          () => _editTextField(title: 'Country', controller: _countryController),
+                          _countryController.text.isEmpty
+                              ? 'Add'
+                              : _countryController.text,
+                          () => _editTextField(
+                            title: 'Country',
+                            controller: _countryController,
+                          ),
                         ),
                         _aboutTile(
                           Icons.home,
                           'Hometown',
-                          _hometownController.text.isEmpty ? 'Add' : _hometownController.text,
-                          () => _editTextField(title: 'Hometown', controller: _hometownController),
+                          _hometownController.text.isEmpty
+                              ? 'Add'
+                              : _hometownController.text,
+                          () => _editTextField(
+                            title: 'Hometown',
+                            controller: _hometownController,
+                          ),
                         ),
                         const SizedBox(height: 24),
-                        const Text('More about you', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text(
+                          'More about you',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 10),
                         _aboutTile(
                           Icons.height,
@@ -941,7 +1206,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           _height.isEmpty ? 'Add' : _height,
                           () => _pickOption(
                             title: 'Height',
-                            options: const ["5'0\"", "5'2\"", "5'4\"", "5'5\"", "5'6\"", "5'8\"", "5'10\"", "6'0\"", "6'2\""],
+                            options: const [
+                              "5'0\"",
+                              "5'2\"",
+                              "5'4\"",
+                              "5'5\"",
+                              "5'6\"",
+                              "5'8\"",
+                              "5'10\"",
+                              "6'0\"",
+                              "6'2\"",
+                            ],
                             current: _height,
                             onSelected: (v) => _height = v,
                           ),
@@ -952,7 +1227,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           _exercise.isEmpty ? 'Add' : _exercise,
                           () => _pickOption(
                             title: 'Exercise',
-                            options: const ['Active', 'Sometimes', 'Almost never'],
+                            options: const [
+                              'Active',
+                              'Sometimes',
+                              'Almost never',
+                            ],
                             current: _exercise,
                             onSelected: (v) => _exercise = v,
                           ),
@@ -964,8 +1243,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           () => _pickOption(
                             title: 'Star sign',
                             options: const [
-                              'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
-                              'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces',
+                              'Aries',
+                              'Taurus',
+                              'Gemini',
+                              'Cancer',
+                              'Leo',
+                              'Virgo',
+                              'Libra',
+                              'Scorpio',
+                              'Sagittarius',
+                              'Capricorn',
+                              'Aquarius',
+                              'Pisces',
                             ],
                             current: _starSign,
                             onSelected: (v) => _starSign = v,
@@ -977,7 +1266,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           _educationLevel.isEmpty ? 'Add' : _educationLevel,
                           () => _pickOption(
                             title: 'Educational level',
-                            options: const ['High school', 'UG degree', 'PG degree', 'PhD', 'Trade school'],
+                            options: const [
+                              'High school',
+                              'UG degree',
+                              'PG degree',
+                              'PhD',
+                              'Trade school',
+                            ],
                             current: _educationLevel,
                             onSelected: (v) => _educationLevel = v,
                           ),
@@ -988,7 +1283,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           _drinking.isEmpty ? 'Add' : _drinking,
                           () => _pickOption(
                             title: 'Drinking',
-                            options: const ["No, I don't drink", 'Socially', 'Frequently'],
+                            options: const [
+                              "No, I don't drink",
+                              'Socially',
+                              'Frequently',
+                            ],
                             current: _drinking,
                             onSelected: (v) => _drinking = v,
                           ),
@@ -999,7 +1298,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           _smoking.isEmpty ? 'Add' : _smoking,
                           () => _pickOption(
                             title: 'Smoking',
-                            options: const ["No, I don't smoke", 'Socially', 'Regularly'],
+                            options: const [
+                              "No, I don't smoke",
+                              'Socially',
+                              'Regularly',
+                            ],
                             current: _smoking,
                             onSelected: (v) => _smoking = v,
                           ),
@@ -1026,7 +1329,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           _kids.isEmpty ? 'Add' : _kids,
                           () => _pickOption(
                             title: 'Kids',
-                            options: const ['Want kids', "Don't want kids", 'Not sure', 'Open to kids'],
+                            options: const [
+                              'Want kids',
+                              "Don't want kids",
+                              'Not sure',
+                              'Open to kids',
+                            ],
                             current: _kids,
                             onSelected: (v) => _kids = v,
                           ),
@@ -1037,7 +1345,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           _haveKids.isEmpty ? 'Add' : _haveKids,
                           () => _pickOption(
                             title: 'Have kids',
-                            options: const ["Don't have kids", 'Have kids', 'Prefer not to say'],
+                            options: const [
+                              "Don't have kids",
+                              'Have kids',
+                              'Prefer not to say',
+                            ],
                             current: _haveKids,
                             onSelected: (v) => _haveKids = v,
                           ),
@@ -1048,7 +1360,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           _religion.isEmpty ? 'Add' : _religion,
                           () => _pickOption(
                             title: 'Religion',
-                            options: const ['Hindu', 'Muslim', 'Christian', 'Sikh', 'Buddhist', 'Atheist', 'Spiritual', 'Other'],
+                            options: const [
+                              'Hindu',
+                              'Muslim',
+                              'Christian',
+                              'Sikh',
+                              'Buddhist',
+                              'Atheist',
+                              'Spiritual',
+                              'Other',
+                            ],
                             current: _religion,
                             onSelected: (v) => _religion = v,
                           ),
@@ -1059,13 +1380,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           _politics.isEmpty ? 'Add' : _politics,
                           () => _pickOption(
                             title: 'Politics',
-                            options: const ['Apolitical', 'Liberal', 'Moderate', 'Conservative'],
+                            options: const [
+                              'Apolitical',
+                              'Liberal',
+                              'Moderate',
+                              'Conservative',
+                            ],
                             current: _politics,
                             onSelected: (v) => _politics = v,
                           ),
                         ),
                         const SizedBox(height: 24),
-                        const Text('Pronouns', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text(
+                          'Pronouns',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 10),
                         _aboutTile(
                           Icons.chat_bubble_outline,
@@ -1073,20 +1405,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           _pronouns.isEmpty ? 'Add' : _pronouns,
                           () => _pickOption(
                             title: 'Pronouns',
-                            options: const ['she/her', 'he/him', 'they/them', 'she/they', 'he/they'],
+                            options: const [
+                              'she/her',
+                              'he/him',
+                              'they/them',
+                              'she/they',
+                              'he/they',
+                            ],
                             current: _pronouns,
                             onSelected: (v) => _pronouns = v,
                           ),
                         ),
                         const SizedBox(height: 20),
-                        const Text('Languages', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        const Text(
+                          'Languages',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 8,
                           runSpacing: 8,
                           children: [
                             ..._languages.map(
-                              (lang) => _chip(lang, () => setState(() => _languages.remove(lang))),
+                              (lang) => _chip(
+                                lang,
+                                () => setState(() => _languages.remove(lang)),
+                              ),
                             ),
                             _addChip(
                               () => _multiSelect(
@@ -1120,7 +1467,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(
+          title,
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 4),
         Text(subtitle, style: const TextStyle(color: Colors.grey)),
         const SizedBox(height: 12),
@@ -1144,21 +1494,42 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _brokenImagePlaceholder() => Container(
-        color: Colors.grey.shade300,
-        child: const Icon(Icons.broken_image, color: Colors.grey),
-      );
+    color: Colors.grey.shade300,
+    child: const Icon(Icons.broken_image, color: Colors.grey),
+  );
 
   Widget _imageForPath(String path) {
-    Widget errorFallback(BuildContext context, Object error, StackTrace? stack) =>
-        _brokenImagePlaceholder();
+    Widget errorFallback(
+      BuildContext context,
+      Object error,
+      StackTrace? stack,
+    ) => _brokenImagePlaceholder();
 
     if (path.startsWith('assets/')) {
-      return Image.asset(path, fit: BoxFit.cover, width: double.infinity, height: double.infinity, errorBuilder: errorFallback);
+      return Image.asset(
+        path,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: errorFallback,
+      );
     }
     if (kIsWeb || path.startsWith('http') || path.startsWith('blob:')) {
-      return Image.network(path, fit: BoxFit.cover, width: double.infinity, height: double.infinity, errorBuilder: errorFallback);
+      return Image.network(
+        path,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: errorFallback,
+      );
     }
-    return Image.file(File(path), fit: BoxFit.cover, width: double.infinity, height: double.infinity, errorBuilder: errorFallback);
+    return Image.file(
+      File(path),
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      errorBuilder: errorFallback,
+    );
   }
 
   Widget _imageCard(String imagePath, int index) {
@@ -1174,7 +1545,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: GestureDetector(
             onTap: () => _deleteImage(index),
             child: Container(
-              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
               child: const Padding(
                 padding: EdgeInsets.all(4),
                 child: Icon(Icons.close, size: 14, color: Colors.white),
@@ -1228,7 +1602,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _aboutTile(IconData icon, String title, String value, VoidCallback? onTap) {
+  Widget _aboutTile(
+    IconData icon,
+    String title,
+    String value,
+    VoidCallback? onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       child: Column(
@@ -1250,8 +1629,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     Text(
                       value,
                       style: TextStyle(
-                        color: value == 'Add' ? AppTheme.primaryColor : Colors.grey,
-                        fontWeight: value == 'Add' ? FontWeight.w600 : FontWeight.normal,
+                        color:
+                            value == 'Add'
+                                ? AppTheme.primaryColor
+                                : Colors.grey,
+                        fontWeight:
+                            value == 'Add'
+                                ? FontWeight.w600
+                                : FontWeight.normal,
                       ),
                     ),
                     if (onTap != null) ...[
