@@ -28,6 +28,7 @@ class _SwipeScreenState extends State<SwipeScreen>
   Offset _dragOffset = Offset.zero;
   Animation<Offset>? _offsetAnimation;
   bool _isAnimatingSwipe = false;
+  bool _isRewinding = false;
 
   @override
   void initState() {
@@ -147,6 +148,56 @@ class _SwipeScreenState extends State<SwipeScreen>
     }
   }
 
+  /// Brings the last swiped person back and flies their card in from the side
+  /// it left on. Unlimited: usable as many times in a row as there is history.
+  Future<void> _handleRewind(double cardWidth) async {
+    if (_isAnimatingSwipe || _isRewinding) {
+      return;
+    }
+
+    final entry = swipeController.lastSwipe;
+    if (entry == null) {
+      return;
+    }
+
+    // Decide where the card starts before restoring it, so its first frame is
+    // already off-screen rather than popping in at the centre.
+    final enterX = entry.action == SwipeAction.like
+        ? cardWidth * 1.35
+        : -cardWidth * 1.35;
+
+    setState(() {
+      _isRewinding = true;
+      _dragOffset = Offset(enterX, 0);
+    });
+
+    final result = swipeController.rewindLastSwipe();
+
+    if (!result.success) {
+      setState(() {
+        _isRewinding = false;
+        _dragOffset = Offset.zero;
+      });
+      if (mounted && result.message.isNotEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.message)),
+        );
+      }
+      return;
+    }
+
+    await _animateCardTo(Offset.zero);
+
+    _swipeAnimationController.reset();
+    if (mounted) {
+      setState(() {
+        _isRewinding = false;
+        _dragOffset = Offset.zero;
+        _offsetAnimation = null;
+      });
+    }
+  }
+
   Future<void> _animateCardTo(Offset target) async {
     _offsetAnimation = Tween<Offset>(
       begin: _dragOffset,
@@ -212,11 +263,19 @@ class _SwipeScreenState extends State<SwipeScreen>
               ? 'No more profiles to show'
               : swipeController.errorMessage.value,
           onRetry: () => swipeController.loadProfiles(refresh: true),
+          onRewind: swipeController.canRewind && !_isRewinding
+              ? () => _handleRewind(MediaQuery.of(context).size.width)
+              : null,
+          rewindLabel: swipeController.lastSwipe?.profile.fullName ?? '',
         );
       }
 
       final topProfile = profiles.first;
-      final canAct = !_isAnimatingSwipe && swipeController.canSwipe(topProfile.id);
+      final canAct = !_isAnimatingSwipe &&
+          !_isRewinding &&
+          swipeController.canSwipe(topProfile.id);
+      final canRewind =
+          !_isAnimatingSwipe && !_isRewinding && swipeController.canRewind;
 
       return Padding(
         padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
@@ -241,9 +300,10 @@ class _SwipeScreenState extends State<SwipeScreen>
                         return _DeckLayer(
                           profile: profile,
                           depth: index,
-                          dragProgress: dragProgress,
+                          dragProgress: _isRewinding ? 0 : dragProgress,
                           dragOffset: isTopCard ? _dragOffset : Offset.zero,
                           isTopCard: isTopCard,
+                          showDecision: !_isRewinding,
                           onTapInfo: isTopCard
                               ? () => Navigator.push(
                                     context,
@@ -283,6 +343,15 @@ class _SwipeScreenState extends State<SwipeScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
+                    _ActionButton(
+                      icon: Icons.replay_rounded,
+                      color: AppTheme.goldColor,
+                      size: 46,
+                      iconSize: 22,
+                      onTap: canRewind
+                          ? () => _handleRewind(constraints.maxWidth)
+                          : null,
+                    ),
                     _ActionButton(
                       icon: Icons.close_rounded,
                       color: AppTheme.rejectColor,
@@ -370,6 +439,7 @@ class _DeckLayer extends StatelessWidget {
     required this.dragProgress,
     required this.dragOffset,
     required this.isTopCard,
+    this.showDecision = true,
     this.onPanUpdate,
     this.onPanEnd,
     this.onTapInfo,
@@ -383,6 +453,10 @@ class _DeckLayer extends StatelessWidget {
   final GestureDragUpdateCallback? onPanUpdate;
   final GestureDragEndCallback? onPanEnd;
   final VoidCallback? onTapInfo;
+
+  /// False while a rewound card flies back in, so it doesn't wear a LIKE or
+  /// NOPE stamp on the way to the centre.
+  final bool showDecision;
 
   @override
   Widget build(BuildContext context) {
@@ -402,10 +476,10 @@ class _DeckLayer extends StatelessWidget {
           child: _SwipeProfileCard(
             profile: profile,
             onTapInfo: onTapInfo,
-            likeOpacity: isTopCard && dragOffset.dx > 0
+            likeOpacity: showDecision && isTopCard && dragOffset.dx > 0
                 ? (dragOffset.dx.abs() / 120).clamp(0.0, 1.0)
                 : 0,
-            nopeOpacity: isTopCard && dragOffset.dx < 0
+            nopeOpacity: showDecision && isTopCard && dragOffset.dx < 0
                 ? (dragOffset.dx.abs() / 120).clamp(0.0, 1.0)
                 : 0,
           ),
@@ -620,10 +694,17 @@ class _EmptyDeckState extends StatelessWidget {
   const _EmptyDeckState({
     required this.message,
     required this.onRetry,
+    this.onRewind,
+    this.rewindLabel = '',
   });
 
   final String message;
   final VoidCallback onRetry;
+
+  /// Set when there is a swipe to take back — passing the last card in the
+  /// deck lands here, and that is exactly when a rewind is wanted most.
+  final VoidCallback? onRewind;
+  final String rewindLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -653,6 +734,21 @@ class _EmptyDeckState extends StatelessWidget {
               onPressed: onRetry,
               child: const Text('Try again'),
             ),
+            if (onRewind != null) ...[
+              const SizedBox(height: 10),
+              TextButton.icon(
+                onPressed: onRewind,
+                icon: const Icon(Icons.replay_rounded, size: 20),
+                label: Text(
+                  rewindLabel.isEmpty
+                      ? 'Bring back last profile'
+                      : 'Bring back $rewindLabel',
+                ),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppTheme.textSecondaryColor,
+                ),
+              ),
+            ],
           ],
         ),
       ),

@@ -4,6 +4,8 @@ class TermsScreen extends StatelessWidget {
   const TermsScreen({super.key});
 
   static const String _content = '''
+Users are advised not to share their personal phone number or other sensitive contact information with other users. If a user voluntarily chooses to share such information, it is done at their own discretion and responsibility, and Vellora shall not be held responsible for any consequences arising from such sharing, to the extent permitted by applicable law.
+
 Last updated: September 2026
 
 Welcome to Vellora. By creating an account or using Vellora, you agree to these Terms of Service. Please read them carefully before using the platform.

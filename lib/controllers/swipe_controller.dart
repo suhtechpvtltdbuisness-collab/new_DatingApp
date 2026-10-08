@@ -28,6 +28,36 @@ class SwipeSubmissionResult {
   });
 }
 
+/// One swipe remembered so it can be taken back later.
+class RewindEntry {
+  const RewindEntry({
+    required this.profile,
+    required this.action,
+    this.matchId,
+  });
+
+  final UserModel profile;
+  final SwipeAction action;
+
+  /// Set when this swipe produced a match. Taking such a swipe back means
+  /// unmatching, which is deliberate enough to belong in the Matches flow.
+  final String? matchId;
+
+  bool get createdMatch => (matchId ?? '').isNotEmpty;
+}
+
+class RewindResult {
+  const RewindResult({
+    required this.success,
+    this.profile,
+    this.message = '',
+  });
+
+  final bool success;
+  final UserModel? profile;
+  final String message;
+}
+
 /// Swipe Controller
 /// Keeps the swipe deck responsive while the API completes in the background.
 class SwipeController extends GetxController {
@@ -60,12 +90,24 @@ class SwipeController extends GetxController {
   static const int pageSize = 10;
   static const int preloadThreshold = 2;
 
+  /// Every swipe made this session, oldest first. Unlimited Backtrack: this
+  /// is never trimmed, so a user can keep rewinding back to their first swipe.
+  final rewindHistory = <RewindEntry>[].obs;
+
   final Set<String> _pendingSwipeIds = <String>{};
 
   UnmodifiableSetView<String> get pendingSwipeIds =>
       UnmodifiableSetView(_pendingSwipeIds);
 
   UserModel? get currentProfile => profiles.isEmpty ? null : profiles.first;
+
+  /// True while there is a swipe left to take back.
+  bool get canRewind => rewindHistory.isNotEmpty;
+
+  /// The swipe a rewind would undo, so the UI can fly the card back in from
+  /// the side it left on.
+  RewindEntry? get lastSwipe =>
+      rewindHistory.isEmpty ? null : rewindHistory.last;
 
   @override
   void onInit() {
@@ -312,6 +354,7 @@ class SwipeController extends GetxController {
     likedProfiles.clear();
     dislikedProfiles.clear();
     matches.clear();
+    rewindHistory.clear();
     _pendingSwipeIds.clear();
     filters.value = const DiscoveryFilters();
     filtersLoaded.value = false;
@@ -324,9 +367,65 @@ class SwipeController extends GetxController {
     isLoadingMore.value = false;
   }
 
+  /// Takes back the most recent swipe and puts that person back on top of the
+  /// deck. Can be called repeatedly — there is no limit and no cooldown — so an
+  /// accidental pass is always recoverable, however long ago it happened.
+  ///
+  /// The swipe is only undone on the device: the backend has no undo route, so
+  /// the original like/pass stays recorded there until the user re-decides and
+  /// a fresh swipe is sent for this profile.
+  RewindResult rewindLastSwipe() {
+    final entry = lastSwipe;
+    if (entry == null) {
+      return const RewindResult(
+        success: false,
+        message: 'No swipes to bring back yet.',
+      );
+    }
+
+    if (entry.createdMatch) {
+      return RewindResult(
+        success: false,
+        message:
+            'You matched with ${entry.profile.fullName}. Unmatch from Matches '
+            'to undo that.',
+      );
+    }
+
+    // A swipe still in flight owns this profile; let it land first, otherwise
+    // its own failure handling would fight the restore.
+    if (_pendingSwipeIds.contains(entry.profile.id)) {
+      return const RewindResult(
+        success: false,
+        message: 'That swipe is still sending. Try again in a moment.',
+      );
+    }
+
+    rewindHistory.removeLast();
+
+    // The person is being re-decided, so they no longer belong in either
+    // history list — and leaving them there would make _dedupeProfiles treat
+    // them as already seen.
+    likedProfiles.removeWhere((item) => item.id == entry.profile.id);
+    dislikedProfiles.removeWhere((item) => item.id == entry.profile.id);
+
+    _restoreProfile(entry.profile, 0);
+
+    errorMessage.value = '';
+    successMessage.value = '${entry.profile.fullName} is back.';
+
+    return RewindResult(
+      success: true,
+      profile: entry.profile,
+      message: successMessage.value,
+    );
+  }
+
   /// Removes a person from the deck immediately (e.g. after blocking).
   void removeProfile(String userId) {
     profiles.removeWhere((p) => p.id == userId);
+    // Someone removed deliberately must not be reachable through a rewind.
+    rewindHistory.removeWhere((entry) => entry.profile.id == userId);
   }
 
   Future<bool> loadMoreProfiles() async {
@@ -389,6 +488,14 @@ class SwipeController extends GetxController {
       if (isMatch && match != null) {
         _upsertMatch(match);
       }
+
+      rewindHistory.add(
+        RewindEntry(
+          profile: removedProfile,
+          action: action,
+          matchId: isMatch ? match?.id : null,
+        ),
+      );
 
       successMessage.value = isMatch
           ? "It's a match!"
