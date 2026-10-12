@@ -4,26 +4,26 @@ class TermsScreen extends StatelessWidget {
   const TermsScreen({super.key});
 
   static const String _content = '''
-Users are advised not to share their personal phone number or other sensitive contact information with other users. If a user voluntarily chooses to share such information, it is done at their own discretion and responsibility, and Vellora shall not be held responsible for any consequences arising from such sharing, to the extent permitted by applicable law.
+Users are advised not to share their personal phone number or other sensitive contact information with other users. If a user voluntarily chooses to share such information, it is done at their own discretion and responsibility, and Velora shall not be held responsible for any consequences arising from such sharing, to the extent permitted by applicable law.
 
 Last updated: September 2026
 
-Welcome to Vellora. By creating an account or using Vellora, you agree to these Terms of Service. Please read them carefully before using the platform.
+Welcome to Velora. By creating an account or using Velora, you agree to these Terms of Service. Please read them carefully before using the platform.
 
-1. Using Vellora
+1. Using Velora
 
-Vellora is a dating and social connection platform that allows users to create profiles, discover other members, like profiles, match, and communicate through the app.
+Velora is a dating and social connection platform that allows users to create profiles, discover other members, like profiles, match, and communicate through the app.
 
 You agree to:
 • Provide accurate and truthful information.
 • Keep your account information secure.
-• Use Vellora respectfully and responsibly.
-• Follow applicable laws and Vellora's Community Guidelines.
+• Use Velora respectfully and responsibly.
+• Follow applicable laws and Velora's Community Guidelines.
 • Interact with other members respectfully.
 
 2. Eligibility
 
-You must be 18 or older to use Vellora.
+You must be 18 or older to use Velora.
 
 You must not create an account using someone else's identity or information.
 
@@ -40,29 +40,29 @@ Do not upload:
 
 4. Matching & Messaging
 
-Vellora allows members to like profiles, match with other members, and communicate through available messaging features.
+Velora allows members to like profiles, match with other members, and communicate through available messaging features.
 
-A match does not guarantee that another member will respond or meet you offline. Use good judgment when communicating or meeting someone you met through Vellora.
+A match does not guarantee that another member will respond or meet you offline. Use good judgment when communicating or meeting someone you met through Velora.
 
 Never share sensitive personal information with someone you do not trust.
 
 5. Safety, Reporting & Blocking
 
-You can use Vellora's Report and Block features when you encounter inappropriate, abusive, suspicious, or unwanted behavior.
+You can use Velora's Report and Block features when you encounter inappropriate, abusive, suspicious, or unwanted behavior.
 
 We may review reported activity and take appropriate action, including restricting, suspending, or removing an account when necessary.
 
-For more information, visit the Vellora Safety Centre.
+For more information, visit the Velora Safety Centre.
 
 6. Prohibited Activities
 
-You must not use Vellora to:
+You must not use Velora to:
 • Harass, threaten, stalk, or intimidate others.
 • Impersonate another person.
 • Scam, defraud, or deceive other members.
 • Send spam or unwanted promotional messages.
 • Attempt to gain unauthorized access to another account.
-• Use Vellora for illegal activities.
+• Use Velora for illegal activities.
 • Circumvent account restrictions or safety measures.
 
 7. Account Suspension or Removal
@@ -73,7 +73,7 @@ We may also take action when necessary to protect users, the platform, or the in
 
 8. Subscriptions & Payments
 
-Some Vellora features may require a paid subscription.
+Some Velora features may require a paid subscription.
 
 If you purchase a subscription, charges and renewals are handled through the applicable app store or payment provider. Subscriptions may automatically renew until cancelled according to the terms of the provider used for the purchase.
 
@@ -81,7 +81,7 @@ Please review the applicable billing provider's cancellation and refund policies
 
 9. Privacy
 
-Your use of Vellora is also subject to our Privacy Policy, which explains how we collect, use, store, and protect your information.
+Your use of Velora is also subject to our Privacy Policy, which explains how we collect, use, store, and protect your information.
 
 10. Changes to These Terms
 
@@ -89,7 +89,7 @@ We may update these Terms from time to time. When changes are made, we may updat
 
 11. Contact Us
 
-If you have questions about these Terms or your Vellora account, contact us through the support/contact option provided within Vellora.
+If you have questions about these Terms or your Velora account, contact us through the support/contact option provided within Velora.
 ''';
 
   @override

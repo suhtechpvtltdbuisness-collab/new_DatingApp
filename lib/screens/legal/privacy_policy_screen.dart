@@ -6,15 +6,15 @@ class PrivacyPolicyScreen extends StatelessWidget {
   static const String _content = '''
 Last updated: September 2026
 
-Vellora respects your privacy. This Privacy Policy explains what information we collect, how we use it, and the choices available to you when you use Vellora.
+Velora respects your privacy. This Privacy Policy explains what information we collect, how we use it, and the choices available to you when you use Velora.
 
 1. Information We Collect
 
-Depending on how you use Vellora, we may collect:
+Depending on how you use Velora, we may collect:
 • Account information: name, email address, phone number, date of birth, and login information.
 • Profile information: profile photos, bio, interests, preferences, location, and other information you choose to add.
 • Dating activity: likes, matches, interactions, and profile preferences.
-• Messages: information associated with communications sent through Vellora.
+• Messages: information associated with communications sent through Velora.
 • Safety information: reports, blocks, complaints, verification information, and information needed to investigate safety issues.
 • Technical information: device information, IP address, browser/app information, and basic usage data.
 • Payment information: subscription and transaction information processed through the applicable payment provider.
@@ -31,29 +31,29 @@ We use information to:
 • Process reports and safety complaints.
 • Provide customer support.
 • Process subscriptions and payments.
-• Maintain, improve, and secure Vellora.
+• Maintain, improve, and secure Velora.
 
 3. Location Information
 
-If you enable location-related features, Vellora may use location information to provide features such as distance-based discovery.
+If you enable location-related features, Velora may use location information to provide features such as distance-based discovery.
 
 4. Photos and Profile Content
 
-Photos, bios, interests, and other information you choose to add to your profile may be visible to other Vellora members according to your account and discovery settings.
+Photos, bios, interests, and other information you choose to add to your profile may be visible to other Velora members according to your account and discovery settings.
 
 Do not upload information that you do not want other members to see.
 
 5. Messages and Safety Reports
 
-Messages and safety reports may be processed to provide the messaging and safety features of Vellora and to investigate violations of our Terms or Community Guidelines.
+Messages and safety reports may be processed to provide the messaging and safety features of Velora and to investigate violations of our Terms or Community Guidelines.
 
 Safety reports and verification information may be reviewed by authorized team members when necessary for safety, moderation, or support.
 
 6. Sharing of Information
 
-We do not make your personal information publicly available except where you choose to display information through your Vellora profile or where disclosure is otherwise permitted or required by applicable law.
+We do not make your personal information publicly available except where you choose to display information through your Velora profile or where disclosure is otherwise permitted or required by applicable law.
 
-We may share information with service providers that help us operate Vellora, such as hosting, authentication, analytics, customer support, payment, and security providers.
+We may share information with service providers that help us operate Velora, such as hosting, authentication, analytics, customer support, payment, and security providers.
 
 7. Data Security
 
@@ -69,13 +69,13 @@ Where we rely on your consent to process your information, you may withdraw that
 
 9. Account Deletion
 
-You can request deletion of your Vellora account through the available account settings or by contacting support.
+You can request deletion of your Velora account through the available account settings or by contacting support.
 
 Some information may need to be retained for legitimate purposes such as legal compliance, fraud prevention, dispute resolution, or security.
 
 10. Children's Privacy
 
-Vellora is intended only for users aged 18 and above. We do not knowingly allow individuals under 18 to create or maintain dating accounts.
+Velora is intended only for users aged 18 and above. We do not knowingly allow individuals under 18 to create or maintain dating accounts.
 
 If we become aware that an account belongs to someone under 18, we may take appropriate action, including removing the account.
 
@@ -87,7 +87,7 @@ The Last Updated date at the top of this page will indicate when the policy was 
 
 12. Contact Us
 
-If you have questions about this Privacy Policy, your account, or your personal information, contact Vellora through the support/contact option provided within the app or website.
+If you have questions about this Privacy Policy, your account, or your personal information, contact Velora through the support/contact option provided within the app or website.
 ''';
 
   @override

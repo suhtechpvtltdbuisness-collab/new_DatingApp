@@ -58,7 +58,7 @@ class CreateAccountScreen extends StatelessWidget {
                           const SizedBox(width: 8),
 
                           const Text(
-                            "Vellora",
+                            "Velora",
                             style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,

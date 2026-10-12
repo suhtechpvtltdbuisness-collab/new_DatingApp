@@ -17,7 +17,7 @@ class NotificationService {
   bool messagesEnabled = true;
   bool pushEnabled = true;
 
-  static const _channelId = 'vellora_messages';
+  static const _channelId = 'velora_messages';
   static const _channelName = 'Messages';
 
   Future<void> initialize() async {
