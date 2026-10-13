@@ -187,7 +187,10 @@ class ChatController extends GetxController {
     if (msg.id.isEmpty) return;
     final existingIdx = messages.indexWhere((m) => m.id == msg.id);
     if (existingIdx != -1) {
-      messages[existingIdx] = msg;
+      final existing = messages[existingIdx];
+      messages[existingIdx] = _statusRank(msg.status) >= _statusRank(existing.status)
+          ? msg
+          : msg.copyWith(status: existing.status, isRead: existing.isRead);
       return;
     }
 
@@ -204,6 +207,19 @@ class ChatController extends GetxController {
     }
 
     messages.add(msg);
+  }
+
+  int _statusRank(MessageStatus status) {
+    switch (status) {
+      case MessageStatus.sending:
+        return 0;
+      case MessageStatus.sent:
+        return 1;
+      case MessageStatus.delivered:
+        return 2;
+      case MessageStatus.read:
+        return 3;
+    }
   }
 
   void _sortMessages() {
@@ -306,12 +322,31 @@ class ChatController extends GetxController {
       onTyping: (userId) {
         isTyping.value = userId.isNotEmpty;
       },
+      onDelivered: (payload) {
+        final delivererId = payload['userId']?.toString() ?? '';
+        if (delivererId.isEmpty || delivererId == currentUserId) return;
+        final ids = (payload['messageIds'] as List?)
+                ?.map((e) => e.toString())
+                .where((id) => id.isNotEmpty)
+                .toSet() ??
+            <String>{};
+        for (var i = 0; i < messages.length; i++) {
+          final m = messages[i];
+          if (m.senderId != currentUserId) continue;
+          if (m.status == MessageStatus.read) continue;
+          if (ids.isNotEmpty && !ids.contains(m.id)) continue;
+          if (m.status == MessageStatus.sending ||
+              m.status == MessageStatus.sent) {
+            messages[i] = m.copyWith(status: MessageStatus.delivered);
+          }
+        }
+      },
       onRead: (payload) {
         final readerId = payload['userId']?.toString() ?? '';
         if (readerId.isEmpty || readerId == currentUserId) return;
         for (var i = 0; i < messages.length; i++) {
           final m = messages[i];
-          if (m.senderId == currentUserId && !m.isRead) {
+          if (m.senderId == currentUserId && m.status != MessageStatus.read) {
             messages[i] = m.copyWith(isRead: true, status: MessageStatus.read);
           }
         }

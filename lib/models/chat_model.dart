@@ -1,4 +1,5 @@
 import 'package:dating_app/utils/constants.dart';
+import 'package:dating_app/utils/media_url.dart';
 
 class ChatMessageModel {
   final String id;
@@ -33,16 +34,36 @@ class ChatMessageModel {
       conversationId: json['conversationId'] ?? '',
       senderId: json['senderId'] ?? '',
       senderName: json['senderName'] ?? '',
-      senderImage: json['senderImage'] ?? '',
+      senderImage: resolveMediaUrl(json['senderImage']?.toString() ?? ''),
       message: json['message'] ?? '',
       timestamp: json['timestamp'] != null
-          ? DateTime.parse(json['timestamp']).toLocal()
+          ? DateTime.parse(json['timestamp'].toString()).toLocal()
           : DateTime.now(),
-      status: MessageStatus.values.byName(json['status'] ?? 'sent'),
-      isRead: json['isRead'] ?? false,
-      attachmentUrl: json['attachmentUrl'],
+      status: _parseStatus(json['status'], json['isRead'] == true),
+      isRead: json['isRead'] == true ||
+          (json['status']?.toString().toLowerCase() == 'read'),
+      attachmentUrl: json['attachmentUrl'] != null
+          ? resolveMediaUrl(json['attachmentUrl'].toString())
+          : null,
       attachmentType: json['attachmentType'],
     );
+  }
+
+  static MessageStatus _parseStatus(dynamic raw, bool isRead) {
+    if (isRead) return MessageStatus.read;
+    final normalized = raw?.toString().toLowerCase().trim() ?? '';
+    switch (normalized) {
+      case 'sending':
+      case 'pending':
+        return MessageStatus.sending;
+      case 'delivered':
+        return MessageStatus.delivered;
+      case 'read':
+        return MessageStatus.read;
+      case 'sent':
+      default:
+        return MessageStatus.sent;
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -125,7 +146,7 @@ class ConversationModel {
       userId: json['userId'] ?? '',
       otherUserId: json['otherUserId'] ?? '',
       otherUserName: json['otherUserName'] ?? '',
-      otherUserImage: json['otherUserImage'] ?? '',
+      otherUserImage: resolveMediaUrl(json['otherUserImage']?.toString() ?? ''),
       lastMessage: json['lastMessage'] ?? '',
       lastMessageTime: json['lastMessageTime'] != null
           ? DateTime.parse(json['lastMessageTime']).toLocal()

@@ -106,6 +106,7 @@ class ChatRealtimeService {
     required void Function(Map<String, dynamic> message) onMessage,
     required void Function(String userId) onTyping,
     required void Function(Map<String, dynamic> payload) onRead,
+    void Function(Map<String, dynamic> payload)? onDelivered,
   }) async {
     await initialize();
     if (!_enabled || conversationId.isEmpty) return;
@@ -118,7 +119,7 @@ class ChatRealtimeService {
     await unsubscribeConversation();
     _activeConversationId = conversationId;
 
-    _conversationChannel = Supabase.instance.client
+    var channel = Supabase.instance.client
         .channel('conversation:$conversationId')
         .onBroadcast(
           event: 'new_message',
@@ -145,8 +146,18 @@ class ChatRealtimeService {
           callback: (payload) {
             onRead(_asMap(payload));
           },
-        )
-        .subscribe();
+        );
+
+    if (onDelivered != null) {
+      channel = channel.onBroadcast(
+        event: 'messages_delivered',
+        callback: (payload) {
+          onDelivered(_asMap(payload));
+        },
+      );
+    }
+
+    _conversationChannel = channel.subscribe();
   }
 
   Future<void> unsubscribeConversation() async {

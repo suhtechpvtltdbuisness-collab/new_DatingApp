@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'FAQs_Screen.dart';
 import 'Community_Guidelines_Screen.dart';
 import 'contact_support_screen.dart';
+import 'legal_document_screen.dart';
+import 'safety_centre_screen.dart';
 
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
@@ -117,6 +119,42 @@ class HelpSupportScreen extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (_) =>
                             const CommunityGuidelinesScreen(),
+                      ),
+                    );
+                  },
+                ),
+
+                buildTile(
+                  "Safety Centre",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const SafetyCentreScreen(),
+                      ),
+                    );
+                  },
+                ),
+
+                buildTile(
+                  "Privacy Policy",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LegalDocumentScreen.privacy(),
+                      ),
+                    );
+                  },
+                ),
+
+                buildTile(
+                  "Terms of Service",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LegalDocumentScreen.terms(),
                       ),
                     );
                   },

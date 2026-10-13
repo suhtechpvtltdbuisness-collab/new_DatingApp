@@ -1,4 +1,5 @@
 import 'package:dating_app/utils/constants.dart';
+import 'package:dating_app/utils/media_url.dart';
 
 class UserModel {
   final String id;
@@ -257,7 +258,7 @@ class UserModel {
   static List<String> _parsePhotoUrls(dynamic value) {
     if (value is List) {
       return value
-          .map((item) => item.toString())
+          .map((item) => resolveMediaUrl(item.toString()))
           .where((item) => item.isNotEmpty)
           .toList();
     }

@@ -10,7 +10,7 @@ import 'package:dating_app/models/user_preferences_model.dart';
 import 'package:dating_app/screens/profile/profile_screen.dart';
 import 'package:dating_app/screens/subscription/subscription_screen.dart';
 import 'Edit_Profile_Screen.dart';
-import 'Safety_Toolkit_Screen.dart';
+import 'safety_centre_screen.dart';
 import 'Blocked_Users_Screen.dart';
 import 'Take_Break_Screen.dart';
 import 'Dating_Tips_Screen.dart';
@@ -1306,13 +1306,13 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
                         _buildTile(
                           Icons.shield_outlined,
-                          "Safety Toolkit",
+                          "Safety Centre",
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder:
-                                    (context) => const SafetyToolkitScreen(),
+                                builder: (context) =>
+                                    const SafetyCentreScreen(),
                               ),
                             );
                           },

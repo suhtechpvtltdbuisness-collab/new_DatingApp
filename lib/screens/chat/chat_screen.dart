@@ -883,19 +883,50 @@ class _MessageBubble extends StatelessWidget {
               ),
               if (isMe) ...[
                 const SizedBox(width: 4),
-                Icon(
-                  Icons.done_all,
-                  size: 14,
-                  color: msg.status == MessageStatus.read
-                      ? Colors.blue
-                      : AppTheme.primaryColor,
-                ),
+                _DeliveryStatusIcon(status: msg.status),
               ],
             ],
           ),
         ],
       ),
     );
+  }
+}
+
+class _DeliveryStatusIcon extends StatelessWidget {
+  final MessageStatus status;
+
+  const _DeliveryStatusIcon({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    switch (status) {
+      case MessageStatus.sending:
+        return const Icon(
+          Icons.access_time,
+          size: 14,
+          color: Colors.grey,
+        );
+      case MessageStatus.sent:
+        // Pending delivery (recipient offline / not received yet)
+        return const Icon(
+          Icons.done,
+          size: 14,
+          color: Colors.grey,
+        );
+      case MessageStatus.delivered:
+        return const Icon(
+          Icons.done_all,
+          size: 14,
+          color: Colors.grey,
+        );
+      case MessageStatus.read:
+        return const Icon(
+          Icons.done_all,
+          size: 14,
+          color: Color(0xFF1E88E5),
+        );
+    }
   }
 }
 

@@ -11,11 +11,7 @@ import 'package:get/get.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    await dotenv.load(fileName: '.env');
-  } catch (_) {
-    await dotenv.load(fileName: '.env.example');
-  }
+  await dotenv.load(fileName: '.env.example');
 
   final authService = AuthService();
   await authService.initialize();
@@ -42,14 +38,14 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light,
-      
+
       // Routes
       initialRoute: initialRoute,
       getPages: AppRoutes.pages,
-      
+
       // Bindings
       initialBinding: AppBindings(),
-      
+
       // Navigation settings
       enableLog: false,
     );
