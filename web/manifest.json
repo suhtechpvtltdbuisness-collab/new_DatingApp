@@ -1,11 +1,11 @@
 {
-    "name": "Velora",
-    "short_name": "Velora",
+    "name": "Vellora",
+    "short_name": "Vellora",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#130A22",
     "theme_color": "#130A22",
-    "description": "Velora - find your perfect match.",
+    "description": "Vellora - find your perfect match.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

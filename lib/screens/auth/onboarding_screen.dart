@@ -39,15 +39,19 @@ class ModernOnboardingScreen extends StatelessWidget {
                   alignment: Alignment.center,
                   children: [
                     _buildCard(
-                      image: 'assets/images/girlimage1.png',
+                      image: 'assets/images/boyimage.png',
+                      networkImage:
+                          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=720&h=960&fit=crop&crop=faces&q=85',
                       name: 'Justin, 25',
                       location: 'New York',
                       rotation: -8,
                       bottom: 0,
                     ),
                     _buildCard(
-                      image: 'assets/images/boyimage.png',
-                      name: 'Julia Lode, 23',
+                      image: 'assets/images/girlimage1.png',
+                      networkImage:
+                          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=720&h=960&fit=crop&crop=faces&q=85',
+                      name: 'Julia, 23',
                       location: 'Los Angeles',
                       rotation: 8,
                       bottom: 20,
@@ -141,14 +145,18 @@ class ModernOnboardingScreen extends StatelessWidget {
     );
   }
 
-  /// Profile Card Widget (for Network/Asset Images)
+  /// Profile Card Widget. Loads a sharp network photo and falls back to the
+  /// bundled asset when offline.
   static Widget _buildCard({
     required String image,
+    required String networkImage,
     required String name,
     required String location,
     required double rotation,
     required double bottom,
   }) {
+    final radius = BorderRadius.circular(AppTheme.radiusLg);
+
     return Positioned(
       bottom: bottom,
       child: Transform.rotate(
@@ -156,8 +164,10 @@ class ModernOnboardingScreen extends StatelessWidget {
         child: Container(
           width: 240,
           height: 320,
+          padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(AppTheme.radiusLg + 4),
             boxShadow: [
               BoxShadow(
                 color: AppTheme.primaryColor.withOpacity(0.28),
@@ -165,32 +175,87 @@ class ModernOnboardingScreen extends StatelessWidget {
                 offset: const Offset(0, 14),
               ),
             ],
-            image: DecorationImage(image: AssetImage(image), fit: BoxFit.cover),
           ),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-              gradient: LinearGradient(
-                begin: Alignment.bottomCenter,
-                end: Alignment.center,
-                colors: [Colors.black.withOpacity(0.65), Colors.transparent],
-              ),
-            ),
-            padding: const EdgeInsets.all(16),
-            alignment: Alignment.bottomLeft,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+          child: ClipRRect(
+            borderRadius: radius,
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                Text(
-                  name,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                Image.network(
+                  networkImage,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
+                  filterQuality: FilterQuality.high,
+                  loadingBuilder: (context, child, progress) =>
+                      progress == null ? child : Image.asset(image, fit: BoxFit.cover),
+                  errorBuilder: (context, error, stackTrace) =>
+                      Image.asset(image, fit: BoxFit.cover),
+                ),
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.center,
+                      colors: [Colors.black.withOpacity(0.72), Colors.transparent],
+                    ),
                   ),
                 ),
-                Text(location, style: const TextStyle(color: Colors.white70)),
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.verified, size: 13, color: AppTheme.primaryColor),
+                        SizedBox(width: 3),
+                        Text(
+                          'Verified',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: AppTheme.textPrimaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 14,
+                  right: 14,
+                  bottom: 14,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 19,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on_rounded, size: 14, color: Colors.white70),
+                          const SizedBox(width: 3),
+                          Text(
+                            location,
+                            style: const TextStyle(color: Colors.white70, fontSize: 13),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),

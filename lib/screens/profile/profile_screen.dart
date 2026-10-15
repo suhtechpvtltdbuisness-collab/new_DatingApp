@@ -46,11 +46,49 @@ class _ProfileDetailsContentState extends State<ProfileDetailsContent> {
   bool _startingChat = false;
   bool _liking = false;
 
+  /// Chat is only allowed once both people have liked each other (an
+  /// accepted match). Stays false until the match list confirms it.
+  bool _canChat = false;
+  bool _matchChecked = false;
+
   @override
   void initState() {
     super.initState();
     _profile = widget.profile;
-    if (_profile == null) _load();
+    if (_profile == null) {
+      _load();
+    } else {
+      _checkMatch();
+    }
+  }
+
+  Future<void> _checkMatch() async {
+    final id = _profile?.id ?? '';
+    if (id.isEmpty || _isOwnProfile) {
+      if (mounted) setState(() => _matchChecked = true);
+      return;
+    }
+
+    const pageSize = 50;
+    var matched = false;
+    for (var page = 1; page <= 5 && !matched; page++) {
+      final response = await SwipeService().getMatches(page: page, limit: pageSize);
+      if (!response.success || response.data == null) break;
+      final items = response.data!;
+      matched = items.any((match) {
+        final otherId = (match.matchedUser?.id ?? '').isNotEmpty
+            ? match.matchedUser!.id
+            : match.targetUserId;
+        return otherId == id && match.isAccepted && !match.isExpired;
+      });
+      if (items.length < pageSize) break;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _canChat = matched;
+      _matchChecked = true;
+    });
   }
 
   Future<void> _load() async {
@@ -75,6 +113,7 @@ class _ProfileDetailsContentState extends State<ProfileDetailsContent> {
             : 'Could not load this profile.';
       }
     });
+    if (_profile != null) _checkMatch();
   }
 
   bool get _isOwnProfile {
@@ -93,6 +132,10 @@ class _ProfileDetailsContentState extends State<ProfileDetailsContent> {
 
   Future<void> _sayHello(UserModel profile, String displayName) async {
     if (_startingChat) return;
+    if (!_canChat) {
+      _toast('You can chat once you both like each other.', error: true);
+      return;
+    }
     setState(() => _startingChat = true);
     final chatController = Get.find<ChatController>();
     final conv = await chatController.createChat(recipientId: profile.id);
@@ -135,7 +178,9 @@ class _ProfileDetailsContentState extends State<ProfileDetailsContent> {
     if (Get.isRegistered<SwipeController>()) {
       Get.find<SwipeController>().removeProfile(profile.id);
     }
-    _toast((response.data?.isMatch ?? false) ? "It's a match!" : 'Liked');
+    final isMatch = response.data?.isMatch ?? false;
+    if (isMatch) setState(() => _canChat = true);
+    _toast(isMatch ? "It's a match!" : 'Liked');
   }
 
   Future<void> _showSafetyActions(UserModel profile, String displayName) async {
@@ -327,21 +372,23 @@ class _ProfileDetailsContentState extends State<ProfileDetailsContent> {
             ),
           ],
 
-          // Say Hello / Like are interactions with someone else — never
-          // offered on the viewer's own profile.
+          // Like is always offered on someone else's profile. Say Hello
+          // (chat) only appears once both people have liked each other.
           if (!isOwn) ...[
             const SizedBox(height: 20),
             Row(
               children: [
-                Expanded(
-                  child: GradientButton(
-                    label: 'Say Hello 👋',
-                    height: 52,
-                    isLoading: _startingChat,
-                    onPressed: () => _sayHello(profile, displayName),
+                if (_canChat) ...[
+                  Expanded(
+                    child: GradientButton(
+                      label: 'Say Hello 👋',
+                      height: 52,
+                      isLoading: _startingChat,
+                      onPressed: () => _sayHello(profile, displayName),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 12),
+                  const SizedBox(width: 12),
+                ],
                 Expanded(
                   child: GhostButton(
                     label: _liking ? 'Liking…' : 'Like ❤️',
@@ -353,6 +400,21 @@ class _ProfileDetailsContentState extends State<ProfileDetailsContent> {
                 ),
               ],
             ),
+            if (_matchChecked && !_canChat) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: const [
+                  Icon(Icons.lock_outline_rounded, size: 15, color: AppTheme.textTertiaryColor),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'You can chat once you both like each other.',
+                      style: TextStyle(color: AppTheme.textTertiaryColor, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
 
           const SizedBox(height: 26),

@@ -300,20 +300,24 @@ class _ChatScreenState extends State<ChatScreen> {
     return disguisedTokens >= 1 && normalizedNumberWords >= 2;
   }
 
+  void _openProfile() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfileDetailsScreen(
+          userId: _chatController.currentConversation.value?.otherUserId,
+        ),
+      ),
+    );
+  }
+
   // -------------------------------------------------------------------------
   // Menu actions
   // -------------------------------------------------------------------------
   void _handleMenuSelection(_ChatMenuOption option) async {
     switch (option) {
       case _ChatMenuOption.viewProfile:
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ProfileDetailsScreen(
-              userId: _chatController.currentConversation.value?.otherUserId,
-            ),
-          ),
-        );
+        _openProfile();
         break;
 
       case _ChatMenuOption.muteNotifications:
@@ -540,7 +544,9 @@ class _ChatScreenState extends State<ChatScreen> {
         elevation: 0,
         backgroundColor: Colors.white,
         titleSpacing: 0,
-        title: Row(
+        title: InkWell(
+          onTap: _openProfile,
+          child: Row(
           children: [
             const SizedBox(width: 8),
             CircleAvatar(
@@ -575,6 +581,7 @@ class _ChatScreenState extends State<ChatScreen> {
               );
             }),
           ],
+        ),
         ),
         actions: [
           PopupMenuButton<_ChatMenuOption>(

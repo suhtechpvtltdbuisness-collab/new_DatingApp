@@ -39,7 +39,7 @@ class _ProfileTextScreenState extends State<ProfileTextScreen> {
   void continueNext() {
     String profileText = profileController.text.trim();
     if (profileText.isEmpty) {
-      profileText = "Hi, I am using Velora."; // Default profile text
+      profileText = "Hi, I am using Vellora."; // Default profile text
     }
 
     // Store profile text in controller

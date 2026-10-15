@@ -59,7 +59,7 @@ class HaveAccountScreen extends StatelessWidget {
                           const SizedBox(width: 8),
 
                           const Text(
-                            "Velora",
+                            "Vellora",
                             style: TextStyle(
                               fontSize: 32,
                               fontWeight: FontWeight.bold,
@@ -151,13 +151,6 @@ class HaveAccountScreen extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
-                  ),
-
-
-                  const Text(
-                    "By signing up, you agree to our Terms.\nSee how we use your data in our Privacy Policy",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
                   ),
 
                   const SizedBox(height: 30),

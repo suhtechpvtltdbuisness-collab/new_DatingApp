@@ -71,12 +71,12 @@ class LegalDocuments {
       LegalSection(
         heading: '1. Acceptance of terms',
         body:
-            'By creating an account or using Velora, you agree to these Terms of Service and our Privacy Policy. If you do not agree, do not use the app.',
+            'By creating an account or using Vellora, you agree to these Terms of Service and our Privacy Policy. If you do not agree, do not use the app.',
       ),
       LegalSection(
         heading: '2. Eligibility',
         body:
-            'You must be at least 18 years old to use Velora. You are responsible for keeping your login details secure and for activity on your account.',
+            'You must be at least 18 years old to use Vellora. You are responsible for keeping your login details secure and for activity on your account.',
       ),
       LegalSection(
         heading: '3. Community rules',

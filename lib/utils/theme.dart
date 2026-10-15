@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// ============================================================
-/// SUH Tech Velora — Design System
+/// SUH Tech Vellora — Design System
 /// "Bold Gradient / Glassmorphism"
 /// A single source of truth for color, gradient, typography and
 /// glass-surface tokens used across the entire app.
