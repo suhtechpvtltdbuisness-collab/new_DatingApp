@@ -2,6 +2,7 @@ import 'package:dating_app/models/match_model.dart';
 
 enum SwipeAction {
   like,
+  superLike,
   dislike,
 }
 

@@ -5,6 +5,9 @@ import 'package:dating_app/models/user_model.dart';
 import 'package:dating_app/screens/chat/chat_screen.dart';
 import 'package:dating_app/screens/profile/profile_screen.dart';
 import 'package:dating_app/screens/swipe/swipe_screen.dart';
+import 'package:dating_app/services/auth_service.dart';
+import 'package:dating_app/services/notification_service.dart';
+import 'package:dating_app/services/super_like_ledger.dart';
 import 'package:dating_app/services/swipe_service.dart';
 import 'package:dating_app/utils/theme.dart';
 import 'package:dating_app/widgets/common/glass_card.dart';
@@ -59,9 +62,10 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
           _matches = response.data!;
           _matchedCount = _matches.length;
         } else {
-          _error = response.message.isNotEmpty
-              ? response.message
-              : 'Could not load matches';
+          _error =
+              response.message.isNotEmpty
+                  ? response.message
+                  : 'Could not load matches';
         }
       });
       return;
@@ -72,23 +76,75 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
     );
     // Keep matched count fresh for the chip.
     final matchesResponse = await _swipeService.getMatches(page: 1, limit: 50);
+    final superLikes = response.success && response.data != null
+        ? await _resolveSuperLikes(response.data!.likes)
+        : null;
     if (!mounted) return;
     setState(() {
       _loading = false;
       if (response.success && response.data != null) {
-        _likes = response.data!.likes;
+        _likes = superLikes ?? response.data!.likes;
         _allCount = response.data!.allCount;
         _newCount = response.data!.newCount;
         _nearbyCount = response.data!.nearbyCount;
       } else {
-        _error = response.message.isNotEmpty
-            ? response.message
-            : 'Could not load likes';
+        _error =
+            response.message.isNotEmpty
+                ? response.message
+                : 'Could not load likes';
       }
       if (matchesResponse.success && matchesResponse.data != null) {
         _matchedCount = matchesResponse.data!.length;
       }
     });
+  }
+
+  /// Marks Super Likes the API didn't flag but this device recorded, and
+  /// announces each new one once (snackbar + local notification).
+  Future<List<IncomingLike>> _resolveSuperLikes(List<IncomingLike> likes) async {
+    final auth = AuthService();
+    final myId = auth.getCurrentUserId() ?? '';
+    final me = Get.isRegistered<UserController>()
+        ? Get.find<UserController>().currentUser.value
+        : null;
+    final myKeys = [myId, auth.getCurrentUserEmail(), me?.id, me?.email];
+    final resolved = <IncomingLike>[];
+    final fresh = <IncomingLike>[];
+    for (final like in likes) {
+      var isSuper = like.isSuperLike;
+      if (!isSuper) {
+        isSuper = await SuperLikeLedger.has(
+          senderKeys: [like.user.id, like.user.email],
+          targetKeys: myKeys,
+        );
+      }
+      final item = isSuper == like.isSuperLike ? like : like.withSuperLike(isSuper);
+      resolved.add(item);
+      if (isSuper &&
+          await SuperLikeLedger.markAnnounced(
+            senderId: like.user.id,
+            targetId: myKeys.firstWhere((k) => (k ?? '').isNotEmpty, orElse: () => '') ?? '',
+          )) {
+        fresh.add(item);
+      }
+    }
+
+    if (fresh.isNotEmpty && mounted) {
+      final name = fresh.first.user.firstName;
+      final text = fresh.length == 1
+          ? '⭐ $name super liked you!'
+          : '⭐ $name and ${fresh.length - 1} more super liked you!';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(backgroundColor: AppTheme.superLikeColor, content: Text(text)),
+      );
+      for (final item in fresh) {
+        NotificationService.instance.showSuperLikeNotification(
+          fromUserId: item.user.id,
+          fromName: item.user.firstName,
+        );
+      }
+    }
+    return resolved;
   }
 
   Future<void> _likeBack(IncomingLike like) async {
@@ -135,30 +191,35 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
 
     final myPhoto = userController.currentUser.value?.profileImage ?? '';
     final matchedUser = match?.matchedUser ?? other;
-    final theirPhoto = matchedUser.profileImage.isNotEmpty
-        ? matchedUser.profileImage
-        : (matchedUser.photoUrls.isNotEmpty ? matchedUser.photoUrls.first : '');
+    final theirPhoto =
+        matchedUser.profileImage.isNotEmpty
+            ? matchedUser.profileImage
+            : (matchedUser.photoUrls.isNotEmpty
+                ? matchedUser.photoUrls.first
+                : '');
 
     await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => MatchScreen(
-          matchedUserId: matchedUser.id.isNotEmpty ? matchedUser.id : other.id,
-          userName: matchedUser.fullName.trim().isNotEmpty
-              ? matchedUser.fullName
-              : other.fullName,
-          myImage: myPhoto,
-          theirImage: theirPhoto,
-        ),
+        builder:
+            (_) => MatchScreen(
+              matchedUserId:
+                  matchedUser.id.isNotEmpty ? matchedUser.id : other.id,
+              userName:
+                  matchedUser.fullName.trim().isNotEmpty
+                      ? matchedUser.fullName
+                      : other.fullName,
+              myImage: myPhoto,
+              theirImage: theirPhoto,
+            ),
       ),
     );
   }
 
   Future<void> _sayHelloToMatch(MatchModel match) async {
     final user = match.matchedUser;
-    final recipientId = user?.id.isNotEmpty == true
-        ? user!.id
-        : match.targetUserId;
+    final recipientId =
+        user?.id.isNotEmpty == true ? user!.id : match.targetUserId;
     if (recipientId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -198,21 +259,19 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
       return;
     }
 
-    final name = user != null && user.fullName.trim().isNotEmpty
-        ? user.fullName
-        : 'Match';
-    final image = user != null && user.profileImage.isNotEmpty
-        ? user.profileImage
-        : 'assets/images/profile.png';
+    final name =
+        user != null && user.fullName.trim().isNotEmpty
+            ? user.fullName
+            : 'Match';
+    final image =
+        user != null && user.profileImage.isNotEmpty
+            ? user.profileImage
+            : 'assets/images/profile.png';
 
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ChatScreen(
-          chatId: conv.id,
-          name: name,
-          image: image,
-        ),
+        builder: (_) => ChatScreen(chatId: conv.id, name: name, image: image),
       ),
     );
   }
@@ -255,6 +314,7 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
   }
 
   String _tag(IncomingLike like) {
+    if (like.isSuperLike) return '⭐ SUPER LIKED YOU';
     if (like.isNew) return 'NEW';
     if (like.distanceKm != null) {
       return '${like.distanceKm!.toStringAsFixed(0)} km';
@@ -264,8 +324,10 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final spotlight = [..._likes]
-      ..sort((a, b) => b.matchScore.compareTo(a.matchScore));
+    final spotlight = [..._likes]..sort((a, b) {
+      if (a.isSuperLike != b.isSuperLike) return a.isSuperLike ? -1 : 1;
+      return b.matchScore.compareTo(a.matchScore);
+    });
     final featured = spotlight.take(6).toList();
 
     return Scaffold(
@@ -311,31 +373,31 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
                 const SizedBox(height: 12),
                 SizedBox(
                   height: 220,
-                  child: _loading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: AppTheme.primaryColor,
-                          ),
-                        )
-                      : featured.isEmpty
+                  child:
+                      _loading
                           ? const Center(
-                              child: Text(
-                                'No likes yet',
-                                style: TextStyle(
-                                  color: AppTheme.textSecondaryColor,
-                                ),
-                              ),
-                            )
-                          : ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
-                              itemCount: featured.length,
-                              itemBuilder: (context, index) {
-                                final like = featured[index];
-                                return _buildProfileCard(like);
-                              },
+                            child: CircularProgressIndicator(
+                              color: AppTheme.primaryColor,
                             ),
+                          )
+                          : featured.isEmpty
+                          ? const Center(
+                            child: Text(
+                              'No likes yet',
+                              style: TextStyle(
+                                color: AppTheme.textSecondaryColor,
+                              ),
+                            ),
+                          )
+                          : ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: featured.length,
+                            itemBuilder: (context, index) {
+                              final like = featured[index];
+                              return _buildProfileCard(like);
+                            },
+                          ),
                 ),
                 const SizedBox(height: 20),
               ],
@@ -373,13 +435,18 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
               if (_error != null)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Text(_error!, style: const TextStyle(color: Colors.red)),
+                  child: Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
                 ),
               if (_loading)
                 const Padding(
                   padding: EdgeInsets.all(24),
                   child: Center(
-                    child: CircularProgressIndicator(color: AppTheme.primaryColor),
+                    child: CircularProgressIndicator(
+                      color: AppTheme.primaryColor,
+                    ),
                   ),
                 )
               else if (_showingMatches) ...[
@@ -402,7 +469,12 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
                       style: TextStyle(color: AppTheme.textSecondaryColor),
                     ),
                   ),
-                ..._likes.map(_buildRow),
+                ...([..._likes]..sort(
+                  (a, b) =>
+                      a.isSuperLike == b.isSuperLike
+                          ? 0
+                          : (a.isSuperLike ? -1 : 1),
+                )).map(_buildRow),
               ],
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -461,9 +533,8 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
     final user = match.matchedUser;
     final busyId = user?.id.isNotEmpty == true ? user!.id : match.targetUserId;
     final busy = _busyUserId == busyId;
-    final image = user != null && user.profileImage.isNotEmpty
-        ? user.profileImage
-        : '';
+    final image =
+        user != null && user.profileImage.isNotEmpty ? user.profileImage : '';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -480,10 +551,11 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
             children: [
               CircleAvatar(
                 radius: 28,
-                backgroundImage: image.startsWith('http')
-                    ? NetworkImage(image)
-                    : const AssetImage('assets/images/profile.png')
-                        as ImageProvider,
+                backgroundImage:
+                    image.startsWith('http')
+                        ? NetworkImage(image)
+                        : const AssetImage('assets/images/profile.png')
+                            as ImageProvider,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -538,15 +610,31 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.75),
             borderRadius: BorderRadius.circular(16),
+            border:
+                like.isSuperLike
+                    ? Border.all(color: AppTheme.superLikeColor, width: 1.6)
+                    : null,
           ),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundImage: like.user.photoUrls.isNotEmpty
-                    ? NetworkImage(like.user.photoUrls.first)
-                    : const AssetImage('assets/images/profile.png')
-                        as ImageProvider,
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundImage:
+                        like.user.photoUrls.isNotEmpty
+                            ? NetworkImage(like.user.photoUrls.first)
+                            : const AssetImage('assets/images/profile.png')
+                                as ImageProvider,
+                  ),
+                  if (like.isSuperLike)
+                    const Positioned(
+                      right: -4,
+                      bottom: -4,
+                      child: _SuperLikeBadge(),
+                    ),
+                ],
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -559,8 +647,15 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
                     ),
                     Text(
                       _tag(like),
-                      style: const TextStyle(
-                        color: AppTheme.warmAccentColor,
+                      style: TextStyle(
+                        color:
+                            like.isSuperLike
+                                ? AppTheme.superLikeColor
+                                : AppTheme.warmAccentColor,
+                        fontWeight:
+                            like.isSuperLike
+                                ? FontWeight.w800
+                                : FontWeight.normal,
                         fontSize: 12,
                       ),
                     ),
@@ -603,13 +698,24 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
           boxShadow: AppTheme.softShadow(),
           color: Colors.grey.shade300,
           image: DecorationImage(
-            image: image.startsWith('http')
-                ? NetworkImage(image)
-                : const AssetImage('assets/images/profile.png')
-                    as ImageProvider,
+            image:
+                image.startsWith('http')
+                    ? NetworkImage(image)
+                    : const AssetImage('assets/images/profile.png')
+                        as ImageProvider,
             fit: BoxFit.cover,
           ),
         ),
+        foregroundDecoration:
+            like.isSuperLike
+                ? BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLg),
+                  border: Border.all(
+                    color: AppTheme.superLikeColor,
+                    width: 2.5,
+                  ),
+                )
+                : null,
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
@@ -624,6 +730,11 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
             mainAxisAlignment: MainAxisAlignment.end,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (like.isSuperLike)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 6),
+                  child: _SuperLikeBadge(),
+                ),
               Text(
                 _label(like),
                 style: const TextStyle(
@@ -633,8 +744,11 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
               ),
               Text(
                 _tag(like),
-                style: const TextStyle(
-                  color: AppTheme.warmAccentColor,
+                style: TextStyle(
+                  color:
+                      like.isSuperLike
+                          ? AppTheme.superLikeColor
+                          : AppTheme.warmAccentColor,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 ),
@@ -665,6 +779,23 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SuperLikeBadge extends StatelessWidget {
+  const _SuperLikeBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        gradient: AppTheme.superLikeGradient,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 1.5),
+      ),
+      child: const Icon(Icons.star_rounded, color: Colors.white, size: 14),
     );
   }
 }

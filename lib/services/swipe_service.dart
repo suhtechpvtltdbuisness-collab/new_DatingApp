@@ -4,6 +4,10 @@ import 'package:dating_app/models/swipe_models.dart';
 import 'package:dating_app/models/user_model.dart';
 import 'package:dating_app/network/api_client.dart';
 import 'package:dating_app/network/api_endpoints.dart';
+import 'package:dating_app/services/auth_service.dart';
+import 'package:dating_app/services/super_like_ledger.dart';
+import 'package:dating_app/controllers/user_controller.dart';
+import 'package:get/get.dart';
 import 'package:logger/logger.dart';
 
 class IncomingLike {
@@ -14,6 +18,7 @@ class IncomingLike {
     required this.isNew,
     this.likedAt,
     this.distanceKm,
+    this.isSuperLike = false,
   });
 
   final UserModel user;
@@ -22,6 +27,19 @@ class IncomingLike {
   final bool isNew;
   final DateTime? likedAt;
   final double? distanceKm;
+
+  /// True when this person used a Super Like on the viewer.
+  final bool isSuperLike;
+
+  IncomingLike withSuperLike(bool value) => IncomingLike(
+        user: user,
+        swipeId: swipeId,
+        matchScore: matchScore,
+        isNew: isNew,
+        likedAt: likedAt,
+        distanceKm: distanceKm,
+        isSuperLike: value,
+      );
 
   factory IncomingLike.fromJson(Map<String, dynamic> json) {
     return IncomingLike(
@@ -35,6 +53,9 @@ class IncomingLike {
       distanceKm: json['distanceKm'] == null
           ? null
           : double.tryParse('${json['distanceKm']}'),
+      isSuperLike: json['isSuperLike'] == true ||
+          json['superLike'] == true ||
+          json['type'] == 'super_like',
     );
   }
 }
@@ -193,8 +214,33 @@ class SwipeService {
     return swipeRight(targetUserId);
   }
 
-  Future<ApiResponse<SwipeActionResponse>> superLikeProfile(String targetUserId) {
-    return swipeRight(targetUserId);
+  Future<ApiResponse<SwipeActionResponse>> superLikeProfile(
+    String targetUserId, {
+    String? targetEmail,
+  }) async {
+    // TODO(backend): switch to the dedicated super-like route once it ships.
+    // Until then it is a normal right swipe flagged with `superLike`, which
+    // the backend can read to notify the other user.
+    final response = await _sendSwipe(
+      endpoint: ApiEndpoints.getEndpoint(
+        ApiEndpoints.swipeRight,
+        {'userId': targetUserId},
+      ),
+      logLabel: 'super like',
+      fallbackError: 'Failed to super like profile',
+      body: const {'superLike': true},
+    );
+    if (response.success) {
+      final auth = AuthService();
+      final me = Get.isRegistered<UserController>()
+          ? Get.find<UserController>().currentUser.value
+          : null;
+      await SuperLikeLedger.record(
+        senderKeys: [auth.getCurrentUserId(), auth.getCurrentUserEmail(), me?.id, me?.email],
+        targetKeys: [targetUserId, targetEmail],
+      );
+    }
+    return response;
   }
 
   Future<ApiResponse<void>> passProfile(String targetUserId) async {
@@ -538,12 +584,14 @@ class SwipeService {
     required String endpoint,
     required String logLabel,
     required String fallbackError,
+    Map<String, dynamic>? body,
   }) async {
     try {
       _logger.i('Sending $logLabel');
 
       final response = await _apiClient.post<dynamic>(
         endpoint,
+        data: body,
         fromJsonT: (json) => json,
       );
 

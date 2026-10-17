@@ -164,10 +164,13 @@ class _ProfileDetailsContentState extends State<ProfileDetailsContent> {
     );
   }
 
-  Future<void> _like(UserModel profile) async {
+  Future<void> _like(UserModel profile, {bool superLike = false}) async {
     if (_liking) return;
     setState(() => _liking = true);
-    final response = await SwipeService().swipeRight(profile.id);
+    final service = SwipeService();
+    final response = superLike
+        ? await service.superLikeProfile(profile.id, targetEmail: profile.email)
+        : await service.swipeRight(profile.id);
     if (!mounted) return;
     setState(() => _liking = false);
     if (!response.success) {
@@ -180,7 +183,11 @@ class _ProfileDetailsContentState extends State<ProfileDetailsContent> {
     }
     final isMatch = response.data?.isMatch ?? false;
     if (isMatch) setState(() => _canChat = true);
-    _toast(isMatch ? "It's a match!" : 'Liked');
+    _toast(isMatch
+        ? "It's a match!"
+        : superLike
+            ? '⭐ Super Like sent to ${profile.firstName}! They\'ll be notified.'
+            : 'Liked');
   }
 
   Future<void> _showSafetyActions(UserModel profile, String displayName) async {
@@ -396,6 +403,18 @@ class _ProfileDetailsContentState extends State<ProfileDetailsContent> {
                     borderColor: AppTheme.primaryColor,
                     textColor: AppTheme.primaryColor,
                     onPressed: _liking ? null : () => _like(profile),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: GhostButton(
+                    label: 'Super Like ⭐',
+                    height: 52,
+                    borderColor: AppTheme.superLikeColor,
+                    textColor: AppTheme.superLikeColor,
+                    onPressed: _liking
+                        ? null
+                        : () => _like(profile, superLike: true),
                   ),
                 ),
               ],

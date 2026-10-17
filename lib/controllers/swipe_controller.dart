@@ -462,9 +462,15 @@ class SwipeController extends GetxController {
     }
 
     try {
-      final response = action == SwipeAction.like
-          ? await _swipeService.swipeRight(profile.id)
-          : await _swipeService.swipeLeft(profile.id);
+      final response = switch (action) {
+        SwipeAction.like => await _swipeService.swipeRight(profile.id),
+        SwipeAction.superLike =>
+          await _swipeService.superLikeProfile(
+          profile.id,
+          targetEmail: profile.email,
+        ),
+        SwipeAction.dislike => await _swipeService.swipeLeft(profile.id),
+      };
 
       if (!response.success) {
         _restoreProfile(removedProfile, profileIndex);
@@ -477,7 +483,7 @@ class SwipeController extends GetxController {
         );
       }
 
-      if (action == SwipeAction.like) {
+      if (action != SwipeAction.dislike) {
         _prependUniqueProfile(likedProfiles, removedProfile);
       } else {
         _prependUniqueProfile(dislikedProfiles, removedProfile);
@@ -499,9 +505,11 @@ class SwipeController extends GetxController {
 
       successMessage.value = isMatch
           ? "It's a match!"
-          : action == SwipeAction.like
-              ? 'Profile liked.'
-              : 'Profile skipped.';
+          : action == SwipeAction.superLike
+              ? 'Super Like sent to ${removedProfile.firstName}.'
+              : action == SwipeAction.like
+                  ? 'Profile liked.'
+                  : 'Profile skipped.';
 
       return SwipeSubmissionResult(
         success: true,

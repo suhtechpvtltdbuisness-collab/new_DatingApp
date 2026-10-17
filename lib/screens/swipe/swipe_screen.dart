@@ -72,10 +72,14 @@ class _SwipeScreenState extends State<SwipeScreen>
     UserModel profile,
     SwipeAction direction,
   ) async {
-    final exitX = direction == SwipeAction.like
-        ? constraints.maxWidth * 1.35
-        : -constraints.maxWidth * 1.35;
-    final exitOffset = Offset(exitX, _dragOffset.dy * 0.3);
+    final exitOffset = direction == SwipeAction.superLike
+        ? Offset(0, -constraints.maxHeight * 1.2)
+        : Offset(
+            direction == SwipeAction.like
+                ? constraints.maxWidth * 1.35
+                : -constraints.maxWidth * 1.35,
+            _dragOffset.dy * 0.3,
+          );
 
     await _runCardAnimation(
       target: exitOffset,
@@ -103,7 +107,24 @@ class _SwipeScreenState extends State<SwipeScreen>
           ),
         ),
       );
-    } else if (direction == SwipeAction.like && result.isMatch) {
+    } else if (direction == SwipeAction.superLike && !result.isMatch) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppTheme.superLikeColor,
+          content: Row(
+            children: [
+              const Icon(Icons.star_rounded, color: Colors.white),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Super Like sent to ${profile.firstName}! They\'ll be notified.',
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } else if (direction != SwipeAction.dislike && result.isMatch) {
       if (!Get.isRegistered<UserController>()) {
         Get.put(UserController());
       }
@@ -162,9 +183,9 @@ class _SwipeScreenState extends State<SwipeScreen>
 
     // Decide where the card starts before restoring it, so its first frame is
     // already off-screen rather than popping in at the centre.
-    final enterX = entry.action == SwipeAction.like
-        ? cardWidth * 1.35
-        : -cardWidth * 1.35;
+    final enterX = entry.action == SwipeAction.dislike
+        ? -cardWidth * 1.35
+        : cardWidth * 1.35;
 
     setState(() {
       _isRewinding = true;
@@ -365,7 +386,7 @@ class _SwipeScreenState extends State<SwipeScreen>
                       size: 46,
                       iconSize: 22,
                       onTap: canAct
-                          ? () => _commitSwipe(constraints, topProfile, SwipeAction.like)
+                          ? () => _commitSwipe(constraints, topProfile, SwipeAction.superLike)
                           : null,
                     ),
                     _ActionButton(

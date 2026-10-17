@@ -57,6 +57,37 @@ class NotificationService {
     await prefs.setBool(StorageKeys.messageNotifications, enabled);
   }
 
+  /// "Someone Super Liked you". Call this when the backend pushes a super-like
+  /// event (FCM payload or socket message) with the sender's name.
+  Future<void> showSuperLikeNotification({
+    required String fromUserId,
+    required String fromName,
+  }) async {
+    if (kIsWeb || !_initialized) return;
+    if (!pushEnabled) return;
+
+    const androidDetails = AndroidNotificationDetails(
+      'velora_likes',
+      'Likes',
+      channelDescription: 'Super Likes and new likes',
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+
+    await _plugin.show(
+      ('superlike_$fromUserId').hashCode & 0x7fffffff,
+      '⭐ Super Like!',
+      '$fromName super liked you. Open Liked You to see them.',
+      const NotificationDetails(android: androidDetails, iOS: iosDetails),
+    );
+  }
+
   Future<void> showMessageNotification({
     required String conversationId,
     required String title,
