@@ -33,6 +33,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   bool isBreakEnabled = false;
   bool _isUpdatingBreak = false;
   String? _breakLabel;
+  bool _isUpdatingIncognito = false;
   bool _isUploadingPhoto = false;
   bool _isVerifyingSelfie = false;
   final ImagePicker _picker = ImagePicker();
@@ -238,6 +239,28 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
               : enabled
               ? 'Break started. Your profile is hidden ${_breakLabel ?? 'until you turn it off'}.'
               : 'Break ended. Your profile is visible again.',
+        ),
+        backgroundColor: ok ? AppTheme.primaryColor : Colors.red,
+      ),
+    );
+  }
+
+  Future<void> _onIncognitoChanged(bool value) async {
+    if (_isUpdatingIncognito) return;
+    setState(() => _isUpdatingIncognito = true);
+    final ok = await _userController.updateMyProfile({'isIncognito': value});
+    if (!mounted) return;
+    setState(() => _isUpdatingIncognito = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          !ok
+              ? (_userController.errorMessage.value.isNotEmpty
+                  ? _userController.errorMessage.value
+                  : 'Could not update Incognito Mode')
+              : value
+              ? 'Incognito Mode is on. Only your matches can see your profile.'
+              : 'Incognito Mode is off. Your profile follows the default visibility.',
         ),
         backgroundColor: ok ? AppTheme.primaryColor : Colors.red,
       ),
@@ -1458,6 +1481,73 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                             );
                           },
                         ),
+                        Obx(() {
+                          final incognito =
+                              _userController.currentUser.value?.isIncognito ??
+                              false;
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 14,
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: Colors.grey.shade300,
+                                  ),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(
+                                    Icons.visibility_off_outlined,
+                                    color: Colors.grey,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        const Text(
+                                          'Incognito Mode',
+                                          style: TextStyle(fontSize: 16),
+                                        ),
+                                        Text(
+                                          incognito
+                                              ? 'Visible only to your matches'
+                                              : 'Hide from people you haven\'t matched with',
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (_isUpdatingIncognito)
+                                    const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Color(0xFFFF3D77),
+                                      ),
+                                    )
+                                  else
+                                    Switch(
+                                      value: incognito,
+                                      activeColor: const Color(0xFFFF3D77),
+                                      onChanged: _onIncognitoChanged,
+                                    ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }),
+
                         _buildTile(
                           Icons.help_outline,
                           "Help & Support",

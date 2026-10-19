@@ -46,6 +46,7 @@ class UserModel {
   final bool isOnline;
   final bool active;
   final bool isHidden;
+  final bool isIncognito;
   final List<String>? blockedUsers;
 
   UserModel({
@@ -93,6 +94,7 @@ class UserModel {
     this.isOnline = false,
     this.active = true,
     this.isHidden = false,
+    this.isIncognito = false,
     this.blockedUsers,
   });
 
@@ -231,6 +233,7 @@ class UserModel {
       isOnline: json['isOnline'] ?? false,
       active: json['active'] != false,
       isHidden: json['isHidden'] == true,
+      isIncognito: json['isIncognito'] == true,
       blockedUsers:
           json['blockedUsers'] != null
               ? List<String>.from(json['blockedUsers'])
@@ -338,6 +341,7 @@ class UserModel {
       },
       'isOnline': isOnline,
       'active': active,
+      'isIncognito': isIncognito,
       'blockedUsers': blockedUsers,
     };
   }
@@ -387,6 +391,7 @@ class UserModel {
     bool? isOnline,
     bool? active,
     bool? isHidden,
+    bool? isIncognito,
     List<String>? blockedUsers,
   }) {
     return UserModel(
@@ -437,6 +442,7 @@ class UserModel {
       isOnline: isOnline ?? this.isOnline,
       active: active ?? this.active,
       isHidden: isHidden ?? this.isHidden,
+      isIncognito: isIncognito ?? this.isIncognito,
       blockedUsers: blockedUsers ?? this.blockedUsers,
     );
   }
