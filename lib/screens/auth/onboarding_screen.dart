@@ -31,49 +31,60 @@ class ModernOnboardingScreen extends StatelessWidget {
                 ),
               ),
 
-              const SizedBox(height: 32),
+              const SizedBox(height: 16),
 
               /// Card Stack Section
               Expanded(
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    _buildCard(
-                      image: 'assets/images/boyimage.png',
-                      networkImage:
-                          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=720&h=960&fit=crop&crop=faces&q=85',
-                      name: 'Justin, 25',
-                      location: 'New York',
-                      rotation: -8,
-                      bottom: 0,
-                    ),
-                    _buildCard(
-                      image: 'assets/images/girlimage1.png',
-                      networkImage:
-                          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=720&h=960&fit=crop&crop=faces&q=85',
-                      name: 'Julia, 23',
-                      location: 'Los Angeles',
-                      rotation: 8,
-                      bottom: 20,
-                    ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Leave room for the rotated corners so cards never spill onto the title.
+                    final cardH = (constraints.maxHeight - 56).clamp(180.0, 320.0);
+                    final cardW = cardH * 0.75;
+                    return Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        _buildCard(
+                          image: 'assets/images/boyimage.png',
+                          networkImage:
+                              'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=720&h=960&fit=crop&crop=faces&q=85',
+                          name: 'Justin, 25',
+                          location: 'New York',
+                          rotation: -8,
+                          bottom: 28,
+                          width: cardW,
+                          height: cardH,
+                        ),
+                        _buildCard(
+                          image: 'assets/images/girlimage1.png',
+                          networkImage:
+                              'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=720&h=960&fit=crop&crop=faces&q=85',
+                          name: 'Julia, 23',
+                          location: 'Los Angeles',
+                          rotation: 8,
+                          bottom: 40,
+                          width: cardW,
+                          height: cardH,
+                        ),
 
-                    /// Floating Icons
-                    Positioned(
-                      left: 40,
-                      top: 80,
-                      child: _circleIcon(Icons.card_giftcard, AppTheme.accentColor),
-                    ),
-                    Positioned(
-                      right: 40,
-                      top: 60,
-                      child: _circleIcon(Icons.chat_bubble, AppTheme.superLikeColor),
-                    ),
-                    Positioned(
-                      right: 50,
-                      bottom: 30,
-                      child: _circleIcon(Icons.favorite, AppTheme.primaryColor),
-                    ),
-                  ],
+                        /// Floating Icons
+                        Positioned(
+                          left: 24,
+                          top: 24,
+                          child: _circleIcon(Icons.card_giftcard, AppTheme.accentColor),
+                        ),
+                        Positioned(
+                          right: 24,
+                          top: 8,
+                          child: _circleIcon(Icons.chat_bubble, AppTheme.superLikeColor),
+                        ),
+                        Positioned(
+                          right: 36,
+                          bottom: 20,
+                          child: _circleIcon(Icons.favorite, AppTheme.primaryColor),
+                        ),
+                      ],
+                    );
+                  },
                 ),
               ),
 
@@ -154,6 +165,8 @@ class ModernOnboardingScreen extends StatelessWidget {
     required String location,
     required double rotation,
     required double bottom,
+    required double width,
+    required double height,
   }) {
     final radius = BorderRadius.circular(AppTheme.radiusLg);
 
@@ -162,8 +175,8 @@ class ModernOnboardingScreen extends StatelessWidget {
       child: Transform.rotate(
         angle: rotation * 0.0174533,
         child: Container(
-          width: 240,
-          height: 320,
+          width: width,
+          height: height,
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
             color: Colors.white,

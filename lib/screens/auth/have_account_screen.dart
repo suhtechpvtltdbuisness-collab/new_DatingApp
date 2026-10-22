@@ -100,7 +100,7 @@ class HaveAccountScreen extends StatelessWidget {
 
                   /// Login Button
                   Container(
-                    height: 55,
+                    height: 58,
                     width: double.infinity,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
@@ -125,13 +125,20 @@ class HaveAccountScreen extends StatelessWidget {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
                         shadowColor: Colors.transparent,
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size.fromHeight(55),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
                       ),
                       child: const Text(
                         "Quick Sign-in",
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          height: 1.3,
                         ),
                       ),
                     ),
@@ -149,6 +156,7 @@ class HaveAccountScreen extends StatelessWidget {
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
+                        height: 1.3,
                       ),
                     ),
                   ),
