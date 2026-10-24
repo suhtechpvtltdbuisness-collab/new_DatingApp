@@ -1,4 +1,5 @@
 import 'package:dating_app/controllers/chat_controller.dart';
+import 'package:dating_app/controllers/notification_controller.dart';
 import 'package:dating_app/controllers/user_controller.dart';
 import 'package:dating_app/models/match_model.dart';
 import 'package:dating_app/models/user_model.dart';
@@ -6,7 +7,6 @@ import 'package:dating_app/screens/chat/chat_screen.dart';
 import 'package:dating_app/screens/profile/profile_screen.dart';
 import 'package:dating_app/screens/swipe/swipe_screen.dart';
 import 'package:dating_app/services/auth_service.dart';
-import 'package:dating_app/services/notification_service.dart';
 import 'package:dating_app/services/super_like_ledger.dart';
 import 'package:dating_app/services/swipe_service.dart';
 import 'package:dating_app/utils/theme.dart';
@@ -41,17 +41,36 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
   static const _likeFilters = ['all', 'new', 'nearby'];
   bool get _showingMatches => _selectedFilter == 3;
 
+  Worker? _liveUpdates;
+
   @override
   void initState() {
     super.initState();
     _load();
+    // New likes and matches arrive over the socket; refresh in place.
+    if (Get.isRegistered<NotificationController>()) {
+      _liveUpdates = ever<int>(
+        Get.find<NotificationController>().likesVersion,
+        (_) {
+          if (mounted) _load(silent: true);
+        },
+      );
+    }
   }
 
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  @override
+  void dispose() {
+    _liveUpdates?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load({bool silent = false}) async {
+    if (!silent) {
+      setState(() {
+        _loading = true;
+        _error = null;
+      });
+    }
 
     if (_showingMatches) {
       final response = await _swipeService.getMatches(page: 1, limit: 50);
@@ -100,7 +119,8 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
   }
 
   /// Marks Super Likes the API didn't flag but this device recorded, and
-  /// announces each new one once (snackbar + local notification).
+  /// announces each new one once in the app. The system notification comes
+  /// from the server over the realtime socket.
   Future<List<IncomingLike>> _resolveSuperLikes(List<IncomingLike> likes) async {
     final auth = AuthService();
     final myId = auth.getCurrentUserId() ?? '';
@@ -137,12 +157,6 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(backgroundColor: AppTheme.superLikeColor, content: Text(text)),
       );
-      for (final item in fresh) {
-        NotificationService.instance.showSuperLikeNotification(
-          fromUserId: item.user.id,
-          fromName: item.user.firstName,
-        );
-      }
     }
     return resolved;
   }

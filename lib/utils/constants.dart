@@ -12,16 +12,6 @@ class AppConstants {
     return _defaultBaseUrl;
   }
 
-  static String get supabaseUrl {
-    if (!dotenv.isInitialized) return '';
-    return dotenv.env['SUPABASE_URL'] ?? '';
-  }
-
-  static String get supabaseAnonKey {
-    if (!dotenv.isInitialized) return '';
-    return dotenv.env['SUPABASE_ANON_KEY'] ?? '';
-  }
-
   static String get googleServerClientId {
     if (!dotenv.isInitialized) return '';
     return dotenv.env['GOOGLE_SERVER_CLIENT_ID'] ?? '';
@@ -112,6 +102,9 @@ class StorageKeys {
   static const String notificationsEnabled = 'notifications_enabled';
   static const String messageNotifications = 'message_notifications';
   static const String matchNotifications = 'match_notifications';
+  static const String likeNotifications = 'like_notifications';
+  static const String accountNotifications = 'account_notifications';
+  static const String mutedConversations = 'muted_conversations';
   static const String locationEnabled = 'location_enabled';
   static const String isFirstLaunch = 'is_first_launch';
 

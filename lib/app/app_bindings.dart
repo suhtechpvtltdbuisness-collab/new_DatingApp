@@ -1,5 +1,6 @@
 import 'package:dating_app/controllers/auth_controller.dart';
 import 'package:dating_app/controllers/chat_controller.dart';
+import 'package:dating_app/controllers/notification_controller.dart';
 import 'package:dating_app/controllers/swipe_controller.dart';
 import 'package:dating_app/controllers/user_controller.dart';
 import 'package:dating_app/controllers/registration_controller.dart';
@@ -43,6 +44,12 @@ class AppBindings extends Bindings {
 
     // Registration Controller
     Get.put<RegistrationController>(RegistrationController(), permanent: true);
+
+    // Notifications + realtime socket. Permanent and registered eagerly so a
+    // notification tap that launched the app is handled.
+    if (!Get.isRegistered<NotificationController>()) {
+      Get.put<NotificationController>(NotificationController(), permanent: true);
+    }
 
     // User Controller - lazy load
     Get.lazyPut<UserController>(() => UserController());

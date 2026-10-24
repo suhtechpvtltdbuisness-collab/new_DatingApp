@@ -2,9 +2,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:dating_app/models/chat_model.dart';
 import 'package:dating_app/services/auth_service.dart';
-import 'package:dating_app/services/chat_realtime_service.dart';
 import 'package:dating_app/services/chat_service.dart';
 import 'package:dating_app/services/notification_service.dart';
+import 'package:dating_app/services/realtime_socket_service.dart';
 import 'package:dating_app/controllers/user_controller.dart';
 import 'package:dating_app/utils/constants.dart';
 import 'package:dating_app/utils/content_moderation.dart';
@@ -15,7 +15,7 @@ import 'package:logger/logger.dart';
 /// Manages chat, messaging, and conversation state
 class ChatController extends GetxController {
   final ChatService _chatService = ChatService();
-  final ChatRealtimeService _realtime = ChatRealtimeService();
+  final RealtimeSocketService _socket = RealtimeSocketService();
   final AuthService _authService = AuthService();
   final Logger _logger = Logger();
 
@@ -42,12 +42,15 @@ class ChatController extends GetxController {
   Timer? _pollTimer;
   Timer? _presenceTimer;
   Timer? _typingDebounce;
+  Timer? _typingClearTimer;
+  final List<StreamSubscription<dynamic>> _socketSubscriptions = [];
+  Worker? _socketStatusWorker;
 
   @override
   void onInit() {
     super.onInit();
     getConversations();
-    _bootstrapRealtime();
+    _bindRealtime();
   }
 
   @override
@@ -55,36 +58,63 @@ class ChatController extends GetxController {
     _pollTimer?.cancel();
     _presenceTimer?.cancel();
     _typingDebounce?.cancel();
-    _realtime.disposeAll();
+    _typingClearTimer?.cancel();
+    for (final sub in _socketSubscriptions) {
+      sub.cancel();
+    }
+    _socketStatusWorker?.dispose();
     messageController.value.dispose();
     super.onClose();
   }
 
-  Future<void> _bootstrapRealtime() async {
-    await _realtime.initialize();
-    realtimeConnected.value = _realtime.isEnabled;
-    final userId = currentUserId;
-    if (userId.isEmpty) return;
-
-    if (_realtime.isEnabled) {
-      await _realtime.subscribeUserInbox(
-        userId: userId,
-        onEvent: _onInboxEvent,
-      );
-    } else if (_chatListVisible) {
-      _startPolling();
-    }
+  /// The socket is opened by NotificationController; this listens to the
+  /// chat events on it and falls back to polling whenever it is down.
+  void _bindRealtime() {
+    realtimeConnected.value = _socket.isConnected;
+    _socketSubscriptions.addAll([
+      _socket.on('conversation_updated').listen(_onInboxEvent),
+      _socket.on('new_message').listen(_onNewMessage),
+      _socket.on('typing').listen(_onTyping),
+      _socket.on('messages_delivered').listen(_onDelivered),
+      _socket.on('messages_read').listen(_onRead),
+      _socket.on('presence').listen(_onPresence),
+    ]);
+    _socketStatusWorker = ever<SocketStatus>(_socket.status, (status) {
+      final connected = status == SocketStatus.connected;
+      if (connected == realtimeConnected.value) return;
+      realtimeConnected.value = connected;
+      if (connected) {
+        _stopPolling();
+        // Catch up on anything sent while the socket was down.
+        getConversations(refresh: true, silent: true);
+        final openId = currentConversation.value?.id;
+        if (openId != null && openId.isNotEmpty) {
+          _refreshOpenConversationQuietly(openId);
+        }
+      } else {
+        _syncPolling();
+      }
+    });
   }
+
+  bool get _realtimeActive => _socket.isConnected;
 
   bool _chatListVisible = false;
 
   /// Without realtime, polling runs only while the chat list or a thread is on screen.
   void setChatListVisible(bool visible) {
     _chatListVisible = visible;
-    if (_realtime.isEnabled) return;
+    if (visible) getConversations(refresh: true, silent: true);
+    _syncPolling();
+  }
+
+  void _syncPolling() {
+    if (_realtimeActive) {
+      _stopPolling();
+      return;
+    }
     final threadOpen = currentConversation.value?.id.isNotEmpty ?? false;
-    if (visible || threadOpen) {
-      if (visible) getConversations(refresh: true, silent: true);
+    if (_chatListVisible || threadOpen) {
       _startPolling();
     } else {
       _stopPolling();
@@ -119,11 +149,23 @@ class ChatController extends GetxController {
     _sortMessages();
   }
 
-  void _onInboxEvent(String event, Map<String, dynamic> payload) {
-    if (event != 'conversation_updated') return;
-
+  void _onInboxEvent(Map<String, dynamic> payload) {
     final conversationId = payload['conversationId']?.toString() ?? '';
     if (conversationId.isEmpty) return;
+
+    // Read on another device (or here): that chat has nothing unread.
+    final readerId = payload['readerId']?.toString() ?? '';
+    if (readerId.isNotEmpty) {
+      if (readerId == currentUserId) {
+        final idx = conversations.indexWhere((c) => c.id == conversationId);
+        if (idx != -1) {
+          conversations[idx] = conversations[idx].copyWith(unreadCount: 0);
+          _recomputeUnread();
+        }
+        NotificationService.instance.clearConversation(conversationId);
+      }
+      return;
+    }
 
     final lastMessage = payload['lastMessage']?.toString() ?? '';
     final lastMessageAtRaw = payload['lastMessageAt'];
@@ -137,10 +179,8 @@ class ChatController extends GetxController {
     final unreadDelta = (payload['unreadDelta'] as num?)?.toInt() ?? 0;
 
     final idx = conversations.indexWhere((c) => c.id == conversationId);
-    String previewName = payload['senderName']?.toString() ?? '';
     if (idx != -1) {
       final existing = conversations[idx];
-      if (previewName.isEmpty) previewName = existing.otherUserName;
       conversations[idx] = existing.copyWith(
         lastMessage: lastMessage.isNotEmpty ? lastMessage : existing.lastMessage,
         lastMessageTime: lastMessageAt ?? existing.lastMessageTime,
@@ -154,20 +194,96 @@ class ChatController extends GetxController {
     }
 
     _recomputeUnread();
+    // The open thread itself is updated by `new_message`; system banners
+    // come from NotificationController.
+  }
 
-    final nested = payload['message'];
-    if (isOpen && nested is Map) {
-      final msg = ChatMessageModel.fromJson(
-        nested.map((key, value) => MapEntry(key.toString(), value)),
+  void _onNewMessage(Map<String, dynamic> payload) {
+    final chatId = currentConversation.value?.id;
+    if (chatId == null || chatId.isEmpty || payload['id'] == null) return;
+    final msg = ChatMessageModel.fromJson(payload);
+    if (msg.conversationId != chatId) return;
+
+    _upsertMessage(msg);
+    _sortMessages();
+    _updateConversationPreview(chatId, msg.message, msg.timestamp);
+    if (msg.senderId != currentUserId) {
+      isTyping.value = false;
+      markConversationAsRead(chatId);
+    }
+  }
+
+  void _onTyping(Map<String, dynamic> payload) {
+    final chatId = currentConversation.value?.id;
+    if (chatId == null || payload['conversationId']?.toString() != chatId) {
+      return;
+    }
+    final typerId = payload['userId']?.toString() ?? '';
+    if (typerId.isEmpty || typerId == currentUserId) return;
+    isTyping.value = true;
+    _typingClearTimer?.cancel();
+    _typingClearTimer = Timer(
+      AppConstants.typingIndicatorDuration,
+      () => isTyping.value = false,
+    );
+  }
+
+  void _onDelivered(Map<String, dynamic> payload) {
+    final chatId = currentConversation.value?.id;
+    if (chatId == null || payload['conversationId']?.toString() != chatId) {
+      return;
+    }
+    final delivererId = payload['userId']?.toString() ?? '';
+    if (delivererId.isEmpty || delivererId == currentUserId) return;
+    final ids = (payload['messageIds'] as List?)
+            ?.map((e) => e.toString())
+            .where((id) => id.isNotEmpty)
+            .toSet() ??
+        <String>{};
+    for (var i = 0; i < messages.length; i++) {
+      final m = messages[i];
+      if (m.senderId != currentUserId) continue;
+      if (ids.isNotEmpty && !ids.contains(m.id)) continue;
+      if (m.status == MessageStatus.sending || m.status == MessageStatus.sent) {
+        messages[i] = m.copyWith(status: MessageStatus.delivered);
+      }
+    }
+  }
+
+  void _onRead(Map<String, dynamic> payload) {
+    final chatId = currentConversation.value?.id;
+    if (chatId == null || payload['conversationId']?.toString() != chatId) {
+      return;
+    }
+    final readerId = payload['userId']?.toString() ?? '';
+    if (readerId.isEmpty || readerId == currentUserId) return;
+    for (var i = 0; i < messages.length; i++) {
+      final m = messages[i];
+      if (m.senderId == currentUserId && m.status != MessageStatus.read) {
+        messages[i] = m.copyWith(isRead: true, status: MessageStatus.read);
+      }
+    }
+  }
+
+  void _onPresence(Map<String, dynamic> payload) {
+    final userId = payload['userId']?.toString() ?? '';
+    if (userId.isEmpty) return;
+    final isOnline = payload['isOnline'] == true;
+    final lastActive =
+        DateTime.tryParse(payload['lastActive']?.toString() ?? '')?.toLocal();
+
+    for (var i = 0; i < conversations.length; i++) {
+      if (conversations[i].otherUserId != userId) continue;
+      conversations[i] = conversations[i].copyWith(
+        isOnline: isOnline,
+        lastSeenTime: lastActive ?? conversations[i].lastSeenTime,
       );
-      _upsertMessage(msg);
-      _sortMessages();
-      markConversationAsRead(conversationId);
-    } else if (!isOpen && unreadDelta > 0 && lastMessage.isNotEmpty) {
-      NotificationService.instance.showMessageNotification(
-        conversationId: conversationId,
-        title: previewName.isNotEmpty ? previewName : 'New message',
-        body: lastMessage,
+    }
+    final current = currentConversation.value;
+    if (current != null && current.otherUserId == userId) {
+      currentConversation.value = current.copyWith(
+        isOnline: isOnline,
+        lastSeenTime: lastActive ?? current.lastSeenTime,
       );
     }
   }
@@ -285,7 +401,7 @@ class ChatController extends GetxController {
   void resetSession() {
     _stopPolling();
     _presenceTimer?.cancel();
-    _realtime.disposeAll();
+    _typingClearTimer?.cancel();
     conversations.clear();
     messages.clear();
     currentConversation.value = null;
@@ -305,60 +421,13 @@ class ChatController extends GetxController {
     final ok = await getConversation(chatId);
     if (!ok) return false;
 
-    await _realtime.subscribeConversation(
-      conversationId: chatId,
-      currentUserId: currentUserId,
-      onMessage: (payload) {
-        if (payload['id'] == null) return;
-        final msg = ChatMessageModel.fromJson(payload);
-        if (msg.conversationId.isNotEmpty && msg.conversationId != chatId) {
-          return;
-        }
-        _upsertMessage(msg);
-        _sortMessages();
-        _updateConversationPreview(chatId, msg.message, msg.timestamp);
-        markConversationAsRead(chatId);
-      },
-      onTyping: (userId) {
-        isTyping.value = userId.isNotEmpty;
-      },
-      onDelivered: (payload) {
-        final delivererId = payload['userId']?.toString() ?? '';
-        if (delivererId.isEmpty || delivererId == currentUserId) return;
-        final ids = (payload['messageIds'] as List?)
-                ?.map((e) => e.toString())
-                .where((id) => id.isNotEmpty)
-                .toSet() ??
-            <String>{};
-        for (var i = 0; i < messages.length; i++) {
-          final m = messages[i];
-          if (m.senderId != currentUserId) continue;
-          if (m.status == MessageStatus.read) continue;
-          if (ids.isNotEmpty && !ids.contains(m.id)) continue;
-          if (m.status == MessageStatus.sending ||
-              m.status == MessageStatus.sent) {
-            messages[i] = m.copyWith(status: MessageStatus.delivered);
-          }
-        }
-      },
-      onRead: (payload) {
-        final readerId = payload['userId']?.toString() ?? '';
-        if (readerId.isEmpty || readerId == currentUserId) return;
-        for (var i = 0; i < messages.length; i++) {
-          final m = messages[i];
-          if (m.senderId == currentUserId && m.status != MessageStatus.read) {
-            messages[i] = m.copyWith(isRead: true, status: MessageStatus.read);
-          }
-        }
-      },
-    );
-
-    if (!_realtime.isEnabled) {
-      _startPolling();
-    }
+    NotificationService.instance.clearConversation(chatId);
+    _syncPolling();
 
     _presenceTimer?.cancel();
+    // Presence arrives over the socket; this only covers the polling fallback.
     _presenceTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      if (_realtimeActive) return;
       final response = await _chatService.getConversation(chatId);
       final current = currentConversation.value;
       if (!response.success || response.data == null || current?.id != chatId) return;
@@ -373,12 +442,10 @@ class ChatController extends GetxController {
 
   Future<void> leaveConversation() async {
     _presenceTimer?.cancel();
+    _typingClearTimer?.cancel();
     isTyping.value = false;
-    await _realtime.unsubscribeConversation();
     clearCurrentConversation();
-    if (!_realtime.isEnabled) {
-      _chatListVisible ? _startPolling() : _stopPolling();
-    }
+    _syncPolling();
   }
 
   Future<bool> getConversation(String chatId) async {
@@ -601,6 +668,7 @@ class ChatController extends GetxController {
   }
 
   Future<void> sendTypingIndicator(String chatId) async {
+    if (_socket.send('typing', {'conversationId': chatId})) return;
     try {
       await _chatService.sendTypingIndicator(chatId);
     } catch (e) {

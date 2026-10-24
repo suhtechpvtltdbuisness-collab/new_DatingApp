@@ -171,6 +171,25 @@ class ApiClient {
     }
   }
 
+  String get accessToken => _accessToken;
+
+  bool get hasSession => _accessToken.isNotEmpty;
+
+  /// Refreshes the access token outside of a failed HTTP request, e.g. when
+  /// the realtime socket is rejected as unauthorized. A failure here may just
+  /// be a dropped connection, so it does not end the session; the next HTTP
+  /// 401 does that if the refresh token really is dead.
+  Future<bool> refreshSession() async {
+    if (_refreshToken.isEmpty || onRefreshToken == null) return false;
+    try {
+      final token = await _refreshAccessTokenOnce();
+      return token != null && token.isNotEmpty;
+    } catch (e) {
+      _logger.e('Session refresh failed', error: e);
+      return false;
+    }
+  }
+
   // Set tokens
   void setTokens(String accessToken, {String? refreshToken}) {
     _accessToken = accessToken;

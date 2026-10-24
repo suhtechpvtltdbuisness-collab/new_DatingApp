@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:dating_app/models/notification_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -5,7 +8,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/constants.dart';
 
-/// Local notifications for new chat messages while the app is open/background.
+typedef NotificationTapHandler = void Function(Map<String, dynamic> payload);
+
+/// System-tray notifications for realtime events (messages, matches, likes,
+/// account updates), the user's per-category settings, and per-chat mutes.
 class NotificationService {
   NotificationService._();
   static final NotificationService instance = NotificationService._();
@@ -14,11 +20,20 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
-  bool messagesEnabled = true;
   bool pushEnabled = true;
+  bool messagesEnabled = true;
+  bool matchesEnabled = true;
+  bool likesEnabled = true;
+  bool accountEnabled = true;
+  Set<String> _mutedConversations = <String>{};
 
-  static const _channelId = 'velora_messages';
-  static const _channelName = 'Messages';
+  NotificationTapHandler? _tapHandler;
+  Map<String, dynamic>? _pendingTap;
+
+  static const _messages = _Channel('velora_messages', 'Messages', 'New chat messages');
+  static const _matches = _Channel('velora_matches', 'Matches', 'New matches');
+  static const _likes = _Channel('velora_likes', 'Likes', 'Super Likes and new likes');
+  static const _account = _Channel('velora_account', 'Account & safety', 'Verification and report updates');
 
   Future<void> initialize() async {
     if (_initialized || kIsWeb) return;
@@ -32,7 +47,15 @@ class NotificationService {
 
     await _plugin.initialize(
       const InitializationSettings(android: android, iOS: ios),
+      onDidReceiveNotificationResponse: (response) =>
+          _handleTap(response.payload),
     );
+
+    // App was started by tapping a notification.
+    final launch = await _plugin.getNotificationAppLaunchDetails();
+    if (launch?.didNotificationLaunchApp == true) {
+      _handleTap(launch!.notificationResponse?.payload);
+    }
 
     if (defaultTargetPlatform == TargetPlatform.android) {
       await Permission.notification.request();
@@ -41,38 +64,151 @@ class NotificationService {
     final prefs = await SharedPreferences.getInstance();
     pushEnabled = prefs.getBool(StorageKeys.notificationsEnabled) ?? true;
     messagesEnabled = prefs.getBool(StorageKeys.messageNotifications) ?? true;
+    matchesEnabled = prefs.getBool(StorageKeys.matchNotifications) ?? true;
+    likesEnabled = prefs.getBool(StorageKeys.likeNotifications) ?? true;
+    accountEnabled = prefs.getBool(StorageKeys.accountNotifications) ?? true;
+    _mutedConversations =
+        (prefs.getStringList(StorageKeys.mutedConversations) ?? const [])
+            .toSet();
 
     _initialized = true;
   }
 
+  /// Taps that arrive before a handler is registered (cold start) are held
+  /// and delivered as soon as one is set.
+  void setTapHandler(NotificationTapHandler? handler) {
+    _tapHandler = handler;
+    final pending = _pendingTap;
+    if (handler != null && pending != null) {
+      _pendingTap = null;
+      handler(pending);
+    }
+  }
+
+  void _handleTap(String? rawPayload) {
+    if (rawPayload == null || rawPayload.isEmpty) return;
+    Map<String, dynamic> payload;
+    try {
+      final decoded = jsonDecode(rawPayload);
+      if (decoded is! Map) return;
+      payload = decoded.map((key, value) => MapEntry(key.toString(), value));
+    } catch (_) {
+      return;
+    }
+    final handler = _tapHandler;
+    if (handler == null) {
+      _pendingTap = payload;
+    } else {
+      handler(payload);
+    }
+  }
+
+  Future<void> _setBool(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(key, value);
+  }
+
   Future<void> setPushEnabled(bool enabled) async {
     pushEnabled = enabled;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(StorageKeys.notificationsEnabled, enabled);
+    await _setBool(StorageKeys.notificationsEnabled, enabled);
   }
 
   Future<void> setMessagesEnabled(bool enabled) async {
     messagesEnabled = enabled;
+    await _setBool(StorageKeys.messageNotifications, enabled);
+  }
+
+  Future<void> setMatchesEnabled(bool enabled) async {
+    matchesEnabled = enabled;
+    await _setBool(StorageKeys.matchNotifications, enabled);
+  }
+
+  Future<void> setLikesEnabled(bool enabled) async {
+    likesEnabled = enabled;
+    await _setBool(StorageKeys.likeNotifications, enabled);
+  }
+
+  Future<void> setAccountEnabled(bool enabled) async {
+    accountEnabled = enabled;
+    await _setBool(StorageKeys.accountNotifications, enabled);
+  }
+
+  bool isConversationMuted(String conversationId) =>
+      _mutedConversations.contains(conversationId);
+
+  Future<void> setConversationMuted(String conversationId, bool muted) async {
+    if (conversationId.isEmpty) return;
+    muted
+        ? _mutedConversations.add(conversationId)
+        : _mutedConversations.remove(conversationId);
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(StorageKeys.messageNotifications, enabled);
+    await prefs.setStringList(
+      StorageKeys.mutedConversations,
+      _mutedConversations.toList(),
+    );
   }
 
-  /// "Someone Super Liked you". Call this when the backend pushes a super-like
-  /// event (FCM payload or socket message) with the sender's name.
-  Future<void> showSuperLikeNotification({
-    required String fromUserId,
-    required String fromName,
-  }) async {
-    if (kIsWeb || !_initialized) return;
-    if (!pushEnabled) return;
+  bool _allows(AppNotification notification) {
+    if (!pushEnabled) return false;
+    switch (notification.type) {
+      case NotificationType.chat:
+        return messagesEnabled &&
+            !isConversationMuted(notification.conversationId);
+      case NotificationType.match:
+        return matchesEnabled;
+      case NotificationType.like:
+      case NotificationType.superLike:
+        return likesEnabled;
+      default:
+        return accountEnabled;
+    }
+  }
 
-    const androidDetails = AndroidNotificationDetails(
-      'velora_likes',
-      'Likes',
-      channelDescription: 'Super Likes and new likes',
+  _Channel _channelFor(String type) {
+    switch (type) {
+      case NotificationType.chat:
+        return _messages;
+      case NotificationType.match:
+        return _matches;
+      case NotificationType.like:
+      case NotificationType.superLike:
+        return _likes;
+      default:
+        return _account;
+    }
+  }
+
+  /// Stable per-subject id, so a newer message from the same chat replaces
+  /// the previous banner instead of stacking.
+  int _idFor(AppNotification notification) {
+    final subject = switch (notification.type) {
+      NotificationType.chat => 'chat_${notification.conversationId}',
+      NotificationType.match => 'match_${notification.actorId}',
+      NotificationType.like ||
+      NotificationType.superLike =>
+        'like_${notification.actorId}',
+      _ => 'notification_${notification.id}',
+    };
+    return subject.hashCode & 0x7fffffff;
+  }
+
+  Future<void> show(AppNotification notification) async {
+    if (kIsWeb || !_initialized || !_allows(notification)) return;
+
+    final channel = _channelFor(notification.type);
+    final body = notification.type == NotificationType.chat &&
+            notification.count > 1
+        ? '${notification.body} (${notification.count} new messages)'
+        : notification.body;
+
+    final androidDetails = AndroidNotificationDetails(
+      channel.id,
+      channel.name,
+      channelDescription: channel.description,
       importance: Importance.high,
       priority: Priority.high,
       playSound: true,
+      styleInformation: BigTextStyleInformation(body),
     );
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
@@ -81,41 +217,34 @@ class NotificationService {
     );
 
     await _plugin.show(
-      ('superlike_$fromUserId').hashCode & 0x7fffffff,
-      '⭐ Super Like!',
-      '$fromName super liked you. Open Liked You to see them.',
-      const NotificationDetails(android: androidDetails, iOS: iosDetails),
-    );
-  }
-
-  Future<void> showMessageNotification({
-    required String conversationId,
-    required String title,
-    required String body,
-  }) async {
-    if (kIsWeb || !_initialized) return;
-    if (!pushEnabled || !messagesEnabled) return;
-
-    const androidDetails = AndroidNotificationDetails(
-      _channelId,
-      _channelName,
-      channelDescription: 'New chat messages',
-      importance: Importance.high,
-      priority: Priority.high,
-      playSound: true,
-    );
-    const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
-
-    final id = conversationId.hashCode & 0x7fffffff;
-    await _plugin.show(
-      id,
-      title,
+      _idFor(notification),
+      notification.title,
       body,
-      const NotificationDetails(android: androidDetails, iOS: iosDetails),
+      NotificationDetails(android: androidDetails, iOS: iosDetails),
+      payload: jsonEncode({
+        'id': notification.id,
+        'type': notification.type,
+        'metadata': notification.metadata,
+      }),
     );
   }
+
+  /// Removes a chat's banner once the chat has been read.
+  Future<void> clearConversation(String conversationId) async {
+    if (kIsWeb || !_initialized || conversationId.isEmpty) return;
+    await _plugin.cancel(('chat_$conversationId').hashCode & 0x7fffffff);
+  }
+
+  Future<void> clearAll() async {
+    if (kIsWeb || !_initialized) return;
+    await _plugin.cancelAll();
+  }
+}
+
+class _Channel {
+  const _Channel(this.id, this.name, this.description);
+
+  final String id;
+  final String name;
+  final String description;
 }

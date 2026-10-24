@@ -1,6 +1,7 @@
 import 'package:dating_app/models/api_models.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/controllers/chat_controller.dart';
+import 'package:dating_app/controllers/notification_controller.dart';
 import 'package:dating_app/controllers/swipe_controller.dart';
 import 'package:dating_app/controllers/user_controller.dart';
 import 'package:get/get.dart';
@@ -202,6 +203,10 @@ class AuthController extends GetxController {
     }
     if (Get.isRegistered<UserController>() && !Get.isPrepared<UserController>()) {
       Get.find<UserController>().resetSession();
+    }
+    // Closes the realtime socket so the next account gets its own.
+    if (Get.isRegistered<NotificationController>()) {
+      Get.find<NotificationController>().stop();
     }
   }
 

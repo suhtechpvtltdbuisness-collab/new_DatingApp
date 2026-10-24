@@ -87,6 +87,16 @@ class ApiEndpoints {
       '/chat-history/:userId'; // GET /chat-history/:userId
 
   // ===============================
+  // NOTIFICATIONS
+  // ===============================
+
+  static const String notifications = '/notifications';
+  static const String notificationsUnreadCount = '/notifications/unread-count';
+  static const String notificationsReadAll = '/notifications/read-all';
+  static const String notificationRead = '/notifications/:notificationId/read';
+  static const String notificationDelete = '/notifications/:notificationId';
+
+  // ===============================
   // BLOCKING
   // ===============================
 

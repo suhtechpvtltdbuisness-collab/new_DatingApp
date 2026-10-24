@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import '../../controllers/chat_controller.dart';
 import '../../models/chat_model.dart';
+import '../../services/notification_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/content_moderation.dart';
 import '../../utils/theme.dart';
@@ -70,7 +71,8 @@ class _ChatScreenState extends State<ChatScreen> {
     'twenty',
   ];
   int blockedAttempts = 0;
-  bool notificationsMuted = false;
+  late bool notificationsMuted =
+      NotificationService.instance.isConversationMuted(widget.chatId);
 
   @override
   void initState() {
@@ -322,6 +324,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
       case _ChatMenuOption.muteNotifications:
         setState(() => notificationsMuted = !notificationsMuted);
+        NotificationService.instance.setConversationMuted(
+          widget.chatId,
+          notificationsMuted,
+        );
         _showToast(
           notificationsMuted ? 'Notifications muted' : 'Notifications unmuted',
         );
