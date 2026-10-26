@@ -154,6 +154,7 @@ class _SwipeScreenState extends State<SwipeScreen>
                 : profile.fullName,
             myImage: myPhoto,
             theirImage: theirPhoto,
+            isSuperLike: direction == SwipeAction.superLike,
           ),
         ),
       );
@@ -784,12 +785,14 @@ class MatchScreen extends StatefulWidget {
     required this.userName,
     required this.myImage,
     required this.theirImage,
+    this.isSuperLike = false,
   });
 
   final String matchedUserId;
   final String userName;
   final String myImage;
   final String theirImage;
+  final bool isSuperLike;
 
   @override
   State<MatchScreen> createState() => _MatchScreenState();
@@ -912,9 +915,13 @@ class _MatchScreenState extends State<MatchScreen> {
                         shape: BoxShape.circle,
                         color: Colors.white,
                       ),
-                      child: const Icon(
-                        Icons.favorite,
-                        color: AppTheme.primaryColor,
+                      child: Icon(
+                        widget.isSuperLike
+                            ? Icons.star_rounded
+                            : Icons.favorite,
+                        color: widget.isSuperLike
+                            ? AppTheme.superLikeColor
+                            : AppTheme.primaryColor,
                         size: 26,
                       ),
                     ),
@@ -923,7 +930,9 @@ class _MatchScreenState extends State<MatchScreen> {
               ),
               const SizedBox(height: 40),
               Text(
-                "You and ${widget.userName} liked\neach other!",
+                widget.isSuperLike
+                    ? "You super liked ${widget.userName}\nand they liked you back!"
+                    : "You and ${widget.userName} liked\neach other!",
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 26,
