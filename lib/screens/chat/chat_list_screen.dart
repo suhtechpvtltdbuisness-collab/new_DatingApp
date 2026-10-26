@@ -9,6 +9,7 @@ import '../../services/swipe_service.dart';
 import '../myprofile/Edit_Profile_Screen.dart';
 import '../../models/chat_model.dart';
 import '../matches/matches_screen.dart';
+import '../notifications/notification_inbox_screen.dart';
 import 'chat_screen.dart';
 
 class ChatListScreen extends StatefulWidget {
@@ -86,6 +87,37 @@ class _ChatListScreenState extends State<ChatListScreen> {
                     'Chats',
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppTheme.textPrimaryColor),
                   ),
+                  Obx(() => Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          IconButton(
+                            icon: const Icon(
+                              Icons.notifications_none_rounded,
+                              color: AppTheme.textPrimaryColor,
+                              size: 28,
+                            ),
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const NotificationInboxScreen(),
+                              ),
+                            ),
+                          ),
+                          if (_chatController.unreadCount.value > 0)
+                            Positioned(
+                              right: 10,
+                              top: 10,
+                              child: Container(
+                                width: 10,
+                                height: 10,
+                                decoration: const BoxDecoration(
+                                  color: AppTheme.primaryColor,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                        ],
+                      )),
                 ],
               ),
             ),
