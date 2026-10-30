@@ -22,7 +22,7 @@ class AppConstants {
 
   // App Configuration
   static const String appName = 'Vellora';
-  static const String appVersion = '1.0.0';
+  static const String appVersion = '1.0.1'; // keep in sync with pubspec.yaml
 
   // Firebase
   static const String firebaseProjectId = 'dating-app-project';

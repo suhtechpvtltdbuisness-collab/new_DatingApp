@@ -123,6 +123,10 @@ class ApiClient {
             // Retry the original request once with the fresh token.
             requestOptions.extra['retriedAfterRefresh'] = true;
             requestOptions.headers['Authorization'] = 'Bearer $newAccessToken';
+            // A multipart body can only be sent once; resend a fresh copy.
+            if (requestOptions.data is FormData) {
+              requestOptions.data = (requestOptions.data as FormData).clone();
+            }
 
             final retryResponse = await _dio.fetch(requestOptions);
             return handler.resolve(retryResponse);
@@ -454,6 +458,42 @@ class ApiClient {
       });
 
       _logger.i('Upload file: $endpoint');
+      final response = await _dio.post(
+        endpoint,
+        data: formData,
+        options: Options(
+          sendTimeout: const Duration(minutes: 2),
+          receiveTimeout: const Duration(minutes: 2),
+          extra: {'skipRetry': true},
+        ),
+        onSendProgress: onSendProgress,
+        cancelToken: cancelToken,
+      );
+
+      return _parseResponse(response, fromJsonT);
+    } on DioError catch (e) {
+      return _handleError(e);
+    } catch (e) {
+      _logger.e('Unexpected error', error: e);
+      return ApiResponse.error(
+        message: AppConstants.serverError,
+        error: e.toString(),
+        statusCode: 500,
+      );
+    }
+  }
+
+  /// POST a ready-made multipart body (fields + files). Not retried
+  /// automatically, so a slow network can't create duplicate submissions.
+  Future<ApiResponse<T>> postMultipart<T>(
+    String endpoint, {
+    required FormData formData,
+    T Function(dynamic)? fromJsonT,
+    void Function(int, int)? onSendProgress,
+    CancelToken? cancelToken,
+  }) async {
+    try {
+      _logger.i('POST multipart $endpoint');
       final response = await _dio.post(
         endpoint,
         data: formData,

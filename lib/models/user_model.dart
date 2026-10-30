@@ -3,6 +3,8 @@ import 'package:dating_app/utils/media_url.dart';
 
 class UserModel {
   final String id;
+  /// Support-facing id (e.g. USR-00123). Distinct from Mongo [id].
+  final String publicUserId;
   final String email;
   final String firstName;
   final String lastName;
@@ -51,6 +53,7 @@ class UserModel {
 
   UserModel({
     required this.id,
+    this.publicUserId = '',
     required this.email,
     required this.firstName,
     required this.lastName,
@@ -161,6 +164,7 @@ class UserModel {
 
     return UserModel(
       id: resolvedId,
+      publicUserId: (json['publicUserId'] ?? '').toString().trim(),
       email: json['email'] ?? '',
       firstName:
           (json['firstName'] ?? (nameParts.isNotEmpty ? nameParts.first : ''))
@@ -297,6 +301,7 @@ class UserModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'publicUserId': publicUserId,
       'email': email,
       'firstName': firstName,
       'lastName': lastName,
@@ -348,6 +353,7 @@ class UserModel {
 
   UserModel copyWith({
     String? id,
+    String? publicUserId,
     String? email,
     String? firstName,
     String? lastName,
@@ -396,6 +402,7 @@ class UserModel {
   }) {
     return UserModel(
       id: id ?? this.id,
+      publicUserId: publicUserId ?? this.publicUserId,
       email: email ?? this.email,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,

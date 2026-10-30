@@ -1,13 +1,29 @@
 import 'package:dating_app/widgets/common/legal_links_text.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:dating_app/controllers/user_controller.dart';
+import 'package:dating_app/services/support_service.dart';
+import 'package:dating_app/utils/constants.dart';
 
 class ContactSupportScreen extends StatefulWidget {
   const ContactSupportScreen({
     super.key,
     this.title = 'Contact support',
     this.initialIssueType,
+    this.kind = 'contact',
   });
+
+  /// Opens the form as "Report a problem" (technical issue preselected).
+  const ContactSupportScreen.reportProblem({super.key})
+      : title = 'Report a problem',
+        initialIssueType = 'Technical Problem',
+        kind = 'problem';
+
+  /// Sent to the backend so support can tell the two forms apart:
+  /// 'contact' or 'problem'.
+  final String kind;
 
   /// Header text — "Report a problem" reuses this form.
   final String title;
@@ -32,10 +48,46 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
       ? widget.initialIssueType
       : null;
   bool _consentGiven = false;
-  final List<({String name, int size})> _attachedFiles = [];
+  final List<SupportAttachment> _attachedFiles = [];
   bool _picking = false;
+  bool _submitting = false;
+  final SupportService _supportService = SupportService();
+
+  @override
+  void initState() {
+    super.initState();
+    _prefillUserInfo();
+  }
+
+  void _prefillUserInfo() {
+    _appVersionController.text = AppConstants.appVersion;
+    _platform = switch (defaultTargetPlatform) {
+      _ when kIsWeb => 'Web (browser)',
+      TargetPlatform.android => 'Android',
+      TargetPlatform.iOS => 'iOS',
+      _ => 'Desktop app',
+    };
+    if (!Get.isRegistered<UserController>()) return;
+    final user = Get.find<UserController>().currentUser.value;
+    if (user == null) return;
+    if (_nameController.text.isEmpty && user.fullName.trim().isNotEmpty) {
+      _nameController.text = user.fullName.trim();
+    }
+    if (_emailController.text.isEmpty && user.email.trim().isNotEmpty) {
+      _emailController.text = user.email.trim();
+    }
+    if (user.email.trim().isNotEmpty) {
+      _accountEmailController.text = user.email.trim();
+    }
+    if (_userIdController.text.isEmpty && user.publicUserId.isNotEmpty) {
+      _userIdController.text = user.publicUserId;
+    }
+  }
 
   static const int _maxAttachmentBytes = 10 * 1024 * 1024;
+  static const int _maxTotalAttachmentBytes = 20 * 1024 * 1024;
+  static const int _maxAttachments = 5;
+  static final RegExp _emailPattern = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$');
   static const List<String> _allowedExtensions = ['png', 'jpg', 'jpeg', 'pdf'];
 
   final _accountEmailController = TextEditingController();
@@ -50,7 +102,7 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
   String? _paymentMethod;
   String? _platform;
   String? _reportReason;
-
+  
   static const List<String> _issueTypes = [
     'Account & Login',
     'Billing & Payments',
@@ -176,9 +228,11 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
     required List<String> items,
     required String hint,
     required void Function(String?) onChanged,
+    String? Function(String?)? validator,
   }) {
     return DropdownButtonFormField<String>(
       value: value,
+      validator: validator,
       hint: Text(
         hint,
         style: const TextStyle(color: Colors.black38, fontSize: 14),
@@ -352,23 +406,38 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
       if (!mounted || picked.isEmpty) return;
 
       final rejected = <String>[];
-      setState(() {
-      });
+      var skippedForLimit = false;
       for (final file in picked) {
         final ext = file.name.split('.').last.toLowerCase();
         final size = await file.xFile.length();
         if (!_allowedExtensions.contains(ext) || size > _maxAttachmentBytes) {
           rejected.add(file.name);
-        } else if (!_attachedFiles.any((f) => f.name == file.name && f.size == size)) {
-          _attachedFiles.add((name: file.name, size: size));
+          continue;
         }
+        if (_attachedFiles.any((f) => f.name == file.name && f.size == size)) {
+          continue;
+        }
+        final total = _attachedFiles.fold<int>(0, (sum, f) => sum + f.size);
+        if (_attachedFiles.length >= _maxAttachments ||
+            total + size > _maxTotalAttachmentBytes) {
+          skippedForLimit = true;
+          continue;
+        }
+        final bytes = await file.xFile.readAsBytes();
+        _attachedFiles.add(SupportAttachment(name: file.name, bytes: bytes));
       }
       if (!mounted) return;
       setState(() {});
-      if (rejected.isNotEmpty) {
+      if (rejected.isNotEmpty || skippedForLimit) {
+        final messages = [
+          if (rejected.isNotEmpty)
+            'Not attached (PNG, JPG or PDF up to 10 MB only): ${rejected.join(', ')}',
+          if (skippedForLimit)
+            'You can attach up to $_maxAttachments files, 20 MB in total.',
+        ];
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Not attached (PNG, JPG or PDF up to 10 MB only): ${rejected.join(', ')}'),
+            content: Text(messages.join('\n')),
             backgroundColor: Colors.red,
           ),
         );
@@ -383,29 +452,85 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
     }
   }
 
-  String _fileLabel(({String name, int size}) f) {
+  String _fileLabel(SupportAttachment f) {
     final kb = f.size / 1024;
     final size = kb >= 1024 ? '${(kb / 1024).toStringAsFixed(1)} MB' : '${kb.toStringAsFixed(0)} KB';
     return '${f.name} · $size';
   }
 
-  void _handleSubmit() {
+  /// The issue-specific fields, labelled the way support should read them.
+  Map<String, String> _detailsForIssue() {
+    switch (_selectedIssueType) {
+      case 'Account & Login':
+        return {
+          'Account email on file': _accountEmailController.text,
+          'Unable to access': _accountIssue ?? '',
+        };
+      case 'Billing & Payments':
+        return {
+          'Transaction / Invoice ID': _txnIdController.text,
+          'Amount in dispute': _amountController.text,
+          'Payment method': _paymentMethod ?? '',
+        };
+      case 'Technical Problem':
+        return {
+          'Platform': _platform ?? '',
+          'App version': _appVersionController.text,
+          'Steps to reproduce': _stepsController.text,
+        };
+      case 'Content / Report':
+        return {
+          'Content URL or post ID': _contentUrlController.text,
+          'Reason for report': _reportReason ?? '',
+        };
+      case 'Other':
+        return {'Additional context': _additionalContextController.text};
+      default:
+        return const {};
+    }
+  }
+
+  Future<void> _handleSubmit() async {
+    if (_submitting) return;
     if (!_consentGiven) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please accept the consent to continue.')),
       );
       return;
     }
-    if (_formKey.currentState?.validate() ?? false) {
-      // The backend has no support-ticket endpoint, so nothing can be sent or
-      // stored yet. Say that plainly instead of faking a submission.
-      showDialog<void>(
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    FocusScope.of(context).unfocus();
+
+    final email = _emailController.text.trim();
+    setState(() => _submitting = true);
+    final response = await _supportService.submitTicket(
+      kind: widget.kind,
+      name: _nameController.text.trim(),
+      email: email,
+      issueType: _selectedIssueType!,
+      subject: _subjectController.text.trim(),
+      description: _descriptionController.text.trim(),
+      details: {
+        ..._detailsForIssue(),
+        if (_platform != null && _selectedIssueType != 'Technical Problem')
+          'Device platform': _platform!,
+        if (_selectedIssueType != 'Technical Problem')
+          'App version': AppConstants.appVersion,
+      },
+      attachments: List.of(_attachedFiles),
+    );
+    if (!mounted) return;
+    setState(() => _submitting = false);
+
+    if (!response.success) {
+      await showDialog<void>(
         context: context,
         builder: (dialogContext) => AlertDialog(
           title: const Text("Couldn't send request"),
-          content: const Text(
-            'In-app support requests are not available yet. Your details are '
-            'still here — please try again later.',
+          content: Text(
+            response.message.isNotEmpty
+                ? response.message
+                : 'Something went wrong. Your details are still here — please try again.',
           ),
           actions: [
             TextButton(
@@ -415,7 +540,36 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
           ],
         ),
       );
+      return;
     }
+
+    final ticket = response.data ?? '';
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Color(0xFF2E9E5B)),
+            SizedBox(width: 8),
+            Text('Request sent'),
+          ],
+        ),
+        content: Text(
+          '${ticket.isNotEmpty ? 'Your ticket number is $ticket.\n\n' : ''}'
+          'Our support team will reply to $email. '
+          'A confirmation email is on its way.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
+    if (mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -449,6 +603,16 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                     ),
                   ],
                 ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 12, top: 4, right: 12),
+                  child: Text(
+                    widget.kind == 'problem'
+                        ? 'Something not working? Tell us what happened and '
+                            'attach a screenshot if you can.'
+                        : "Send us your question and we'll reply by email.",
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF7A5A6E)),
+                  ),
+                ),
                 const SizedBox(height: 20),
 
                 // ── Section 1: User Info ─────────────────────────────────────
@@ -459,8 +623,9 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                     controller: _nameController,
                     textAlignVertical: TextAlignVertical.center,
                     decoration: _inputDecoration('Your full name'),
+                    maxLength: 100,
                     validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Required' : null,
+                        (v == null || v.trim().isEmpty) ? 'Required' : null,
                   ),
                   _fieldGap(),
                   _fieldLabel('Email'),
@@ -469,14 +634,21 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                     textAlignVertical: TextAlignVertical.center,
                     decoration: _inputDecoration('you@example.com'),
                     keyboardType: TextInputType.emailAddress,
-                    validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Required' : null,
+                    validator: (v) {
+                      final value = v?.trim() ?? '';
+                      if (value.isEmpty) return 'Required';
+                      if (!_emailPattern.hasMatch(value)) {
+                        return 'Enter a valid email address';
+                      }
+                      return null;
+                    },
                   ),
                   _fieldGap(),
                   _fieldLabel('User ID'),
                   TextFormField(
                     controller: _userIdController,
                     textAlignVertical: TextAlignVertical.center,
+                    readOnly: true,
                     decoration: _inputDecoration('e.g. USR-00123'),
                   ),
                 ]),
@@ -490,6 +662,8 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                     items: _issueTypes,
                     hint: 'Select an issue type',
                     onChanged: (v) => setState(() => _selectedIssueType = v),
+                    validator: (v) =>
+                        v == null ? 'Please select an issue type' : null,
                   ),
                   _fieldGap(),
                   _fieldLabel('Subject'),
@@ -497,8 +671,9 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                     controller: _subjectController,
                     textAlignVertical: TextAlignVertical.center,
                     decoration: _inputDecoration('Brief summary of your issue'),
+                    maxLength: 150,
                     validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Required' : null,
+                        (v == null || v.trim().isEmpty) ? 'Required' : null,
                   ),
                   _fieldGap(),
                   _fieldLabel('Description'),
@@ -509,8 +684,9 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                       'Describe your issue in detail...',
                     ),
                     maxLines: 5,
+                    maxLength: 5000,
                     validator: (v) =>
-                        (v == null || v.isEmpty) ? 'Required' : null,
+                        (v == null || v.trim().isEmpty) ? 'Required' : null,
                   ),
                 ]),
 
@@ -641,9 +817,9 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
 
                   // ── Gradient Submit Button ───────────────────────────────
                   GestureDetector(
-                    onTap: _consentGiven ? _handleSubmit : null,
+                    onTap: _consentGiven && !_submitting ? _handleSubmit : null,
                     child: Opacity(
-                      opacity: _consentGiven ? 1.0 : 0.45,
+                      opacity: _consentGiven && !_submitting ? 1.0 : 0.45,
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -653,15 +829,24 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                           ),
                           borderRadius: BorderRadius.circular(30),
                         ),
-                        child: const Center(
-                          child: Text(
-                            'Submit request',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 15,
-                            ),
-                          ),
+                        child: Center(
+                          child: _submitting
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text(
+                                  'Submit request',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
+                                ),
                         ),
                       ),
                     ),

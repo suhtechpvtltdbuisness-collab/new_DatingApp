@@ -102,10 +102,8 @@ class HelpSupportScreen extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const ContactSupportScreen(
-                          title: 'Report a problem',
-                          initialIssueType: 'Technical Problem',
-                        ),
+                        builder: (_) =>
+                            const ContactSupportScreen.reportProblem(),
                       ),
                     );
                   },

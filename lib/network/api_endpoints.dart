@@ -87,6 +87,12 @@ class ApiEndpoints {
       '/chat-history/:userId'; // GET /chat-history/:userId
 
   // ===============================
+  // SUPPORT
+  // ===============================
+
+  static const String supportTickets = '/support/tickets';
+
+  // ===============================
   // NOTIFICATIONS
   // ===============================
 

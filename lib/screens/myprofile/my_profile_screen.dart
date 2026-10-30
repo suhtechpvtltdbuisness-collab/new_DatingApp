@@ -934,6 +934,17 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                        if ((user?.publicUserId ?? '').isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            'User ID: ${user!.publicUserId}',
+                            style: const TextStyle(
+                              color: Colors.black54,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                         Text(
                           location.isNotEmpty ? location : 'Location not set',
                           style: const TextStyle(color: Colors.grey),
