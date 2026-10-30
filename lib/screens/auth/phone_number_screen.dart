@@ -5,6 +5,7 @@ import 'package:dating_app/screens/auth/otp_screen.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/utils/theme.dart';
 import 'package:dating_app/widgets/common/gradient_button.dart';
+import 'package:dating_app/widgets/common/legal_links_text.dart';
 // 👉 import your email signup screen
 import 'package:dating_app/screens/auth/email_signup_screen.dart';
 import 'package:dating_app/screens/auth/email_signin_screen.dart';
@@ -312,8 +313,10 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
                             ),
                             const SizedBox(width: 10),
                             Expanded(
-                              child: Text(
-                                'By clicking "Send Code", you agree to our Terms of Service and Privacy Policy. Standard messaging rates may apply.',
+                              child: LegalLinksText(
+                                before:
+                                    'By clicking "Send Code", you agree to our ',
+                                after: '. Standard messaging rates may apply.',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.black.withOpacity(0.6),

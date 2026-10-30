@@ -1,3 +1,4 @@
+import 'package:dating_app/widgets/common/legal_links_text.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -622,29 +623,14 @@ class _ContactSupportScreenState extends State<ContactSupportScreen> {
                       Expanded(
                         child: Padding(
                           padding: const EdgeInsets.only(top: 12),
-                          child: RichText(
-                            text: const TextSpan(
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                color: Color(0xFF5A3A5A),
-                                height: 1.5,
-                              ),
-                              children: [
-                                TextSpan(text: 'I agree to the '),
-                                TextSpan(
-                                  text: 'Terms of Service',
-                                  style: TextStyle(color: Color(0xFF7B4A9B)),
-                                ),
-                                TextSpan(text: ' and '),
-                                TextSpan(
-                                  text: 'Privacy Policy',
-                                  style: TextStyle(color: Color(0xFF7B4A9B)),
-                                ),
-                                TextSpan(
-                                  text:
-                                      '. I consent to my data being processed to resolve this request.',
-                                ),
-                              ],
+                          child: const LegalLinksText(
+                            before: 'I agree to the ',
+                            after:
+                                '. I consent to my data being processed to resolve this request.',
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              color: Color(0xFF5A3A5A),
+                              height: 1.5,
                             ),
                           ),
                         ),

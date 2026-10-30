@@ -5,6 +5,7 @@ import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/utils/post_login.dart';
 import 'package:dating_app/utils/theme.dart';
 import 'package:dating_app/widgets/common/gradient_button.dart';
+import 'package:dating_app/widgets/common/legal_links_text.dart';
 import 'email_otp_screen.dart';
 
 class EmailSignupScreen extends StatefulWidget {
@@ -273,8 +274,9 @@ class _EmailSignupScreenState extends State<EmailSignupScreen> {
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text(
-                            "I agree to Terms of Service and Privacy Policy.",
+                          child: LegalLinksText(
+                            before: 'I agree to ',
+                            after: '.',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.black.withOpacity(0.6),

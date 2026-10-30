@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'all_features_screen.dart';
 import 'package:dating_app/utils/theme.dart';
+import 'package:dating_app/widgets/common/legal_links_text.dart';
 
 class SubscriptionScreen extends StatefulWidget {
   const SubscriptionScreen({super.key});
@@ -228,8 +229,10 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
                     const Padding(
                       padding: EdgeInsets.symmetric(horizontal: 20),
-                      child: Text(
-                        "Recurring billing, cancel anytime. By subscribing, you agree to our Terms of Service and Privacy Policy.",
+                      child: LegalLinksText(
+                        before:
+                            'Recurring billing, cancel anytime. By subscribing, you agree to our ',
+                        after: '.',
                         style: TextStyle(color: Colors.grey, fontSize: 12),
                         textAlign: TextAlign.center,
                       ),
