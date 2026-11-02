@@ -2,7 +2,7 @@ name: dating_app
 description: "Vellora - a modern 18+ dating app. Find your perfect match."
 publish_to: 'none'
 
-version: 1.0.1+6
+version: 1.0.1+7
 
 environment:
   sdk: ^3.7.0
