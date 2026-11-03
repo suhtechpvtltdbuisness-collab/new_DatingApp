@@ -3,6 +3,7 @@ import 'package:dating_app/controllers/swipe_controller.dart';
 import 'package:dating_app/controllers/user_controller.dart';
 import 'package:dating_app/models/user_model.dart';
 import 'package:dating_app/services/auth_service.dart';
+import 'package:dating_app/screens/swipe/swipe_screen.dart' show MatchScreen;
 import 'package:dating_app/services/swipe_service.dart';
 import 'package:dating_app/utils/theme.dart';
 import 'package:dating_app/widgets/common/glass_card.dart';
@@ -183,6 +184,35 @@ class _ProfileDetailsContentState extends State<ProfileDetailsContent> {
     }
     final isMatch = response.data?.isMatch ?? false;
     if (isMatch) setState(() => _canChat = true);
+    if (superLike) {
+      if (!Get.isRegistered<UserController>()) {
+        Get.put(UserController());
+      }
+      final userController = Get.find<UserController>();
+      if (userController.currentUser.value == null) {
+        await userController.getMyProfile();
+      }
+      if (!mounted) return;
+      final theirPhoto =
+          profile.profileImage.isNotEmpty
+              ? profile.profileImage
+              : (profile.photoUrls.isNotEmpty ? profile.photoUrls.first : '');
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => MatchScreen(
+                matchedUserId: profile.id,
+                userName: profile.fullName,
+                myImage: userController.currentUser.value?.profileImage ?? '',
+                theirImage: theirPhoto,
+                isSuperLike: true,
+                isMutual: isMatch,
+              ),
+        ),
+      );
+      return;
+    }
     _toast(isMatch
         ? "It's a match!"
         : superLike

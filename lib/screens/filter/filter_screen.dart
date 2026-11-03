@@ -156,6 +156,9 @@ class _FilterScreenState extends State<FilterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
+        width: double.infinity,
+        height: double.infinity,
+
         /// Gradient background
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -166,361 +169,383 @@ class _FilterScreenState extends State<FilterScreen> {
         ),
 
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
 
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                /// HEADER
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-
-                    const Text(
-                      "Filters",
-                      style: TextStyle(
-                        fontSize: 26,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    TextButton(
-                      onPressed: _loading || _saving ? null : _resetDraft,
-                      child: const Text(
-                        "Reset",
-                        style: TextStyle(color: AppTheme.primaryColor),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                /// FILTER TABS
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _tab(
-                        "Basic filters",
-                        !_showAdvanced,
-                        () => setState(() => _showAdvanced = false),
-                      ),
-                      const SizedBox(width: 10),
-                      _tab(
-                        "Advanced filters",
-                        _showAdvanced,
-                        () => setState(() => _showAdvanced = true),
-                      ),
-                    ],
-                  ),
-                ),
-
-                if (_loadError != null) ...[
-                  const SizedBox(height: 12),
-                  Text(_loadError!, style: const TextStyle(color: Colors.red)),
-                ],
-
-                const SizedBox(height: 25),
-
-                if (_loading)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 60),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else if (!_showAdvanced) ...[
-                  /// WHO WOULD YOU LIKE TO DATE
-                  const Text(
-                    "Who would you like to date?",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  GestureDetector(
-                    onTap: _showGenderSheet,
-                    child: _card(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      /// HEADER
+                      Row(
                         children: [
-                          Text(selectedGender.isEmpty ? 'Select' : selectedGender),
-                          const Icon(Icons.arrow_forward_ios, size: 16),
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back),
+                            onPressed: () => Navigator.pop(context),
+                          ),
+
+                          const Text(
+                            "Filters",
+                            style: TextStyle(
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const Spacer(),
+                          TextButton(
+                            onPressed: _loading || _saving ? null : _resetDraft,
+                            child: const Text(
+                              "Reset",
+                              style: TextStyle(color: AppTheme.primaryColor),
+                            ),
+                          ),
                         ],
                       ),
-                    ),
-                  ),
 
-                  const SizedBox(height: 25),
+                      const SizedBox(height: 20),
 
-                  /// AGE FILTER
-                  const Text(
-                    "How old are they?",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                      /// FILTER TABS
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            _tab(
+                              "Basic filters",
+                              !_showAdvanced,
+                              () => setState(() => _showAdvanced = false),
+                            ),
+                            const SizedBox(width: 10),
+                            _tab(
+                              "Advanced filters",
+                              _showAdvanced,
+                              () => setState(() => _showAdvanced = true),
+                            ),
+                          ],
+                        ),
+                      ),
 
-                  const SizedBox(height: 10),
-
-                  _card(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                      if (_loadError != null) ...[
+                        const SizedBox(height: 12),
                         Text(
-                          "Between ${ageRange.start.round()} and ${ageRange.end.round()}",
-                        ),
-
-                        RangeSlider(
-                          values: ageRange,
-                          min: DiscoveryFilters.ageFloor.toDouble(),
-                          max: DiscoveryFilters.ageCeiling.toDouble(),
-                          divisions:
-                              DiscoveryFilters.ageCeiling -
-                              DiscoveryFilters.ageFloor,
-                          activeColor: AppTheme.primaryColor,
-                          inactiveColor: AppTheme.primaryColor.withOpacity(
-                            0.15,
-                          ),
-                          onChanged: (values) {
-                            setState(() {
-                              ageRange = values;
-                            });
-                          },
-                        ),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                "See people 2 years either side if I run out",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade700,
-                                ),
-                              ),
-                            ),
-
-                            Switch(
-                              value: ageToggle,
-                              activeColor: AppTheme.primaryColor,
-                              onChanged: (val) {
-                                setState(() {
-                                  ageToggle = val;
-                                });
-                              },
-                            ),
-                          ],
+                          _loadError!,
+                          style: const TextStyle(color: Colors.red),
                         ),
                       ],
-                    ),
-                  ),
 
-                  const SizedBox(height: 25),
+                      const SizedBox(height: 25),
 
-                  /// DISTANCE FILTER
-                  const Text(
-                    "How far away are they?",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
+                      if (_loading)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 60),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else if (!_showAdvanced) ...[
+                        /// WHO WOULD YOU LIKE TO DATE
+                        const Text(
+                          "Who would you like to date?",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
 
-                  const SizedBox(height: 10),
+                        const SizedBox(height: 10),
 
-                  _card(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Up to ${distance.round()} kilometres away"),
-
-                        Slider(
-                          value: distance,
-                          min: 1,
-                          max: 100,
-                          activeColor: AppTheme.primaryColor,
-                          inactiveColor: AppTheme.primaryColor.withOpacity(
-                            0.15,
+                        GestureDetector(
+                          onTap: _showGenderSheet,
+                          child: _card(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  selectedGender.isEmpty
+                                      ? 'Select'
+                                      : selectedGender,
+                                ),
+                                const Icon(Icons.arrow_forward_ios, size: 16),
+                              ],
+                            ),
                           ),
-                          onChanged: (value) {
-                            setState(() {
-                              distance = value;
-                            });
-                          },
                         ),
 
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                "See people slightly further away if I run out",
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade700,
-                                ),
+                        const SizedBox(height: 25),
+
+                        /// AGE FILTER
+                        const Text(
+                          "How old are they?",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        _card(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Between ${ageRange.start.round()} and ${ageRange.end.round()}",
                               ),
-                            ),
 
-                            Switch(
-                              value: distanceToggle,
-                              activeColor: AppTheme.primaryColor,
-                              onChanged: (val) {
-                                setState(() {
-                                  distanceToggle = val;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ] else ...[
-                  /// INTERESTS
-                  const Text(
-                    "Do they share any of your interests?",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  Text(
-                    interests.isEmpty
-                        ? "No interest filter — everyone is shown"
-                        : "Only show people who share at least one",
-                    style: const TextStyle(color: Colors.grey),
-                  ),
-
-                  const SizedBox(height: 15),
-
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children:
-                        interests
-                            .map(
-                              (e) => Chip(
-                                label: Text(
-                                  e,
-                                  style: const TextStyle(fontSize: 13),
-                                ),
-                                deleteIcon: const Icon(Icons.close, size: 16),
-                                onDeleted: () {
+                              RangeSlider(
+                                values: ageRange,
+                                min: DiscoveryFilters.ageFloor.toDouble(),
+                                max: DiscoveryFilters.ageCeiling.toDouble(),
+                                divisions:
+                                    DiscoveryFilters.ageCeiling -
+                                    DiscoveryFilters.ageFloor,
+                                activeColor: AppTheme.primaryColor,
+                                inactiveColor: AppTheme.primaryColor
+                                    .withOpacity(0.15),
+                                onChanged: (values) {
                                   setState(() {
-                                    interests.remove(e);
+                                    ageRange = values;
                                   });
                                 },
-                                backgroundColor: AppTheme.primaryColor
-                                    .withOpacity(0.08),
-                                deleteIconColor: AppTheme.primaryColor,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                ),
-                                materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
                               ),
-                            )
-                            .toList(),
-                  ),
 
-                  const SizedBox(height: 10),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      "See people 2 years either side if I run out",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ),
 
-                  OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: AppTheme.primaryColor,
-                      side: const BorderSide(color: AppTheme.primaryColor),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                    ),
-                    onPressed: _showAddInterestDialog,
-                    child: const Text("Add more +"),
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  /// VERIFIED ONLY
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(Icons.verified, color: AppTheme.primaryColor),
-                          SizedBox(width: 8),
-                          Text(
-                            "Verified only",
-                            style: TextStyle(fontWeight: FontWeight.w500),
+                                  Switch(
+                                    value: ageToggle,
+                                    activeColor: AppTheme.primaryColor,
+                                    onChanged: (val) {
+                                      setState(() {
+                                        ageToggle = val;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-
-                      Switch(
-                        value: verifiedOnly,
-                        activeColor: AppTheme.primaryColor,
-                        onChanged: (val) {
-                          setState(() {
-                            verifiedOnly = val;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 25),
-
-                  /// LANGUAGES
-                  const Text(
-                    "Which languages do they know?",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  GestureDetector(
-                    onTap: () async {
-                      final picked = await Navigator.push<List<String>>(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  LanguageScreen(initialSelection: languages),
                         ),
-                      );
-                      if (picked != null && mounted) {
-                        setState(() => languages = picked);
-                      }
-                    },
-                    child: _card(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              languages.isEmpty
-                                  ? "Select languages"
-                                  : languages.join(", "),
-                              overflow: TextOverflow.ellipsis,
+
+                        const SizedBox(height: 25),
+
+                        /// DISTANCE FILTER
+                        const Text(
+                          "How far away are they?",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        _card(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Up to ${distance.round()} kilometres away"),
+
+                              Slider(
+                                value: distance,
+                                min: 1,
+                                max: 100,
+                                activeColor: AppTheme.primaryColor,
+                                inactiveColor: AppTheme.primaryColor
+                                    .withOpacity(0.15),
+                                onChanged: (value) {
+                                  setState(() {
+                                    distance = value;
+                                  });
+                                },
+                              ),
+
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      "See people slightly further away if I run out",
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade700,
+                                      ),
+                                    ),
+                                  ),
+
+                                  Switch(
+                                    value: distanceToggle,
+                                    activeColor: AppTheme.primaryColor,
+                                    onChanged: (val) {
+                                      setState(() {
+                                        distanceToggle = val;
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        /// INTERESTS
+                        const Text(
+                          "Do they share any of your interests?",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        Text(
+                          interests.isEmpty
+                              ? "No interest filter — everyone is shown"
+                              : "Only show people who share at least one",
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+
+                        const SizedBox(height: 15),
+
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children:
+                              interests
+                                  .map(
+                                    (e) => Chip(
+                                      label: Text(
+                                        e,
+                                        style: const TextStyle(fontSize: 13),
+                                      ),
+                                      deleteIcon: const Icon(
+                                        Icons.close,
+                                        size: 16,
+                                      ),
+                                      onDeleted: () {
+                                        setState(() {
+                                          interests.remove(e);
+                                        });
+                                      },
+                                      backgroundColor: AppTheme.primaryColor
+                                          .withOpacity(0.08),
+                                      deleteIconColor: AppTheme.primaryColor,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                      ),
+                                      materialTapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  )
+                                  .toList(),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppTheme.primaryColor,
+                            side: const BorderSide(
+                              color: AppTheme.primaryColor,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
                             ),
                           ),
-                          const Icon(Icons.arrow_forward_ios, size: 16),
-                        ],
-                      ),
-                    ),
+                          onPressed: _showAddInterestDialog,
+                          child: const Text("Add more +"),
+                        ),
+
+                        const SizedBox(height: 25),
+
+                        /// VERIFIED ONLY
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(
+                                  Icons.verified,
+                                  color: AppTheme.primaryColor,
+                                ),
+                                SizedBox(width: 8),
+                                Text(
+                                  "Verified only",
+                                  style: TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+
+                            Switch(
+                              value: verifiedOnly,
+                              activeColor: AppTheme.primaryColor,
+                              onChanged: (val) {
+                                setState(() {
+                                  verifiedOnly = val;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 25),
+
+                        /// LANGUAGES
+                        const Text(
+                          "Which languages do they know?",
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        GestureDetector(
+                          onTap: () async {
+                            final picked = await Navigator.push<List<String>>(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => LanguageScreen(
+                                      initialSelection: languages,
+                                    ),
+                              ),
+                            );
+                            if (picked != null && mounted) {
+                              setState(() => languages = picked);
+                            }
+                          },
+                          child: _card(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    languages.isEmpty
+                                        ? "Select languages"
+                                        : languages.join(", "),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const Icon(Icons.arrow_forward_ios, size: 16),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                ],
+                ),
+              ),
 
-                const SizedBox(height: 30),
-
-                GradientButton(
+              /// SAVE BUTTON (pinned to bottom)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                child: GradientButton(
                   label: "Save",
                   isLoading: _saving,
                   onPressed: _loading ? null : _save,
                 ),
-
-                const SizedBox(height: 40),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

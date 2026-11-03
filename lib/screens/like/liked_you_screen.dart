@@ -32,6 +32,9 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
   String? _error;
   List<IncomingLike> _likes = [];
   List<MatchModel> _matches = [];
+
+  /// Ids of matched people who used a Super Like on me.
+  Set<String> _superLikedMatchIds = {};
   int _allCount = 0;
   int _newCount = 0;
   int _nearbyCount = 0;
@@ -74,11 +77,15 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
 
     if (_showingMatches) {
       final response = await _swipeService.getMatches(page: 1, limit: 50);
+      final superIds = response.success && response.data != null
+          ? await _resolveSuperLikedMatches(response.data!)
+          : <String>{};
       if (!mounted) return;
       setState(() {
         _loading = false;
         if (response.success && response.data != null) {
           _matches = response.data!;
+          _superLikedMatchIds = superIds;
           _matchedCount = _matches.length;
         } else {
           _error =
@@ -116,6 +123,32 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
         _matchedCount = matchesResponse.data!.length;
       }
     });
+  }
+
+  String _matchKey(MatchModel match) {
+    final id = match.matchedUser?.id ?? '';
+    return id.isNotEmpty ? id : match.targetUserId;
+  }
+
+  /// Matched people who Super Liked me: flagged by the API (`superLikeCount`)
+  /// or recorded on this device.
+  Future<Set<String>> _resolveSuperLikedMatches(List<MatchModel> matches) async {
+    final auth = AuthService();
+    final me = Get.isRegistered<UserController>()
+        ? Get.find<UserController>().currentUser.value
+        : null;
+    final myKeys = [auth.getCurrentUserId(), auth.getCurrentUserEmail(), me?.id, me?.email];
+    final ids = <String>{};
+    for (final match in matches) {
+      final user = match.matchedUser;
+      final isSuper = match.superLikeCount > 0 ||
+          await SuperLikeLedger.has(
+            senderKeys: [user?.id, user?.email, match.targetUserId],
+            targetKeys: myKeys,
+          );
+      if (isSuper) ids.add(_matchKey(match));
+    }
+    return ids;
   }
 
   /// Marks Super Likes the API didn't flag but this device recorded, and
@@ -549,6 +582,7 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
     final busy = _busyUserId == busyId;
     final image =
         user != null && user.profileImage.isNotEmpty ? user.profileImage : '';
+    final isSuper = _superLikedMatchIds.contains(_matchKey(match));
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
@@ -560,6 +594,9 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.75),
             borderRadius: BorderRadius.circular(16),
+            border: isSuper
+                ? Border.all(color: AppTheme.superLikeColor, width: 1.6)
+                : null,
           ),
           child: Row(
             children: [
@@ -580,11 +617,14 @@ class _LikedYouScreenState extends State<LikedYouScreen> {
                       _matchLabel(match),
                       style: const TextStyle(fontWeight: FontWeight.w700),
                     ),
-                    const Text(
-                      'Matched',
+                    Text(
+                      isSuper ? '⭐ SUPER LIKED YOU · Matched' : 'Matched',
                       style: TextStyle(
-                        color: AppTheme.warmAccentColor,
+                        color: isSuper
+                            ? AppTheme.superLikeColor
+                            : AppTheme.warmAccentColor,
                         fontSize: 12,
+                        fontWeight: isSuper ? FontWeight.w700 : null,
                       ),
                     ),
                   ],

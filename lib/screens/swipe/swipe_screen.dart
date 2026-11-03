@@ -49,16 +49,17 @@ class _SwipeScreenState extends State<SwipeScreen>
     super.dispose();
   }
 
-  Future<void> _handlePanEnd(BoxConstraints constraints, UserModel profile) async {
+  Future<void> _handlePanEnd(
+    BoxConstraints constraints,
+    UserModel profile,
+  ) async {
     final threshold = constraints.maxWidth * AppConstants.swipeThreshold;
-    final shouldCommit = _dragOffset.dx.abs() >= threshold &&
+    final shouldCommit =
+        _dragOffset.dx.abs() >= threshold &&
         _dragOffset.dx.abs() > _dragOffset.dy.abs();
 
     if (!shouldCommit) {
-      await _runCardAnimation(
-        target: Offset.zero,
-        markAsSwipe: false,
-      );
+      await _runCardAnimation(target: Offset.zero, markAsSwipe: false);
       return;
     }
 
@@ -72,19 +73,17 @@ class _SwipeScreenState extends State<SwipeScreen>
     UserModel profile,
     SwipeAction direction,
   ) async {
-    final exitOffset = direction == SwipeAction.superLike
-        ? Offset(0, -constraints.maxHeight * 1.2)
-        : Offset(
-            direction == SwipeAction.like
-                ? constraints.maxWidth * 1.35
-                : -constraints.maxWidth * 1.35,
-            _dragOffset.dy * 0.3,
-          );
+    final exitOffset =
+        direction == SwipeAction.superLike
+            ? Offset(0, -constraints.maxHeight * 1.2)
+            : Offset(
+              direction == SwipeAction.like
+                  ? constraints.maxWidth * 1.35
+                  : -constraints.maxWidth * 1.35,
+              _dragOffset.dy * 0.3,
+            );
 
-    await _runCardAnimation(
-      target: exitOffset,
-      markAsSwipe: true,
-    );
+    await _runCardAnimation(target: exitOffset, markAsSwipe: true);
 
     final result = await swipeController.submitSwipe(
       profile: profile,
@@ -98,7 +97,11 @@ class _SwipeScreenState extends State<SwipeScreen>
     if (!result.success) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result.message.isEmpty ? 'Swipe failed. Please try again.' : result.message),
+          content: Text(
+            result.message.isEmpty
+                ? 'Swipe failed. Please try again.'
+                : result.message,
+          ),
           action: SnackBarAction(
             label: 'Retry',
             onPressed: () {
@@ -107,24 +110,8 @@ class _SwipeScreenState extends State<SwipeScreen>
           ),
         ),
       );
-    } else if (direction == SwipeAction.superLike && !result.isMatch) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          backgroundColor: AppTheme.superLikeColor,
-          content: Row(
-            children: [
-              const Icon(Icons.star_rounded, color: Colors.white),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Super Like sent to ${profile.firstName}! They\'ll be notified.',
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    } else if (direction != SwipeAction.dislike && result.isMatch) {
+    } else if (direction != SwipeAction.dislike &&
+        (result.isMatch || direction == SwipeAction.superLike)) {
       if (!Get.isRegistered<UserController>()) {
         Get.put(UserController());
       }
@@ -134,28 +121,32 @@ class _SwipeScreenState extends State<SwipeScreen>
       }
       if (!mounted) return;
 
-      final myPhoto =
-          userController.currentUser.value?.profileImage ?? '';
+      final myPhoto = userController.currentUser.value?.profileImage ?? '';
       final matchedFromApi = result.match?.matchedUser;
-      final theirPhotos = matchedFromApi?.photoUrls.isNotEmpty == true
-          ? matchedFromApi!.photoUrls
-          : profile.photoUrls;
+      final theirPhotos =
+          matchedFromApi?.photoUrls.isNotEmpty == true
+              ? matchedFromApi!.photoUrls
+              : profile.photoUrls;
       final theirPhoto = theirPhotos.isNotEmpty ? theirPhotos.first : '';
 
       await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => MatchScreen(
-            matchedUserId: matchedFromApi?.id.isNotEmpty == true
-                ? matchedFromApi!.id
-                : profile.id,
-            userName: (matchedFromApi?.fullName.trim().isNotEmpty == true)
-                ? matchedFromApi!.fullName
-                : profile.fullName,
-            myImage: myPhoto,
-            theirImage: theirPhoto,
-            isSuperLike: direction == SwipeAction.superLike,
-          ),
+          builder:
+              (_) => MatchScreen(
+                matchedUserId:
+                    matchedFromApi?.id.isNotEmpty == true
+                        ? matchedFromApi!.id
+                        : profile.id,
+                userName:
+                    (matchedFromApi?.fullName.trim().isNotEmpty == true)
+                        ? matchedFromApi!.fullName
+                        : profile.fullName,
+                myImage: myPhoto,
+                theirImage: theirPhoto,
+                isSuperLike: direction == SwipeAction.superLike,
+                isMutual: result.isMatch,
+              ),
         ),
       );
     }
@@ -184,9 +175,10 @@ class _SwipeScreenState extends State<SwipeScreen>
 
     // Decide where the card starts before restoring it, so its first frame is
     // already off-screen rather than popping in at the centre.
-    final enterX = entry.action == SwipeAction.dislike
-        ? -cardWidth * 1.35
-        : cardWidth * 1.35;
+    final enterX =
+        entry.action == SwipeAction.dislike
+            ? -cardWidth * 1.35
+            : cardWidth * 1.35;
 
     setState(() {
       _isRewinding = true;
@@ -201,9 +193,9 @@ class _SwipeScreenState extends State<SwipeScreen>
         _dragOffset = Offset.zero;
       });
       if (mounted && result.message.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.message)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(result.message)));
       }
       return;
     }
@@ -221,10 +213,7 @@ class _SwipeScreenState extends State<SwipeScreen>
   }
 
   Future<void> _animateCardTo(Offset target) async {
-    _offsetAnimation = Tween<Offset>(
-      begin: _dragOffset,
-      end: target,
-    ).animate(
+    _offsetAnimation = Tween<Offset>(begin: _dragOffset, end: target).animate(
       CurvedAnimation(
         parent: _swipeAnimationController,
         curve: Curves.easeOutCubic,
@@ -281,19 +270,22 @@ class _SwipeScreenState extends State<SwipeScreen>
 
       if (profiles.isEmpty) {
         return _EmptyDeckState(
-          message: swipeController.errorMessage.value.isEmpty
-              ? 'No more profiles to show'
-              : swipeController.errorMessage.value,
+          message:
+              swipeController.errorMessage.value.isEmpty
+                  ? 'No more profiles to show'
+                  : swipeController.errorMessage.value,
           onRetry: () => swipeController.loadProfiles(refresh: true),
-          onRewind: swipeController.canRewind && !_isRewinding
-              ? () => _handleRewind(MediaQuery.of(context).size.width)
-              : null,
+          onRewind:
+              swipeController.canRewind && !_isRewinding
+                  ? () => _handleRewind(MediaQuery.of(context).size.width)
+                  : null,
           rewindLabel: swipeController.lastSwipe?.profile.fullName ?? '',
         );
       }
 
       final topProfile = profiles.first;
-      final canAct = !_isAnimatingSwipe &&
+      final canAct =
+          !_isAnimatingSwipe &&
           !_isRewinding &&
           swipeController.canSwipe(topProfile.id);
       final canRewind =
@@ -305,48 +297,55 @@ class _SwipeScreenState extends State<SwipeScreen>
           builder: (context, constraints) {
             final swipeThreshold =
                 constraints.maxWidth * AppConstants.swipeThreshold;
-            final dragProgress =
-                (_dragOffset.dx.abs() / swipeThreshold).clamp(0.0, 1.0);
+            final dragProgress = (_dragOffset.dx.abs() / swipeThreshold).clamp(
+              0.0,
+              1.0,
+            );
 
             return Column(
               children: [
                 Expanded(
                   child: Stack(
                     clipBehavior: Clip.none,
-                    children: List.generate(
-                      math.min(profiles.length, 3),
-                      (index) {
-                        final profile = profiles[index];
-                        final isTopCard = index == 0;
+                    children:
+                        List.generate(math.min(profiles.length, 3), (index) {
+                          final profile = profiles[index];
+                          final isTopCard = index == 0;
 
-                        return _DeckLayer(
-                          profile: profile,
-                          depth: index,
-                          dragProgress: _isRewinding ? 0 : dragProgress,
-                          dragOffset: isTopCard ? _dragOffset : Offset.zero,
-                          isTopCard: isTopCard,
-                          showDecision: !_isRewinding,
-                          onTapInfo: isTopCard
-                              ? () => Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => ProfileDetailsScreen(profile: profile),
-                                    ),
-                                  )
-                              : null,
-                          onPanUpdate: isTopCard && canAct
-                              ? (details) {
-                                  setState(() {
-                                    _dragOffset += details.delta;
-                                  });
-                                }
-                              : null,
-                          onPanEnd: isTopCard && canAct
-                              ? (_) => _handlePanEnd(constraints, topProfile)
-                              : null,
-                        );
-                      },
-                    ).reversed.toList(),
+                          return _DeckLayer(
+                            profile: profile,
+                            depth: index,
+                            dragProgress: _isRewinding ? 0 : dragProgress,
+                            dragOffset: isTopCard ? _dragOffset : Offset.zero,
+                            isTopCard: isTopCard,
+                            showDecision: !_isRewinding,
+                            onTapInfo:
+                                isTopCard
+                                    ? () => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder:
+                                            (_) => ProfileDetailsScreen(
+                                              profile: profile,
+                                            ),
+                                      ),
+                                    )
+                                    : null,
+                            onPanUpdate:
+                                isTopCard && canAct
+                                    ? (details) {
+                                      setState(() {
+                                        _dragOffset += details.delta;
+                                      });
+                                    }
+                                    : null,
+                            onPanEnd:
+                                isTopCard && canAct
+                                    ? (_) =>
+                                        _handlePanEnd(constraints, topProfile)
+                                    : null,
+                          );
+                        }).reversed.toList(),
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -355,9 +354,10 @@ class _SwipeScreenState extends State<SwipeScreen>
                       ? 'Loading more profiles...'
                       : swipeController.errorMessage.value,
                   style: TextStyle(
-                    color: swipeController.errorMessage.value.isEmpty
-                        ? Colors.transparent
-                        : AppTheme.errorColor,
+                    color:
+                        swipeController.errorMessage.value.isEmpty
+                            ? Colors.transparent
+                            : AppTheme.errorColor,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -370,25 +370,38 @@ class _SwipeScreenState extends State<SwipeScreen>
                       color: AppTheme.goldColor,
                       size: 46,
                       iconSize: 22,
-                      onTap: canRewind
-                          ? () => _handleRewind(constraints.maxWidth)
-                          : null,
+                      onTap:
+                          canRewind
+                              ? () => _handleRewind(constraints.maxWidth)
+                              : null,
                     ),
                     _ActionButton(
                       icon: Icons.close_rounded,
                       color: AppTheme.rejectColor,
                       size: 54,
                       iconSize: 26,
-                      onTap: canAct ? () => _commitSwipe(constraints, topProfile, SwipeAction.dislike) : null,
+                      onTap:
+                          canAct
+                              ? () => _commitSwipe(
+                                constraints,
+                                topProfile,
+                                SwipeAction.dislike,
+                              )
+                              : null,
                     ),
                     _ActionButton(
                       icon: Icons.star_rounded,
                       color: AppTheme.superLikeColor,
                       size: 46,
                       iconSize: 22,
-                      onTap: canAct
-                          ? () => _commitSwipe(constraints, topProfile, SwipeAction.superLike)
-                          : null,
+                      onTap:
+                          canAct
+                              ? () => _commitSwipe(
+                                constraints,
+                                topProfile,
+                                SwipeAction.superLike,
+                              )
+                              : null,
                     ),
                     _ActionButton(
                       icon: Icons.favorite_rounded,
@@ -396,7 +409,14 @@ class _SwipeScreenState extends State<SwipeScreen>
                       size: 62,
                       iconSize: 28,
                       gradient: AppTheme.heroGradient,
-                      onTap: canAct ? () => _commitSwipe(constraints, topProfile, SwipeAction.like) : null,
+                      onTap:
+                          canAct
+                              ? () => _commitSwipe(
+                                constraints,
+                                topProfile,
+                                SwipeAction.like,
+                              )
+                              : null,
                     ),
                   ],
                 ),
@@ -447,7 +467,11 @@ class _ActionButton extends StatelessWidget {
               ),
             ],
           ),
-          child: Icon(icon, color: gradient == null ? color : Colors.white, size: iconSize),
+          child: Icon(
+            icon,
+            color: gradient == null ? color : Colors.white,
+            size: iconSize,
+          ),
         ),
       ),
     );
@@ -484,12 +508,12 @@ class _DeckLayer extends StatelessWidget {
   Widget build(BuildContext context) {
     final depthOffset = depth * 14.0;
     final baseScale = 1 - (depth * 0.04);
-    final animatedScale = isTopCard
-        ? 1.0
-        : (baseScale + (dragProgress * 0.03)).clamp(0.88, 1.0);
+    final animatedScale =
+        isTopCard ? 1.0 : (baseScale + (dragProgress * 0.03)).clamp(0.88, 1.0);
 
     Widget card = Transform.translate(
-      offset: isTopCard ? dragOffset : Offset(0, depthOffset - (dragProgress * 10)),
+      offset:
+          isTopCard ? dragOffset : Offset(0, depthOffset - (dragProgress * 10)),
       child: Transform.rotate(
         angle: isTopCard ? dragOffset.dx / 900 : 0,
         child: Transform.scale(
@@ -498,22 +522,21 @@ class _DeckLayer extends StatelessWidget {
           child: _SwipeProfileCard(
             profile: profile,
             onTapInfo: onTapInfo,
-            likeOpacity: showDecision && isTopCard && dragOffset.dx > 0
-                ? (dragOffset.dx.abs() / 120).clamp(0.0, 1.0)
-                : 0,
-            nopeOpacity: showDecision && isTopCard && dragOffset.dx < 0
-                ? (dragOffset.dx.abs() / 120).clamp(0.0, 1.0)
-                : 0,
+            likeOpacity:
+                showDecision && isTopCard && dragOffset.dx > 0
+                    ? (dragOffset.dx.abs() / 120).clamp(0.0, 1.0)
+                    : 0,
+            nopeOpacity:
+                showDecision && isTopCard && dragOffset.dx < 0
+                    ? (dragOffset.dx.abs() / 120).clamp(0.0, 1.0)
+                    : 0,
           ),
         ),
       ),
     );
 
     if (!isTopCard) {
-      return Positioned.fill(
-        top: depthOffset,
-        child: card,
-      );
+      return Positioned.fill(top: depthOffset, child: card);
     }
 
     return Positioned.fill(
@@ -553,8 +576,11 @@ class _SwipeProfileCard extends StatelessWidget {
             Image.network(
               image,
               fit: BoxFit.cover,
-              errorBuilder: (_, _, _) =>
-                  Image.asset('assets/images/profile.png', fit: BoxFit.cover),
+              errorBuilder:
+                  (_, _, _) => Image.asset(
+                    'assets/images/profile.png',
+                    fit: BoxFit.cover,
+                  ),
             )
           else
             Image.asset('assets/images/profile.png', fit: BoxFit.cover),
@@ -578,10 +604,7 @@ class _SwipeProfileCard extends StatelessWidget {
             left: 24,
             child: Opacity(
               opacity: likeOpacity,
-              child: _SwipeBadge(
-                label: 'LIKE',
-                color: AppTheme.acceptColor,
-              ),
+              child: _SwipeBadge(label: 'LIKE', color: AppTheme.acceptColor),
             ),
           ),
           Positioned(
@@ -589,10 +612,7 @@ class _SwipeProfileCard extends StatelessWidget {
             right: 24,
             child: Opacity(
               opacity: nopeOpacity,
-              child: _SwipeBadge(
-                label: 'NOPE',
-                color: AppTheme.rejectColor,
-              ),
+              child: _SwipeBadge(label: 'NOPE', color: AppTheme.rejectColor),
             ),
           ),
           Positioned(
@@ -621,7 +641,11 @@ class _SwipeProfileCard extends StatelessWidget {
                           if (profile.isVerified)
                             const Padding(
                               padding: EdgeInsets.only(left: 8, bottom: 4),
-                              child: Icon(Icons.verified_rounded, color: AppTheme.superLikeColor, size: 20),
+                              child: Icon(
+                                Icons.verified_rounded,
+                                color: AppTheme.superLikeColor,
+                                size: 20,
+                              ),
                             ),
                         ],
                       ),
@@ -635,12 +659,17 @@ class _SwipeProfileCard extends StatelessWidget {
                             color: Colors.white.withOpacity(0.25),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.info_outline_rounded, color: Colors.white, size: 20),
+                          child: const Icon(
+                            Icons.info_outline_rounded,
+                            color: Colors.white,
+                            size: 20,
+                          ),
                         ),
                       ),
                   ],
                 ),
-                if ((profile.city ?? '').isNotEmpty || (profile.country ?? '').isNotEmpty)
+                if ((profile.city ?? '').isNotEmpty ||
+                    (profile.country ?? '').isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 6),
                     child: Text(
@@ -679,10 +708,7 @@ class _SwipeProfileCard extends StatelessWidget {
 }
 
 class _SwipeBadge extends StatelessWidget {
-  const _SwipeBadge({
-    required this.label,
-    required this.color,
-  });
+  const _SwipeBadge({required this.label, required this.color});
 
   final String label;
   final Color color;
@@ -738,8 +764,15 @@ class _EmptyDeckState extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(gradient: AppTheme.heroGradient, shape: BoxShape.circle),
-              child: const Icon(Icons.favorite_border_rounded, size: 40, color: Colors.white),
+              decoration: BoxDecoration(
+                gradient: AppTheme.heroGradient,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.favorite_border_rounded,
+                size: 40,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 20),
             Text(
@@ -752,10 +785,7 @@ class _EmptyDeckState extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: onRetry,
-              child: const Text('Try again'),
-            ),
+            ElevatedButton(onPressed: onRetry, child: const Text('Try again')),
             if (onRewind != null) ...[
               const SizedBox(height: 10),
               TextButton.icon(
@@ -786,6 +816,7 @@ class MatchScreen extends StatefulWidget {
     required this.myImage,
     required this.theirImage,
     this.isSuperLike = false,
+    this.isMutual = true,
   });
 
   final String matchedUserId;
@@ -793,6 +824,9 @@ class MatchScreen extends StatefulWidget {
   final String myImage;
   final String theirImage;
   final bool isSuperLike;
+
+  /// False when a super like was sent but the other person hasn't liked back.
+  final bool isMutual;
 
   @override
   State<MatchScreen> createState() => _MatchScreenState();
@@ -831,13 +865,15 @@ class _MatchScreenState extends State<MatchScreen> {
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => ChatScreen(
-          chatId: conv.id,
-          name: widget.userName,
-          image: widget.theirImage.isNotEmpty
-              ? widget.theirImage
-              : 'assets/images/profile.png',
-        ),
+        builder:
+            (_) => ChatScreen(
+              chatId: conv.id,
+              name: widget.userName,
+              image:
+                  widget.theirImage.isNotEmpty
+                      ? widget.theirImage
+                      : 'assets/images/profile.png',
+            ),
       ),
     );
   }
@@ -852,26 +888,343 @@ class _MatchScreenState extends State<MatchScreen> {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: Colors.white, width: 4),
           boxShadow: const [
-            BoxShadow(color: Colors.black26, blurRadius: 20, offset: Offset(0, 10)),
+            BoxShadow(
+              color: Colors.black26,
+              blurRadius: 20,
+              offset: Offset(0, 10),
+            ),
           ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(16),
-          child: imageUrl.startsWith('http')
-              ? Image.network(
-                  imageUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  height: double.infinity,
-                  errorBuilder: (_, _, _) => Image.asset(
-                    'assets/images/profile.png',
+          child:
+              imageUrl.startsWith('http')
+                  ? Image.network(
+                    imageUrl,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    errorBuilder:
+                        (_, _, _) => Image.asset(
+                          'assets/images/profile.png',
+                          fit: BoxFit.cover,
+                        ),
+                  )
+                  : Image.asset(
+                    imageUrl.isNotEmpty
+                        ? imageUrl
+                        : 'assets/images/profile.png',
                     fit: BoxFit.cover,
                   ),
-                )
-              : Image.asset(
-                  imageUrl.isNotEmpty ? imageUrl : 'assets/images/profile.png',
-                  fit: BoxFit.cover,
+        ),
+      ),
+    );
+  }
+
+  // ---------------------------------------------------------------------
+  // MUTUAL SUPER LIKE
+  // ---------------------------------------------------------------------
+
+  /// A photo card with a small super-like star badge on its top corner.
+  Widget _superLikePhotoCard(String imageUrl, {required double angle}) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        _photoCard(imageUrl, angle: angle),
+        Positioned(
+          top: -6,
+          right: -6,
+          child: Container(
+            padding: const EdgeInsets.all(7),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [AppTheme.superLikeColor, AppTheme.accentColor],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              border: Border.all(color: Colors.white, width: 2),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.superLikeColor.withValues(alpha: 0.7),
+                  blurRadius: 14,
                 ),
+              ],
+            ),
+            child: const Icon(
+              Icons.bolt_rounded,
+              color: Colors.white,
+              size: 16,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Big glowing star with an orbit ring, overlapping the bottom of the cards.
+  Widget _glowingSuperStar() {
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.4, end: 1.0),
+      duration: const Duration(milliseconds: 900),
+      curve: Curves.elasticOut,
+      builder:
+          (context, scale, child) =>
+              Transform.scale(scale: scale, child: child),
+      child: SizedBox(
+        width: 230,
+        height: 130,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Orbit ring
+            Transform.rotate(
+              angle: -0.14,
+              child: Container(
+                width: 230,
+                height: 54,
+                decoration: BoxDecoration(
+                  borderRadius: const BorderRadius.all(
+                    Radius.elliptical(115, 27),
+                  ),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    width: 1.5,
+                  ),
+                ),
+              ),
+            ),
+            // Glowing star
+            ShaderMask(
+              shaderCallback:
+                  (rect) => const LinearGradient(
+                    colors: [AppTheme.superLikeColor, AppTheme.accentColor],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(rect),
+              child: Icon(
+                Icons.star_rounded,
+                size: 124,
+                color: Colors.white,
+                shadows: [
+                  Shadow(
+                    color: AppTheme.superLikeColor.withValues(alpha: 0.9),
+                    blurRadius: 36,
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.bolt_rounded, color: Colors.white, size: 52),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMutualSuperLike(BuildContext context) {
+    final firstName = widget.userName.trim().split(' ').first;
+    final lineColor = Colors.white.withValues(alpha: 0.35);
+
+    return Scaffold(
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: const BoxDecoration(gradient: AppTheme.heroGradient),
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder:
+                (context, constraints) => SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 16),
+
+                        /// Header: star + "MUTUAL SUPER LIKE"
+                        const Icon(
+                          Icons.star_rounded,
+                          color: Colors.white,
+                          size: 30,
+                          shadows: [
+                            Shadow(color: Colors.white, blurRadius: 14),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(width: 48, height: 1, color: lineColor),
+                            const SizedBox(width: 12),
+                            Text(
+                              widget.isMutual
+                                  ? 'MUTUAL SUPER LIKE'
+                                  : 'SUPER LIKE SENT',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: 3.5,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Container(width: 48, height: 1, color: lineColor),
+                          ],
+                        ),
+                        const SizedBox(height: 36),
+
+                        /// Photos
+                        SizedBox(
+                          height: 270,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            clipBehavior: Clip.none,
+                            children: [
+                              Transform.translate(
+                                offset: const Offset(-70, 10),
+                                child: _superLikePhotoCard(
+                                  widget.myImage,
+                                  angle: -0.2,
+                                ),
+                              ),
+                              Transform.translate(
+                                offset: const Offset(70, -10),
+                                child: _superLikePhotoCard(
+                                  widget.theirImage,
+                                  angle: 0.2,
+                                ),
+                              ),
+                              Positioned(
+                                bottom: -50,
+                                child: _glowingSuperStar(),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 56),
+
+                        /// Title
+                        Text(
+                          widget.isMutual ? 'You and $firstName' : 'You',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            height: 1.2,
+                          ),
+                        ),
+                        const Text(
+                          'Super Liked',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 40,
+                            fontWeight: FontWeight.w800,
+                            fontStyle: FontStyle.italic,
+                            color: Color(0xFFE3D4FF),
+                            height: 1.2,
+                          ),
+                        ),
+                        Text(
+                          widget.isMutual ? 'each other!' : '$firstName!',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w800,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.white,
+                            height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          widget.isMutual
+                              ? "That's a special connection.\nStart chatting now!"
+                              : "$firstName will be notified.\nFingers crossed!",
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: Colors.white70,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+
+                        /// Buttons
+                        if (widget.isMutual)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 32),
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 56,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.white,
+                                  foregroundColor: AppTheme.primaryDarkColor,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(30),
+                                  ),
+                                ),
+                                onPressed: _openingChat ? null : _sayHello,
+                                child:
+                                    _openingChat
+                                        ? const SizedBox(
+                                          height: 22,
+                                          width: 22,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                          ),
+                                        )
+                                        : const Text(
+                                          'Say hello',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                              ),
+                            ),
+                          ),
+                        if (widget.isMutual) const SizedBox(height: 14),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                backgroundColor:
+                                    widget.isMutual ? null : Colors.white,
+                                side: const BorderSide(
+                                  color: Colors.white,
+                                  width: 1.4,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                              ),
+                              onPressed: () => Navigator.pop(context),
+                              child: Text(
+                                'Keep swiping',
+                                style: TextStyle(
+                                  color:
+                                      widget.isMutual
+                                          ? Colors.white
+                                          : AppTheme.primaryDarkColor,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                      ],
+                    ),
+                  ),
+                ),
+          ),
         ),
       ),
     );
@@ -879,6 +1232,8 @@ class _MatchScreenState extends State<MatchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.isSuperLike) return _buildMutualSuperLike(context);
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(gradient: AppTheme.heroGradient),
@@ -919,9 +1274,10 @@ class _MatchScreenState extends State<MatchScreen> {
                         widget.isSuperLike
                             ? Icons.star_rounded
                             : Icons.favorite,
-                        color: widget.isSuperLike
-                            ? AppTheme.superLikeColor
-                            : AppTheme.primaryColor,
+                        color:
+                            widget.isSuperLike
+                                ? AppTheme.superLikeColor
+                                : AppTheme.primaryColor,
                         size: 26,
                       ),
                     ),
@@ -961,19 +1317,20 @@ class _MatchScreenState extends State<MatchScreen> {
                       ),
                     ),
                     onPressed: _openingChat ? null : _sayHello,
-                    child: _openingChat
-                        ? const SizedBox(
-                            height: 22,
-                            width: 22,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text(
-                            'Say hello',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                    child:
+                        _openingChat
+                            ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : const Text(
+                              'Say hello',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                          ),
                   ),
                 ),
               ),
