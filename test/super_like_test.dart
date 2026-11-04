@@ -132,7 +132,7 @@ void main() {
     );
     await tester.pump();
 
-    await tester.tap(find.byIcon(Icons.star_rounded));
+    await tester.tap(find.byIcon(Icons.star_outline_rounded));
     await tester.pumpAndSettle();
 
     expect(service.calls, ['super:ana']);

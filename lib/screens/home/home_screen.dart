@@ -1,6 +1,7 @@
 import 'package:dating_app/app/app_routes.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/utils/constants.dart';
+import 'package:dating_app/utils/profile_theme.dart';
 import 'package:dating_app/utils/theme.dart';
 import 'package:dating_app/controllers/chat_controller.dart';
 import 'package:dating_app/controllers/notification_controller.dart';
@@ -77,7 +78,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(gradient: AppTheme.backgroundGradient),
+        decoration: BoxDecoration(
+          gradient:
+              (_currentIndex == 1 || _currentIndex == 3)
+                  ? ProfileTheme.background
+                  : AppTheme.backgroundGradient,
+        ),
         child: SafeArea(
           child: Column(
             children: [

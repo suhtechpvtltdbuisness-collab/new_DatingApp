@@ -87,6 +87,7 @@ class SwipeController extends GetxController {
   /// True when the deck had to use the "if I run out" relaxations.
   final isRelaxed = false.obs;
 
+
   static const int pageSize = 10;
   static const int preloadThreshold = 2;
 
@@ -145,6 +146,8 @@ class SwipeController extends GetxController {
 
       var incoming = <UserModel>[];
       var skipped = 0;
+      var fetched = 0;
+      var unseen = 0;
       // Device-side filters can empty a whole page; keep paging a little so
       // the deck doesn't look empty while matching people exist further on.
       while (true) {
@@ -164,7 +167,10 @@ class SwipeController extends GetxController {
 
         final page = response.data ?? const <UserModel>[];
         hasMoreProfiles.value = page.length >= pageSize;
-        incoming = _applyFilters(_dedupeProfiles(page));
+        final deduped = _dedupeProfiles(page);
+        fetched += page.length;
+        unseen += deduped.length;
+        incoming = _applyFilters(deduped);
 
         if (incoming.isNotEmpty ||
             !hasMoreProfiles.value ||
@@ -174,6 +180,16 @@ class SwipeController extends GetxController {
         skipped++;
         currentPage.value++;
       }
+
+      final f = filters.value;
+      _logger.i(
+          'Deck load: server sent $fetched · not yet swiped $unseen · after filters ${incoming.length}\n'
+          'already swiped: ${likedProfiles.length} liked, ${dislikedProfiles.length} passed\n'
+          'filters: age ${f.minAge}-${f.maxAge}, '
+          '${f.distanceEnabled ? "within ${f.maxDistance} km" : "no distance limit"}, '
+          'interestedIn ${f.interestedIn}, verifiedOnly ${f.verifiedOnly}, '
+          'interests ${f.interests.length}, languages ${f.languages.length}'
+          '${isRelaxed.value ? " (relaxed)" : ""}');
 
       if (refresh) {
         profiles.assignAll(incoming);
@@ -419,6 +435,49 @@ class SwipeController extends GetxController {
       profile: entry.profile,
       message: successMessage.value,
     );
+  }
+
+  final Set<String> _hydrated = <String>{};
+
+  /// The list endpoint may return only one photo per person. For cards that
+  /// show one (or none), fetch the full profile once and keep every photo, so
+  /// the story-style viewer has something to page through.
+  Future<void> hydratePhotos(UserModel person) async {
+    if (person.photoUrls.length > 1 || !_hydrated.add(person.id)) return;
+    try {
+      final response = await _swipeService.getProfileDetail(person.id);
+      final full = response.data;
+      if (!response.success || full == null) {
+        _hydrated.remove(person.id); // allow a later retry
+        return;
+      }
+      if (full.photoUrls.length <= person.photoUrls.length) return;
+      final i = profiles.indexWhere((p) => p.id == person.id);
+      if (i == -1) return;
+      profiles[i] = profiles[i].copyWith(photoUrls: full.photoUrls);
+    } catch (e) {
+      _hydrated.remove(person.id);
+      _logger.w('Hydrate photos failed: $e');
+    }
+  }
+
+  /// Puts everyone the user passed on back into the deck so they can decide
+  /// again. Likes stay out (they are already recorded). Local only: the server
+  /// takes a fresh swipe as the new decision. Returns how many came back.
+  int recyclePassedProfiles() {
+    final passed = dislikedProfiles
+        .where((p) => !profiles.any((item) => item.id == p.id))
+        .toList();
+    if (passed.isEmpty) return 0;
+
+    dislikedProfiles.clear();
+    // Their old pass is no longer the latest word on them.
+    rewindHistory.removeWhere(
+      (e) => e.action == SwipeAction.dislike && passed.any((p) => p.id == e.profile.id),
+    );
+    profiles.addAll(passed);
+    errorMessage.value = '';
+    return passed.length;
   }
 
   /// Removes a person from the deck immediately (e.g. after blocking).

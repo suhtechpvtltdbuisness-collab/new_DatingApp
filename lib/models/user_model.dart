@@ -148,8 +148,17 @@ class UserModel {
     final fullName = (json['name'] ?? '').toString().trim();
     final nameParts =
         fullName.isEmpty ? const <String>[] : fullName.split(RegExp(r'\s+'));
-    final rawPhotos =
-        json['photoUrls'] ?? json['photos'] ?? json['images'] ?? const [];
+    // First non-empty list wins: an empty `photoUrls` must not hide `photos`.
+    final rawPhotos = [
+      json['photoUrls'],
+      json['photos'],
+      json['images'],
+      json['pictures'],
+      json['gallery'],
+    ].firstWhere(
+      (v) => v is List && v.isNotEmpty,
+      orElse: () => const [],
+    );
     final location = json['location'];
     final coordinates =
         location is Map<String, dynamic>
@@ -265,7 +274,18 @@ class UserModel {
   static List<String> _parsePhotoUrls(dynamic value) {
     if (value is List) {
       return value
-          .map((item) => resolveMediaUrl(item.toString()))
+          .map((item) {
+            // Some APIs return photo objects ({url: ...}) instead of strings.
+            if (item is Map) {
+              item =
+                  item['url'] ??
+                  item['secure_url'] ??
+                  item['imageUrl'] ??
+                  item['src'] ??
+                  '';
+            }
+            return resolveMediaUrl(item.toString());
+          })
           .where((item) => item.isNotEmpty)
           .toList();
     }

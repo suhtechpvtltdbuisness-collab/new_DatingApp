@@ -36,6 +36,9 @@ class _TestSwipeController extends SwipeController {
 
   @override
   Future<bool> refreshSwipeHistory() async => true;
+
+  @override
+  Future<void> hydratePhotos(UserModel person) async {}
 }
 
 SwipeController _seed(List<UserModel> deck) {
@@ -67,7 +70,7 @@ void main() {
     );
     await tester.pump();
 
-    expect(find.text('BEA Tester, ${_person('bea').age}'), findsOneWidget);
+    expect(find.text('BEA, ${_person('bea').age}'), findsOneWidget);
 
     await tester.tap(find.byIcon(Icons.replay_rounded));
     await tester.pumpAndSettle();
@@ -96,7 +99,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(controller.profiles.single.id, 'ana');
-    expect(find.text('ANA Tester, ${_person('ana').age}'), findsOneWidget);
+    expect(find.text('ANA, ${_person('ana').age}'), findsOneWidget);
   });
 
   testWidgets('an empty deck with no history offers no rewind', (tester) async {

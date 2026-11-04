@@ -7,10 +7,14 @@ import 'package:dating_app/models/swipe_models.dart';
 import 'package:dating_app/models/user_model.dart';
 import 'package:dating_app/screens/chat/chat_screen.dart';
 import 'package:dating_app/screens/profile/profile_screen.dart';
-import 'package:dating_app/utils/constants.dart';
+import 'package:dating_app/utils/swipe_theme.dart';
 import 'package:dating_app/utils/theme.dart';
+import 'package:dating_app/widgets/profile/profile_widgets.dart';
+import 'package:dating_app/widgets/swipe/action_button.dart';
+import 'package:dating_app/widgets/swipe/card_stack.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class SwipeScreen extends StatefulWidget {
   const SwipeScreen({super.key});
@@ -19,25 +23,24 @@ class SwipeScreen extends StatefulWidget {
   State<SwipeScreen> createState() => _SwipeScreenState();
 }
 
-class _SwipeScreenState extends State<SwipeScreen>
-    with SingleTickerProviderStateMixin {
+class _SwipeScreenState extends State<SwipeScreen> {
   final SwipeController swipeController = Get.find<SwipeController>();
-
-  late final AnimationController _swipeAnimationController;
-
-  Offset _dragOffset = Offset.zero;
-  Animation<Offset>? _offsetAnimation;
-  bool _isAnimatingSwipe = false;
+  final CardStackController _stack = CardStackController();
   bool _isRewinding = false;
+  Worker? _photoWorker;
 
   @override
   void initState() {
     super.initState();
-    _swipeAnimationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 260),
-    );
-
+    // Make sure the top cards have all their photos for the story viewer.
+    _photoWorker = ever<List<UserModel>>(swipeController.profiles, (list) {
+      for (final p in list.take(2)) {
+        swipeController.hydratePhotos(p);
+      }
+    });
+    for (final p in swipeController.profiles.take(2)) {
+      swipeController.hydratePhotos(p);
+    }
     if (swipeController.profiles.isEmpty && !swipeController.isLoading.value) {
       swipeController.loadProfiles(refresh: true);
     }
@@ -45,46 +48,13 @@ class _SwipeScreenState extends State<SwipeScreen>
 
   @override
   void dispose() {
-    _swipeAnimationController.dispose();
+    _photoWorker?.dispose();
     super.dispose();
   }
 
-  Future<void> _handlePanEnd(
-    BoxConstraints constraints,
-    UserModel profile,
-  ) async {
-    final threshold = constraints.maxWidth * AppConstants.swipeThreshold;
-    final shouldCommit =
-        _dragOffset.dx.abs() >= threshold &&
-        _dragOffset.dx.abs() > _dragOffset.dy.abs();
-
-    if (!shouldCommit) {
-      await _runCardAnimation(target: Offset.zero, markAsSwipe: false);
-      return;
-    }
-
-    final direction =
-        _dragOffset.dx >= 0 ? SwipeAction.like : SwipeAction.dislike;
-    await _commitSwipe(constraints, profile, direction);
-  }
-
-  Future<void> _commitSwipe(
-    BoxConstraints constraints,
-    UserModel profile,
-    SwipeAction direction,
-  ) async {
-    final exitOffset =
-        direction == SwipeAction.superLike
-            ? Offset(0, -constraints.maxHeight * 1.2)
-            : Offset(
-              direction == SwipeAction.like
-                  ? constraints.maxWidth * 1.35
-                  : -constraints.maxWidth * 1.35,
-              _dragOffset.dy * 0.3,
-            );
-
-    await _runCardAnimation(target: exitOffset, markAsSwipe: true);
-
+  /// Runs after the card has flown off: sends the swipe, reports a failure
+  /// and opens the match screen. Same logic as before the redesign.
+  Future<void> _onSwipe(UserModel profile, SwipeAction direction) async {
     final result = await swipeController.submitSwipe(
       profile: profile,
       action: direction,
@@ -150,589 +120,235 @@ class _SwipeScreenState extends State<SwipeScreen>
         ),
       );
     }
-
-    _swipeAnimationController.reset();
-    if (mounted) {
-      setState(() {
-        _dragOffset = Offset.zero;
-        _offsetAnimation = null;
-        _isAnimatingSwipe = false;
-      });
-    }
   }
 
   /// Brings the last swiped person back and flies their card in from the side
   /// it left on. Unlimited: usable as many times in a row as there is history.
-  Future<void> _handleRewind(double cardWidth) async {
-    if (_isAnimatingSwipe || _isRewinding) {
-      return;
-    }
-
+  Future<void> _handleRewind() async {
+    if (_isRewinding) return;
     final entry = swipeController.lastSwipe;
-    if (entry == null) {
-      return;
-    }
+    if (entry == null) return;
 
-    // Decide where the card starts before restoring it, so its first frame is
-    // already off-screen rather than popping in at the centre.
-    final enterX =
-        entry.action == SwipeAction.dislike
-            ? -cardWidth * 1.35
-            : cardWidth * 1.35;
-
-    setState(() {
-      _isRewinding = true;
-      _dragOffset = Offset(enterX, 0);
-    });
-
-    final result = swipeController.rewindLastSwipe();
-
-    if (!result.success) {
-      setState(() {
-        _isRewinding = false;
-        _dragOffset = Offset.zero;
-      });
-      if (mounted && result.message.isNotEmpty) {
+    bool restore() {
+      final result = swipeController.rewindLastSwipe();
+      if (!result.success && mounted && result.message.isNotEmpty) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text(result.message)));
       }
+      return result.success;
+    }
+
+    // Empty deck: there is no card stack on screen to animate.
+    if (swipeController.profiles.isEmpty) {
+      restore();
       return;
     }
 
-    await _animateCardTo(Offset.zero);
-
-    _swipeAnimationController.reset();
-    if (mounted) {
-      setState(() {
-        _isRewinding = false;
-        _dragOffset = Offset.zero;
-        _offsetAnimation = null;
-      });
-    }
+    setState(() => _isRewinding = true);
+    await _stack.rewind(lastAction: entry.action, restore: restore);
+    if (mounted) setState(() => _isRewinding = false);
   }
 
-  Future<void> _animateCardTo(Offset target) async {
-    _offsetAnimation = Tween<Offset>(begin: _dragOffset, end: target).animate(
-      CurvedAnimation(
-        parent: _swipeAnimationController,
-        curve: Curves.easeOutCubic,
-      ),
+  void _openDetails(UserModel profile) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => ProfileDetailsScreen(profile: profile)),
     );
-
-    _swipeAnimationController
-      ..reset()
-      ..addListener(_animationListener);
-
-    await _swipeAnimationController.forward();
-    _swipeAnimationController.removeListener(_animationListener);
-    _dragOffset = target;
   }
 
-  Future<void> _runCardAnimation({
-    required Offset target,
-    required bool markAsSwipe,
-  }) async {
-    if (mounted) {
-      setState(() {
-        _isAnimatingSwipe = true;
-      });
+  /// Distance between me and [p] from stored coordinates, or null when
+  /// either side has no usable location.
+  String? _distanceLabel(UserModel? me, UserModel p) {
+    bool valid(double lat, double lng) =>
+        !(lat == 0 && lng == 0) && lat.abs() <= 90 && lng.abs() <= 180;
+    if (me == null ||
+        !valid(me.latitude, me.longitude) ||
+        !valid(p.latitude, p.longitude)) {
+      return null;
     }
-
-    await _animateCardTo(target);
-
-    if (mounted && !markAsSwipe) {
-      setState(() {
-        _isAnimatingSwipe = false;
-      });
-    }
-  }
-
-  void _animationListener() {
-    final animatedOffset = _offsetAnimation?.value;
-    if (animatedOffset == null || !mounted) {
-      return;
-    }
-
-    setState(() {
-      _dragOffset = animatedOffset;
-    });
+    const r = 6371.0;
+    double rad(double d) => d * math.pi / 180;
+    final dLat = rad(p.latitude - me.latitude);
+    final dLng = rad(p.longitude - me.longitude);
+    final a =
+        math.pow(math.sin(dLat / 2), 2) +
+        math.cos(rad(me.latitude)) *
+            math.cos(rad(p.latitude)) *
+            math.pow(math.sin(dLng / 2), 2);
+    final km = 2 * r * math.asin(math.sqrt(a.toDouble()));
+    return km < 1 ? '<1 km' : '${km.round()} km';
   }
 
   @override
   Widget build(BuildContext context) {
-    return Obx(() {
-      final profiles = swipeController.profiles.toList(growable: false);
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: const BoxDecoration(gradient: SwipeTheme.background),
+      child: Obx(() {
+        final profiles = swipeController.profiles.toList(growable: false);
 
-      if (swipeController.isLoading.value && profiles.isEmpty) {
-        return const Center(child: CircularProgressIndicator());
-      }
+        if (swipeController.isLoading.value && profiles.isEmpty) {
+          return const _SwipeSkeleton();
+        }
 
-      if (profiles.isEmpty) {
-        return _EmptyDeckState(
-          message:
-              swipeController.errorMessage.value.isEmpty
-                  ? 'No more profiles to show'
-                  : swipeController.errorMessage.value,
-          onRetry: () => swipeController.loadProfiles(refresh: true),
-          onRewind:
-              swipeController.canRewind && !_isRewinding
-                  ? () => _handleRewind(MediaQuery.of(context).size.width)
-                  : null,
-          rewindLabel: swipeController.lastSwipe?.profile.fullName ?? '',
+        if (profiles.isEmpty) {
+          return _EmptyDeckState(
+            message: swipeController.errorMessage.value,
+            onRetry: () => swipeController.loadProfiles(refresh: true),
+            passedCount: swipeController.dislikedProfiles.length,
+            onShowPassed: swipeController.recyclePassedProfiles,
+            onRewind:
+                swipeController.canRewind && !_isRewinding
+                    ? _handleRewind
+                    : null,
+            rewindLabel: swipeController.lastSwipe?.profile.fullName ?? '',
+          );
+        }
+
+        final top = profiles.first;
+        final canAct = !_isRewinding && swipeController.canSwipe(top.id);
+        final canRewind = !_isRewinding && swipeController.canRewind;
+        final me =
+            Get.isRegistered<UserController>()
+                ? Get.find<UserController>().currentUser.value
+                : null;
+        final status =
+            swipeController.isLoadingMore.value
+                ? 'Loading more profiles...'
+                : swipeController.errorMessage.value;
+
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(
+            SwipeTheme.pagePadding,
+            4,
+            SwipeTheme.pagePadding,
+            8,
+          ),
+          child: Column(
+            children: [
+              Expanded(
+                child: CardStack(
+                  controller: _stack,
+                  profiles: profiles,
+                  enabled: canAct,
+                  onSwipe: _onSwipe,
+                  onExpand: _openDetails,
+                  distanceLabel: (p) => _distanceLabel(me, p),
+                ),
+              ),
+              if (status.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    status,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color:
+                          swipeController.errorMessage.value.isEmpty
+                              ? SwipeTheme.labelGrey
+                              : AppTheme.errorColor,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ActionButton(
+                    icon: Icons.close_rounded,
+                    label: 'Pass',
+                    color: SwipeTheme.passRed,
+                    onTap:
+                        canAct ? () => _stack.swipe(SwipeAction.dislike) : null,
+                  ),
+                  ActionButton(
+                    icon: Icons.replay_rounded,
+                    label: 'Rewind',
+                    color: SwipeTheme.pink,
+                    onTap: canRewind ? _handleRewind : null,
+                  ),
+                  ActionButton(
+                    icon: Icons.star_outline_rounded,
+                    label: 'Super like',
+                    color: SwipeTheme.superBlue,
+                    onTap:
+                        canAct
+                            ? () => _stack.swipe(SwipeAction.superLike)
+                            : null,
+                  ),
+                  ActionButton(
+                    icon: Icons.favorite_border_rounded,
+                    label: 'Like',
+                    color: SwipeTheme.pink,
+                    size: SwipeTheme.likeSize,
+                    gradient: SwipeTheme.brand,
+                    bold: true,
+                    onTap:
+                        canAct ? () => _stack.swipe(SwipeAction.like) : null,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+            ],
+          ),
         );
-      }
-
-      final topProfile = profiles.first;
-      final canAct =
-          !_isAnimatingSwipe &&
-          !_isRewinding &&
-          swipeController.canSwipe(topProfile.id);
-      final canRewind =
-          !_isAnimatingSwipe && !_isRewinding && swipeController.canRewind;
-
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final swipeThreshold =
-                constraints.maxWidth * AppConstants.swipeThreshold;
-            final dragProgress = (_dragOffset.dx.abs() / swipeThreshold).clamp(
-              0.0,
-              1.0,
-            );
-
-            return Column(
-              children: [
-                Expanded(
-                  child: Stack(
-                    clipBehavior: Clip.none,
-                    children:
-                        List.generate(math.min(profiles.length, 3), (index) {
-                          final profile = profiles[index];
-                          final isTopCard = index == 0;
-
-                          return _DeckLayer(
-                            profile: profile,
-                            depth: index,
-                            dragProgress: _isRewinding ? 0 : dragProgress,
-                            dragOffset: isTopCard ? _dragOffset : Offset.zero,
-                            isTopCard: isTopCard,
-                            showDecision: !_isRewinding,
-                            onTapInfo:
-                                isTopCard
-                                    ? () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (_) => ProfileDetailsScreen(
-                                              profile: profile,
-                                            ),
-                                      ),
-                                    )
-                                    : null,
-                            onPanUpdate:
-                                isTopCard && canAct
-                                    ? (details) {
-                                      setState(() {
-                                        _dragOffset += details.delta;
-                                      });
-                                    }
-                                    : null,
-                            onPanEnd:
-                                isTopCard && canAct
-                                    ? (_) =>
-                                        _handlePanEnd(constraints, topProfile)
-                                    : null,
-                          );
-                        }).reversed.toList(),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  swipeController.isLoadingMore.value
-                      ? 'Loading more profiles...'
-                      : swipeController.errorMessage.value,
-                  style: TextStyle(
-                    color:
-                        swipeController.errorMessage.value.isEmpty
-                            ? Colors.transparent
-                            : AppTheme.errorColor,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _ActionButton(
-                      icon: Icons.replay_rounded,
-                      color: AppTheme.goldColor,
-                      size: 46,
-                      iconSize: 22,
-                      onTap:
-                          canRewind
-                              ? () => _handleRewind(constraints.maxWidth)
-                              : null,
-                    ),
-                    _ActionButton(
-                      icon: Icons.close_rounded,
-                      color: AppTheme.rejectColor,
-                      size: 54,
-                      iconSize: 26,
-                      onTap:
-                          canAct
-                              ? () => _commitSwipe(
-                                constraints,
-                                topProfile,
-                                SwipeAction.dislike,
-                              )
-                              : null,
-                    ),
-                    _ActionButton(
-                      icon: Icons.star_rounded,
-                      color: AppTheme.superLikeColor,
-                      size: 46,
-                      iconSize: 22,
-                      onTap:
-                          canAct
-                              ? () => _commitSwipe(
-                                constraints,
-                                topProfile,
-                                SwipeAction.superLike,
-                              )
-                              : null,
-                    ),
-                    _ActionButton(
-                      icon: Icons.favorite_rounded,
-                      color: AppTheme.primaryColor,
-                      size: 62,
-                      iconSize: 28,
-                      gradient: AppTheme.heroGradient,
-                      onTap:
-                          canAct
-                              ? () => _commitSwipe(
-                                constraints,
-                                topProfile,
-                                SwipeAction.like,
-                              )
-                              : null,
-                    ),
-                  ],
-                ),
-              ],
-            );
-          },
-        ),
-      );
-    });
+      }),
+    );
   }
 }
 
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({
-    required this.icon,
-    required this.color,
-    required this.onTap,
-    this.size = 54,
-    this.iconSize = 24,
-    this.gradient,
-  });
-
-  final IconData icon;
-  final Color color;
-  final VoidCallback? onTap;
-  final double size;
-  final double iconSize;
-  final Gradient? gradient;
+/// Shimmering placeholder shown while the first page of profiles loads.
+class _SwipeSkeleton extends StatelessWidget {
+  const _SwipeSkeleton();
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Opacity(
-        opacity: onTap == null ? 0.5 : 1,
-        child: Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: gradient == null ? Colors.white : null,
-            gradient: gradient,
-            shape: BoxShape.circle,
-            boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.35),
-                blurRadius: 16,
-                offset: const Offset(0, 8),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        SwipeTheme.pagePadding,
+        4,
+        SwipeTheme.pagePadding,
+        12,
+      ),
+      child: Column(
+        children: [
+          const Expanded(
+            child: SizedBox.expand(
+              child: SkeletonBox(radius: SwipeTheme.cardRadius),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: const [
+              SkeletonBox(
+                width: SwipeTheme.actionSize,
+                height: SwipeTheme.actionSize,
+                circle: true,
+              ),
+              SkeletonBox(
+                width: SwipeTheme.actionSize,
+                height: SwipeTheme.actionSize,
+                circle: true,
+              ),
+              SkeletonBox(
+                width: SwipeTheme.actionSize,
+                height: SwipeTheme.actionSize,
+                circle: true,
+              ),
+              SkeletonBox(
+                width: SwipeTheme.likeSize,
+                height: SwipeTheme.likeSize,
+                circle: true,
               ),
             ],
           ),
-          child: Icon(
-            icon,
-            color: gradient == null ? color : Colors.white,
-            size: iconSize,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _DeckLayer extends StatelessWidget {
-  const _DeckLayer({
-    required this.profile,
-    required this.depth,
-    required this.dragProgress,
-    required this.dragOffset,
-    required this.isTopCard,
-    this.showDecision = true,
-    this.onPanUpdate,
-    this.onPanEnd,
-    this.onTapInfo,
-  });
-
-  final UserModel profile;
-  final int depth;
-  final double dragProgress;
-  final Offset dragOffset;
-  final bool isTopCard;
-  final GestureDragUpdateCallback? onPanUpdate;
-  final GestureDragEndCallback? onPanEnd;
-  final VoidCallback? onTapInfo;
-
-  /// False while a rewound card flies back in, so it doesn't wear a LIKE or
-  /// NOPE stamp on the way to the centre.
-  final bool showDecision;
-
-  @override
-  Widget build(BuildContext context) {
-    final depthOffset = depth * 14.0;
-    final baseScale = 1 - (depth * 0.04);
-    final animatedScale =
-        isTopCard ? 1.0 : (baseScale + (dragProgress * 0.03)).clamp(0.88, 1.0);
-
-    Widget card = Transform.translate(
-      offset:
-          isTopCard ? dragOffset : Offset(0, depthOffset - (dragProgress * 10)),
-      child: Transform.rotate(
-        angle: isTopCard ? dragOffset.dx / 900 : 0,
-        child: Transform.scale(
-          scale: animatedScale,
-          alignment: Alignment.topCenter,
-          child: _SwipeProfileCard(
-            profile: profile,
-            onTapInfo: onTapInfo,
-            likeOpacity:
-                showDecision && isTopCard && dragOffset.dx > 0
-                    ? (dragOffset.dx.abs() / 120).clamp(0.0, 1.0)
-                    : 0,
-            nopeOpacity:
-                showDecision && isTopCard && dragOffset.dx < 0
-                    ? (dragOffset.dx.abs() / 120).clamp(0.0, 1.0)
-                    : 0,
-          ),
-        ),
-      ),
-    );
-
-    if (!isTopCard) {
-      return Positioned.fill(top: depthOffset, child: card);
-    }
-
-    return Positioned.fill(
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onPanUpdate: onPanUpdate,
-        onPanEnd: onPanEnd,
-        child: card,
-      ),
-    );
-  }
-}
-
-class _SwipeProfileCard extends StatelessWidget {
-  const _SwipeProfileCard({
-    required this.profile,
-    required this.likeOpacity,
-    required this.nopeOpacity,
-    this.onTapInfo,
-  });
-
-  final UserModel profile;
-  final double likeOpacity;
-  final double nopeOpacity;
-  final VoidCallback? onTapInfo;
-
-  @override
-  Widget build(BuildContext context) {
-    final image = profile.profileImage;
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (image.isNotEmpty)
-            Image.network(
-              image,
-              fit: BoxFit.cover,
-              errorBuilder:
-                  (_, _, _) => Image.asset(
-                    'assets/images/profile.png',
-                    fit: BoxFit.cover,
-                  ),
-            )
-          else
-            Image.asset('assets/images/profile.png', fit: BoxFit.cover),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.black.withValues(alpha: 0.06),
-                    Colors.black.withValues(alpha: 0.16),
-                    Colors.black.withValues(alpha: 0.75),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 28,
-            left: 24,
-            child: Opacity(
-              opacity: likeOpacity,
-              child: _SwipeBadge(label: 'LIKE', color: AppTheme.acceptColor),
-            ),
-          ),
-          Positioned(
-            top: 28,
-            right: 24,
-            child: Opacity(
-              opacity: nopeOpacity,
-              child: _SwipeBadge(label: 'NOPE', color: AppTheme.rejectColor),
-            ),
-          ),
-          Positioned(
-            left: 24,
-            right: 24,
-            bottom: 24,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.end,
-                        children: [
-                          Text(
-                            '${profile.fullName}, ${profile.age}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 28,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          if (profile.isVerified)
-                            const Padding(
-                              padding: EdgeInsets.only(left: 8, bottom: 4),
-                              child: Icon(
-                                Icons.verified_rounded,
-                                color: AppTheme.superLikeColor,
-                                size: 20,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    if (onTapInfo != null)
-                      GestureDetector(
-                        onTap: onTapInfo,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.25),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.info_outline_rounded,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                if ((profile.city ?? '').isNotEmpty ||
-                    (profile.country ?? '').isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      [profile.city, profile.country]
-                          .whereType<String>()
-                          .where((value) => value.isNotEmpty)
-                          .join(', '),
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                if ((profile.bio ?? '').isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Text(
-                      profile.bio!,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        height: 1.35,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
         ],
-      ),
-    );
-  }
-}
-
-class _SwipeBadge extends StatelessWidget {
-  const _SwipeBadge({required this.label, required this.color});
-
-  final String label;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Transform.rotate(
-      angle: label == 'LIKE' ? -0.15 : 0.15,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color, width: 3),
-          color: Colors.black.withValues(alpha: 0.18),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: color,
-            fontSize: 24,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 1.5,
-          ),
-        ),
       ),
     );
   }
@@ -742,12 +358,19 @@ class _EmptyDeckState extends StatelessWidget {
   const _EmptyDeckState({
     required this.message,
     required this.onRetry,
+    this.passedCount = 0,
+    this.onShowPassed,
     this.onRewind,
     this.rewindLabel = '',
   });
 
+  /// Error from the last load, if any. Shown under the subtitle.
   final String message;
   final VoidCallback onRetry;
+
+  /// People the user passed on; they can be brought back to decide again.
+  final int passedCount;
+  final VoidCallback? onShowPassed;
 
   /// Set when there is a swipe to take back — passing the last card in the
   /// deck lands here, and that is exactly when a rewind is wanted most.
@@ -763,29 +386,75 @@ class _EmptyDeckState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(22),
+              padding: const EdgeInsets.all(26),
               decoration: BoxDecoration(
-                gradient: AppTheme.heroGradient,
+                gradient: SwipeTheme.brand,
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: SwipeTheme.pink.withOpacity(0.3),
+                    blurRadius: 24,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
               child: const Icon(
                 Icons.favorite_border_rounded,
-                size: 40,
+                size: 44,
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             Text(
-              message,
+              "You're all caught up",
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 17,
-                color: AppTheme.textPrimaryColor,
-                fontWeight: FontWeight.w600,
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF1E1B3A),
               ),
             ),
-            const SizedBox(height: 20),
-            ElevatedButton(onPressed: onRetry, child: const Text('Try again')),
+            const SizedBox(height: 6),
+            Text(
+              'Check back soon for more people',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: SwipeTheme.labelGrey,
+              ),
+            ),
+            if (message.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                message,
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: AppTheme.errorColor,
+                ),
+              ),
+            ],
+            const SizedBox(height: 24),
+            SizedBox(
+              width: 180,
+              child: GradientButton(
+                label: 'Refresh',
+                icon: Icons.refresh_rounded,
+                onTap: onRetry,
+              ),
+            ),
+            if (passedCount > 0 && onShowPassed != null) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: 260,
+                child: OutlineButton(
+                  label: 'See $passedCount passed again',
+                  icon: Icons.history_rounded,
+                  height: 46,
+                  onTap: onShowPassed,
+                ),
+              ),
+            ],
             if (onRewind != null) ...[
               const SizedBox(height: 10),
               TextButton.icon(
@@ -797,7 +466,7 @@ class _EmptyDeckState extends StatelessWidget {
                       : 'Bring back $rewindLabel',
                 ),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppTheme.textSecondaryColor,
+                  foregroundColor: SwipeTheme.labelGrey,
                 ),
               ),
             ],
