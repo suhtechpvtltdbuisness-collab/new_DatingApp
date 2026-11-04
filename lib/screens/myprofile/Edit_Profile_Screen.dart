@@ -420,6 +420,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         context,
         _picker,
         ImageSource.camera,
+        selfie: true,
       );
       if (image == null) return;
 

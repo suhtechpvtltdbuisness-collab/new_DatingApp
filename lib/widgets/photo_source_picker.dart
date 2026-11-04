@@ -11,8 +11,9 @@ import 'package:dating_app/utils/theme.dart';
 Future<XFile?> pickProfilePhoto(
   BuildContext context,
   ImagePicker picker,
-  ImageSource source,
-) {
+  ImageSource source, {
+  bool selfie = false,
+}) {
   if (kIsWeb && source == ImageSource.camera) {
     return Navigator.of(context).push<XFile>(
       MaterialPageRoute(builder: (_) => const CameraCaptureScreen()),
@@ -20,9 +21,11 @@ Future<XFile?> pickProfilePhoto(
   }
   return picker.pickImage(
     source: source,
-    imageQuality: 70,
+    imageQuality: selfie ? 90 : 70,
     maxWidth: 1600,
     maxHeight: 1600,
+    // Verification selfies open the front camera; Android otherwise defaults to the rear one.
+    preferredCameraDevice: selfie ? CameraDevice.front : CameraDevice.rear,
   );
 }
 

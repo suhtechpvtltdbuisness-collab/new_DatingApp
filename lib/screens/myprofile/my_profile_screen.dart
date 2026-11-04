@@ -132,6 +132,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         context,
         _picker,
         ImageSource.camera,
+        selfie: true,
       );
       if (image == null || !mounted) return;
 
