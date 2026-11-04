@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:dating_app/models/user_model.dart' as models;
 import 'package:dating_app/models/user_preferences_model.dart';
 import 'package:dating_app/services/auth_service.dart';
@@ -39,6 +41,8 @@ class UserController extends GetxController {
         currentUser.value = response.data;
         errorMessage.value = '';
         _logger.i('Loaded real profile from GET /profile');
+        // Don't block the profile from showing while we look up the place.
+        unawaited(_fillLocationIfMissing(response.data!));
       } else {
         errorMessage.value = response.message;
         _logger.w('GET /profile failed: ${response.error}');
@@ -52,6 +56,59 @@ class UserController extends GetxController {
   }
 
   Future<void> refreshProfile() => _loadUserData();
+
+  bool _locationLookupDone = false;
+
+  /// Signup only sends coordinates, so a new profile has no city/country and
+  /// the Profile page says "Location not set". Work the place name out from
+  /// the coordinates and save it to the profile once.
+  Future<void> _fillLocationIfMissing(models.UserModel user) async {
+    if (_locationLookupDone) return;
+    if (user.locationLabel.isNotEmpty) return;
+    _locationLookupDone = true;
+
+    try {
+      var lat = user.latitude;
+      var lng = user.longitude;
+
+      // The backend may not return the signup coordinates; fall back to the
+      // device position, but only if permission was already granted (no
+      // surprise permission prompt on the profile page).
+      if (lat == 0 && lng == 0) {
+        final permission = await Geolocator.checkPermission();
+        final granted =
+            permission == LocationPermission.whileInUse ||
+            permission == LocationPermission.always;
+        if (!granted || !await Geolocator.isLocationServiceEnabled()) return;
+        final pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.low,
+        );
+        lat = pos.latitude;
+        lng = pos.longitude;
+      }
+
+      final places = await placemarkFromCoordinates(lat, lng);
+      if (places.isEmpty) return;
+      final p = places.first;
+
+      String clean(String? v) => (v ?? '').trim();
+      final city = [
+        clean(p.locality),
+        clean(p.subAdministrativeArea),
+        clean(p.administrativeArea),
+      ].firstWhere((v) => v.isNotEmpty, orElse: () => '');
+      final country = clean(p.country);
+      if (city.isEmpty && country.isEmpty) return;
+
+      await updateMyProfile({
+        if (city.isNotEmpty) 'city': city,
+        if (country.isNotEmpty) 'country': country,
+      });
+    } catch (e) {
+      // Geocoding isn't available everywhere (e.g. web). Not worth an error.
+      _logger.w('Could not work out profile location: $e');
+    }
+  }
 
   /// Get MY profile — GET /profile
   Future<bool> getMyProfile() async {
@@ -494,6 +551,7 @@ class UserController extends GetxController {
 
   /// Clears everything tied to the signed-in user (called on logout).
   void resetSession() {
+    _locationLookupDone = false;
     currentUser.value = null;
     userPreferences.value = null;
     blockedUsers.clear();

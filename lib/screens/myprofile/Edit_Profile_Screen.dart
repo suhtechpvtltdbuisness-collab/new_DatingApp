@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:dating_app/controllers/user_controller.dart';
 import 'package:dating_app/models/user_model.dart';
 import 'package:dating_app/utils/constants.dart';
+import 'package:dating_app/utils/profile_theme.dart';
 import 'package:dating_app/utils/theme.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -268,7 +269,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Profile updated successfully!'),
-          backgroundColor: AppTheme.primaryColor,
+          backgroundColor: ProfileTheme.pink,
         ),
       );
       Navigator.pop(context, true);
@@ -338,7 +339,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ListTile(
                   leading: const Icon(
                     Icons.photo_library,
-                    color: AppTheme.primaryColor,
+                    color: ProfileTheme.pink,
                   ),
                   title: const Text('Choose from Gallery'),
                   onTap: () async {
@@ -349,7 +350,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ListTile(
                   leading: const Icon(
                     Icons.camera_alt,
-                    color: AppTheme.primaryColor,
+                    color: ProfileTheme.pink,
                   ),
                   title: const Text('Take a Photo'),
                   onTap: () async {
@@ -441,7 +442,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(message),
-          backgroundColor: verified ? AppTheme.primaryColor : Colors.red,
+          backgroundColor: verified ? ProfileTheme.pink : Colors.red,
         ),
       );
       setState(() {});
@@ -550,7 +551,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         option == current
                             ? const Icon(
                               Icons.check,
-                              color: AppTheme.primaryColor,
+                              color: ProfileTheme.pink,
                             )
                             : null,
                     onTap: () => Navigator.pop(context, option),
@@ -640,12 +641,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   border: Border.all(
                                     color:
                                         isSelected
-                                            ? AppTheme.primaryColor
+                                            ? ProfileTheme.pink
                                             : Colors.grey.shade300,
                                   ),
                                   color:
                                       isSelected
-                                          ? AppTheme.primaryColor.withOpacity(
+                                          ? ProfileTheme.pink.withOpacity(
                                             0.08,
                                           )
                                           : Colors.white,
@@ -657,7 +658,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     fontSize: 12,
                                     color:
                                         isSelected
-                                            ? AppTheme.primaryColor
+                                            ? ProfileTheme.pink
                                             : Colors.black,
                                     fontWeight:
                                         isSelected
@@ -726,16 +727,33 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Keep the layout intact with very large/small system fonts, and keep
+    // the content a readable width on tablets / web.
+    final mq = MediaQuery.of(context);
+    return MediaQuery(
+      data: mq.copyWith(
+        textScaler: mq.textScaler.clamp(
+          minScaleFactor: 0.85,
+          maxScaleFactor: 1.15,
+        ),
+      ),
+      child: Container(
+        decoration: const BoxDecoration(gradient: ProfileTheme.background),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: _buildScaffold(context),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context) {
     final user = _userController.currentUser.value;
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFFFD9EA), Color(0xFFE7D9FF)],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
+        decoration: const BoxDecoration(gradient: ProfileTheme.background),
         child: SafeArea(
           child: SingleChildScrollView(
             child: Column(
@@ -746,46 +764,105 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.arrow_back),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                          const Text(
-                            'Edit Profile',
-                            style: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const Spacer(),
-                          _isSaving
-                              ? const Padding(
-                                padding: EdgeInsets.only(right: 16),
-                                child: SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    color: AppTheme.primaryColor,
+                      const SizedBox(height: 10),
+                      // Header: back circle | title | Save pill. All 40px tall
+                      // and flush with the 16px page gutter below.
+                      SizedBox(
+                        height: ProfileTheme.circleButton,
+                        child: Row(
+                          children: [
+                            Material(
+                              color: Colors.white,
+                              shape: const CircleBorder(),
+                              elevation: 0,
+                              child: InkWell(
+                                customBorder: const CircleBorder(),
+                                onTap: () => Navigator.pop(context),
+                                child: Ink(
+                                  width: ProfileTheme.circleButton,
+                                  height: ProfileTheme.circleButton,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    boxShadow: ProfileTheme.cardShadow,
                                   ),
-                                ),
-                              )
-                              : TextButton(
-                                onPressed: _saveProfile,
-                                child: const Text(
-                                  'Save',
-                                  style: TextStyle(
-                                    color: AppTheme.primaryColor,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
+                                  child: const Icon(
+                                    Icons.arrow_back_rounded,
+                                    size: 22,
+                                    color: ProfileTheme.navy,
                                   ),
                                 ),
                               ),
-                        ],
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Text(
+                                'Edit Profile',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: ProfileTheme.title,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            _isSaving
+                                ? const SizedBox(
+                                  width: 40,
+                                  height: 40,
+                                  child: Center(
+                                    child: SizedBox(
+                                      width: 22,
+                                      height: 22,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.5,
+                                        color: ProfileTheme.pink,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                                : DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(
+                                      ProfileTheme.radiusPill,
+                                    ),
+                                    boxShadow: ProfileTheme.brandShadow,
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(
+                                      ProfileTheme.radiusPill,
+                                    ),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: Ink(
+                                      decoration: const BoxDecoration(
+                                        gradient: ProfileTheme.brand,
+                                      ),
+                                      child: InkWell(
+                                        onTap: _saveProfile,
+                                        child: const SizedBox(
+                                          height: 38,
+                                          child: Padding(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: 20,
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                'Save',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 18),
                       const Text('Profile strength'),
                       const SizedBox(height: 10),
                       Container(
@@ -806,7 +883,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   value: _strength / 100,
                                   minHeight: 8,
                                   backgroundColor: Colors.grey.shade200,
-                                  color: AppTheme.primaryColor,
+                                  color: ProfileTheme.pink,
                                 ),
                               ),
                             ),
@@ -833,7 +910,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         const Padding(
                           padding: EdgeInsets.only(bottom: 12),
                           child: LinearProgressIndicator(
-                            color: AppTheme.primaryColor,
+                            color: ProfileTheme.pink,
                           ),
                         ),
                       GridView.count(
@@ -860,7 +937,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   child: Icon(
                                     Icons.add,
                                     size: 30,
-                                    color: AppTheme.primaryColor,
+                                    color: ProfileTheme.pink,
                                   ),
                                 ),
                               ),
@@ -884,20 +961,29 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           return Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    verified
-                                        ? Icons.verified_rounded
-                                        : Icons.camera_alt_rounded,
-                                    color:
-                                        verified
-                                            ? const Color(0xFF2EAD62)
-                                            : AppTheme.primaryColor,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  const Text('Selfie verification'),
-                                ],
+                              Flexible(
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      verified
+                                          ? Icons.verified_rounded
+                                          : Icons.camera_alt_rounded,
+                                      color:
+                                          verified
+                                              ? const Color(0xFF2EAD62)
+                                              : ProfileTheme.pink,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    const Flexible(
+                                      child: Text(
+                                        'Selfie verification',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                               TextButton.icon(
                                 onPressed:
@@ -936,14 +1022,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 ),
                 Container(
                   width: double.infinity,
-                  decoration: const BoxDecoration(
+                  margin: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                  decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(30),
-                    ),
+                    borderRadius: BorderRadius.circular(28),
+                    boxShadow: [
+                      BoxShadow(
+                        color: ProfileTheme.pink.withOpacity(0.10),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -1092,11 +1184,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             onPressed: () => _editOpeningMove(null),
                             icon: const Icon(
                               Icons.add,
-                              color: AppTheme.primaryColor,
+                              color: ProfileTheme.pink,
                             ),
                             label: const Text(
                               'Add opening move',
-                              style: TextStyle(color: AppTheme.primaryColor),
+                              style: TextStyle(color: ProfileTheme.pink),
                             ),
                           ),
                         const SizedBox(height: 16),
@@ -1571,15 +1663,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          border: Border.all(color: AppTheme.primaryColor),
+          border: Border.all(color: ProfileTheme.pink),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(text, style: const TextStyle(color: AppTheme.primaryColor)),
+            Flexible(
+              child: Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: ProfileTheme.pink),
+              ),
+            ),
             const SizedBox(width: 6),
-            const Icon(Icons.close, size: 14, color: AppTheme.primaryColor),
+            const Icon(Icons.close, size: 14, color: ProfileTheme.pink),
           ],
         ),
       ),
@@ -1592,15 +1691,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          border: Border.all(color: AppTheme.primaryColor),
+          border: Border.all(color: ProfileTheme.pink),
           borderRadius: BorderRadius.circular(20),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Add', style: TextStyle(color: AppTheme.primaryColor)),
+            Text('Add', style: TextStyle(color: ProfileTheme.pink)),
             SizedBox(width: 6),
-            Icon(Icons.add, size: 16, color: AppTheme.primaryColor),
+            Icon(Icons.add, size: 16, color: ProfileTheme.pink),
           ],
         ),
       ),
@@ -1615,45 +1714,61 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   ) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
       child: Column(
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Icon(icon, color: AppTheme.primaryColor),
-                    const SizedBox(width: 12),
-                    Text(title),
-                  ],
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: ProfileTheme.pink.withOpacity(0.10),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 19, color: ProfileTheme.pink),
                 ),
-                Row(
-                  children: [
-                    Text(
-                      value,
-                      style: TextStyle(
-                        color:
-                            value == 'Add'
-                                ? AppTheme.primaryColor
-                                : Colors.grey,
-                        fontWeight:
-                            value == 'Add'
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                      ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                // Long values (e.g. a long name) shrink instead of overflowing.
+                Expanded(
+                  child: Text(
+                    value,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color:
+                          value == 'Add'
+                              ? ProfileTheme.pink
+                              : Colors.grey.shade600,
+                      fontWeight:
+                          value == 'Add' ? FontWeight.w600 : FontWeight.normal,
                     ),
-                    if (onTap != null) ...[
-                      const SizedBox(width: 6),
-                      const Icon(Icons.chevron_right, size: 18),
-                    ],
-                  ],
+                  ),
                 ),
+                if (onTap != null) ...[
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.chevron_right,
+                    size: 20,
+                    color: Colors.grey.shade500,
+                  ),
+                ],
               ],
             ),
           ),
-          Divider(color: Colors.grey.shade200),
+          Divider(height: 1, color: Colors.grey.shade200),
         ],
       ),
     );

@@ -26,6 +26,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   bool _isVerifyingSelfie = false;
   final ImagePicker _picker = ImagePicker();
 
+  /// Set from the screen width in build().
+  double _avatarSize = ProfileTheme.avatarSize;
+
   // Access the UserController (registered in app bindings)
   final UserController _userController = Get.find<UserController>();
 
@@ -218,40 +221,67 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ProfileTheme.bgBottom,
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(gradient: ProfileTheme.background),
-        child: SafeArea(
-          child: RefreshIndicator(
-            color: ProfileTheme.purple,
-            onRefresh: _userController.refreshProfile,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(
-                ProfileTheme.pagePadding,
-                10,
-                ProfileTheme.pagePadding,
-                ProfileTheme.bottomInset,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _header(),
-                  const SizedBox(height: ProfileTheme.gap),
-                  Obx(() {
-                    final user = _userController.currentUser.value;
-                    if (user == null) {
-                      return _userController.isLoading.value
-                          ? const ProfileSkeleton()
-                          : _emptyProfile();
-                    }
-                    return _body(user);
-                  }),
-                ],
-              ),
+    // Keep the layout intact when a phone uses a very large/small system font.
+    final mq = MediaQuery.of(context);
+    final scaler = mq.textScaler.clamp(
+      minScaleFactor: 0.85,
+      maxScaleFactor: 1.15,
+    );
+
+    return MediaQuery(
+      data: mq.copyWith(textScaler: scaler),
+      child: Scaffold(
+        backgroundColor: ProfileTheme.bgBottom,
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(gradient: ProfileTheme.background),
+          child: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final w = constraints.maxWidth;
+                // Smaller side padding on narrow phones.
+                final pad = w < 360 ? 14.0 : ProfileTheme.pagePadding;
+                // Avatar scales with the screen (80..110).
+                _avatarSize = (w * 0.26).clamp(80.0, 110.0);
+
+                return RefreshIndicator(
+                  color: ProfileTheme.purple,
+                  onRefresh: _userController.refreshProfile,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: EdgeInsets.fromLTRB(
+                      pad,
+                      10,
+                      pad,
+                      ProfileTheme.bottomInset,
+                    ),
+                    // On tablets / web keep the content centered and readable.
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 560),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _header(),
+                            const SizedBox(height: ProfileTheme.gap),
+                            Obx(() {
+                              final user = _userController.currentUser.value;
+                              if (user == null) {
+                                return _userController.isLoading.value
+                                    ? const ProfileSkeleton()
+                                    : _emptyProfile();
+                              }
+                              return _body(user);
+                            }),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -380,7 +410,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
             ? 'Try selfie again'
             : 'Verify with selfie';
 
-    const ring = ProfileTheme.avatarSize;
+    final ring = _avatarSize;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -461,8 +491,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 19,
+                        fontWeight: FontWeight.w600,
                         color: ProfileTheme.navy,
                       ),
                     ),
@@ -514,8 +544,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                   ),
                 )
               else
-                SizedBox(
-                  width: 170,
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 190),
                   child: OutlineButton(
                     label:
                         _isVerifyingSelfie

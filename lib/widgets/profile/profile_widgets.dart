@@ -10,46 +10,63 @@ class GradientButton extends StatelessWidget {
     required this.label,
     required this.onTap,
     this.icon,
+    this.height = ProfileTheme.buttonHeight,
   });
 
   final String label;
   final IconData? icon;
   final VoidCallback? onTap;
+  final double height;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: ProfileTheme.buttonHeight,
-      decoration: BoxDecoration(
-        gradient: ProfileTheme.brand,
-        borderRadius: BorderRadius.circular(ProfileTheme.radiusPill),
-        boxShadow: ProfileTheme.brandShadow,
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(ProfileTheme.radiusPill),
-          onTap: onTap,
-          child: Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (icon != null) ...[
-                  Icon(icon, color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
-                ],
-                Flexible(
-                  child: Text(
-                    label,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+    final radius = BorderRadius.circular(ProfileTheme.radiusPill);
+    return Opacity(
+      opacity: onTap == null ? 0.6 : 1,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: radius,
+          boxShadow: ProfileTheme.brandShadow,
+        ),
+        // Material + Ink so the tap ripple is drawn on top of the gradient.
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: radius,
+          clipBehavior: Clip.antiAlias,
+          child: Ink(
+            height: height,
+            decoration: BoxDecoration(
+              gradient: ProfileTheme.brand,
+              borderRadius: radius,
+            ),
+            child: InkWell(
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (icon != null) ...[
+                        Icon(icon, color: Colors.white, size: 18),
+                        const SizedBox(width: 6),
+                      ],
+                      Flexible(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
@@ -79,46 +96,53 @@ class OutlineButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: height,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(ProfileTheme.radiusPill),
-        border: Border.all(color: color.withOpacity(0.55)),
-      ),
+    final radius = BorderRadius.circular(ProfileTheme.radiusPill);
+    return Opacity(
+      opacity: onTap == null && !loading ? 0.6 : 1,
       child: Material(
-        color: Colors.transparent,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: radius,
+          side: BorderSide(color: color.withOpacity(0.55)),
+        ),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
-          borderRadius: BorderRadius.circular(ProfileTheme.radiusPill),
           onTap: onTap,
-          child: Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (loading)
-                  SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: color,
+          child: SizedBox(
+            height: height,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Center(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (loading)
+                      SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: color,
+                        ),
+                      )
+                    else if (icon != null)
+                      Icon(icon, color: color, size: 18),
+                    if (loading || icon != null) const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          color: color,
+                          fontSize: height < 40 ? 12.5 : 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  )
-                else if (icon != null)
-                  Icon(icon, color: color, size: 20),
-                if (loading || icon != null) const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    label,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(
-                      color: color,
-                      fontSize: height < 48 ? 12.5 : 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),

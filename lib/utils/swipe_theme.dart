@@ -28,7 +28,7 @@ class SwipeTheme {
   static const double pagePadding = 16;
   static const double actionSize = 64;
   static const double likeSize = 76;
-  static const double actionIcon = 28;
+  static const double actionIcon = 24;
   static const double chipHeight = 30;
   static const double expandSize = 40;
   static const double overlayPadding = 20;

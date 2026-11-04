@@ -17,6 +17,7 @@ dependencies:
   dotted_border: ^2.1.0
 
   geolocator: ^10.1.0
+  geocoding: ^3.0.0
   permission_handler: ^11.3.0
   country_code_picker: ^3.0.0
   # UI & Design

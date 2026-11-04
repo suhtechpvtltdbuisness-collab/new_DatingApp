@@ -822,41 +822,54 @@ class _MatchScreenState extends State<MatchScreen> {
                         const SizedBox(height: 32),
 
                         /// Buttons
-                        if (widget.isMutual)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 32),
-                            child: SizedBox(
-                              width: double.infinity,
-                              height: 56,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.white,
-                                  foregroundColor: AppTheme.primaryDarkColor,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    widget.isMutual
+                                        ? Colors.white
+                                        : Colors.white24,
+                                foregroundColor:
+                                    widget.isMutual
+                                        ? AppTheme.primaryDarkColor
+                                        : Colors.white,
+                                elevation: widget.isMutual ? null : 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                  side:
+                                      widget.isMutual
+                                          ? BorderSide.none
+                                          : const BorderSide(
+                                            color: Colors.white,
+                                            width: 1.4,
+                                          ),
                                 ),
-                                onPressed: _openingChat ? null : _sayHello,
-                                child:
-                                    _openingChat
-                                        ? const SizedBox(
-                                          height: 22,
-                                          width: 22,
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                          ),
-                                        )
-                                        : const Text(
-                                          'Say hello',
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
                               ),
+                              onPressed: _openingChat ? null : _sayHello,
+                              child:
+                                  _openingChat
+                                      ? const SizedBox(
+                                        height: 22,
+                                        width: 22,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
+                                      )
+                                      : const Text(
+                                        'Say hello',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
                             ),
                           ),
-                        if (widget.isMutual) const SizedBox(height: 14),
+                        ),
+                        const SizedBox(height: 14),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 32),
                           child: SizedBox(

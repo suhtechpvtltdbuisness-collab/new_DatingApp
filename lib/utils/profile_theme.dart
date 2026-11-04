@@ -43,7 +43,7 @@ class ProfileTheme {
   static const double avatarSize = 100;
   static const double circleButton = 44;
   static const double chipHeight = 34;
-  static const double buttonHeight = 56;
+  static const double buttonHeight = 46;
   static const double rowHeight = 58;
 
   // Gradients
@@ -78,10 +78,10 @@ class ProfileTheme {
 
   // Text styles
   static TextStyle title = GoogleFonts.poppins(
-    fontSize: 28,
-    fontWeight: FontWeight.w700,
+    fontSize: 24,
+    fontWeight: FontWeight.w600,
     color: navy,
-    height: 1.15,
+    height: 1.2,
   );
   static TextStyle subtitle = GoogleFonts.poppins(fontSize: 12, color: grey);
   static TextStyle section = GoogleFonts.poppins(
