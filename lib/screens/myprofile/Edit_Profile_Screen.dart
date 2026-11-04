@@ -179,6 +179,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       relationshipStatus: RelationshipStatus.single,
       createdAt: DateTime.now(),
       lastActive: DateTime.now(),
+      isVerified: _userController.currentUser.value?.isVerified ?? false,
+      selfieVerificationStatus:
+          _userController.currentUser.value?.selfieVerificationStatus ??
+              'not_started',
     );
     return draft.profileCompleteness;
   }

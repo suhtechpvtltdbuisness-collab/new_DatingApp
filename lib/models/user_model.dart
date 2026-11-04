@@ -135,6 +135,7 @@ class UserModel {
       languages.isNotEmpty,
       qualities.isNotEmpty,
       (height?.trim().isNotEmpty ?? false),
+      isVerified || selfieVerificationStatus == 'verified',
     ];
     final filled = checks.where((c) => c).length;
     return ((filled / checks.length) * 100).round();
