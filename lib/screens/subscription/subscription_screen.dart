@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'all_features_screen.dart';
+import 'package:dating_app/models/subscription_plan_model.dart';
+import 'package:dating_app/network/api_client.dart';
+import 'package:dating_app/network/api_endpoints.dart';
 import 'package:dating_app/utils/theme.dart';
 import 'package:dating_app/widgets/common/legal_links_text.dart';
 
@@ -12,6 +15,45 @@ class SubscriptionScreen extends StatefulWidget {
 
 class _SubscriptionScreenState extends State<SubscriptionScreen> {
   int selectedIndex = 0;
+  List<SubscriptionPlan> _plans = List<SubscriptionPlan>.from(SubscriptionPlan.defaultPlans);
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPlans();
+  }
+
+  Future<void> _fetchPlans() async {
+    try {
+      final response = await ApiClient().get(ApiEndpoints.getPlans);
+      if (response.success && response.data != null) {
+        final rawData = response.data;
+        List<dynamic>? rawList;
+        if (rawData is List) {
+          rawList = rawData;
+        } else if (rawData is Map && rawData['data'] is List) {
+          rawList = rawData['data'] as List<dynamic>;
+        }
+
+        if (rawList != null && rawList.isNotEmpty) {
+          final fetched = rawList
+              .map((item) => SubscriptionPlan.fromJson(item as Map<String, dynamic>))
+              .where((p) => p.isActive)
+              .toList();
+          if (fetched.isNotEmpty && mounted) {
+            setState(() {
+              _plans = fetched;
+              if (selectedIndex >= _plans.length) {
+                selectedIndex = 0;
+              }
+            });
+          }
+        }
+      }
+    } catch (_) {
+      // Graceful fallback: defaultPlans remain active
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -203,27 +245,18 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
                     const SizedBox(height: 10),
 
-                    _planCard(
-                      index: 0,
-                      title: "3 Months",
-                      price: "₹99.99",
-                      subtitle: "Save 65% compared to monthly",
-                      isBest: true,
-                    ),
-
-                    _planCard(
-                      index: 1,
-                      title: "1 Month",
-                      price: "119.99",
-                      subtitle: "Save 40%",
-                    ),
-
-                    _planCard(
-                      index: 2,
-                      title: "1 Week",
-                      price: "₹149.99",
-                      subtitle: "Flexibility first",
-                    ),
+                    ...List.generate(_plans.length, (index) {
+                      final plan = _plans[index];
+                      return _planCard(
+                        index: index,
+                        title: plan.title,
+                        price: plan.price,
+                        subtitle: plan.subtitle,
+                        period: plan.period,
+                        badge: plan.badge,
+                        isBest: plan.isBest || plan.badge.isNotEmpty,
+                      );
+                    }),
 
                     const SizedBox(height: 20),
 
@@ -284,12 +317,12 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     );
   }
 
-  static const List<String> _planNames = ["3 Months", "1 Month", "1 Week"];
-
   /// No payment provider (store billing, Razorpay, Stripe…) or subscription
   /// endpoint exists in the app or backend yet, so there is no checkout to
   /// open. Tell the user plainly — never simulate a purchase.
   void _startCheckout(BuildContext context, {bool restore = false}) {
+    final planTitle =
+        selectedIndex < _plans.length ? _plans[selectedIndex].title : "selected";
     showDialog<void>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -297,7 +330,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         content: Text(
           restore
               ? 'Purchases cannot be restored yet because payments are not enabled in this version of the app.'
-              : 'Payments for the ${_planNames[selectedIndex]} plan are not available in this version of the app yet. You have not been charged.',
+              : 'Payments for the $planTitle plan are not available in this version of the app yet. You have not been charged.',
         ),
         actions: [
           TextButton(
@@ -346,6 +379,8 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
     required String title,
     required String price,
     required String subtitle,
+    String period = "PER WEEK",
+    String badge = "",
     bool isBest = false,
   }) {
     bool selected = selectedIndex == index;
@@ -368,7 +403,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (isBest)
+                  if (isBest || badge.isNotEmpty)
                     Container(
                       margin: const EdgeInsets.only(bottom: 6),
                       padding: const EdgeInsets.symmetric(
@@ -377,9 +412,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                         color: AppTheme.primaryDarkColor,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Text(
-                        "BEST VALUE",
-                        style: TextStyle(color: Colors.white, fontSize: 10),
+                      child: Text(
+                        badge.isNotEmpty ? badge : "BEST VALUE",
+                        style: const TextStyle(color: Colors.white, fontSize: 10),
                       ),
                     ),
                   Text(
@@ -390,16 +425,18 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                       fontSize: 16,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: selected ? Colors.white70 : Colors.grey,
-                      fontSize: 12,
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: selected ? Colors.white70 : Colors.grey,
+                        fontSize: 12,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                  ],
                 ],
               ),
             ),
@@ -419,7 +456,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                   ),
                 ),
                 Text(
-                  "PER WEEK",
+                  period.isNotEmpty ? period.toUpperCase() : "PER WEEK",
                   style: TextStyle(
                     fontSize: 10,
                     color: selected ? Colors.white70 : Colors.grey,

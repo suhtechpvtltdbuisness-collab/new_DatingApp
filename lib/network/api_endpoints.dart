@@ -111,6 +111,12 @@ class ApiEndpoints {
   static const String getBlockedUsers = '/users/blocked';
 
   // ===============================
+  // SUBSCRIPTION & PLANS
+  // ===============================
+
+  static const String getPlans = '/plans';
+
+  // ===============================
   // HELPERS
   // ===============================
 
