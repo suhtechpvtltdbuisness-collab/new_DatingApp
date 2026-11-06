@@ -1,5 +1,7 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../controllers/chat_controller.dart';
 import '../../models/chat_model.dart';
@@ -44,7 +46,11 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _showEmojiPicker = false;
   final ScrollController _scrollController = ScrollController();
   Worker? _messagesWorker;
+  Worker? _closedWorker;
+  // True while this screen's own block flow is closing the chat.
+  bool _closingSelf = false;
   String? _lastMessageId;
+  final ImagePicker _picker = ImagePicker();
 
   // ---- contact-info guard ----
   final List<String> _numberWords = [
@@ -89,11 +95,34 @@ class _ChatScreenState extends State<ChatScreen> {
       _lastMessageId = latestId;
       _scrollToBottom();
     });
+    // Unmatched or blocked while open: the chat is gone, so leave it.
+    _closedWorker = ever<String>(_chatController.closedConversationId, (id) {
+      if (id != widget.chatId || !mounted) return;
+      _chatController.closedConversationId.value = '';
+      if (_closingSelf) return;
+      final route = ModalRoute.of(context);
+      final navigator = Navigator.of(context);
+      final messenger = ScaffoldMessenger.of(context);
+      if (route == null || !route.isActive) return;
+      // A dialog may be open on top; remove the chat itself, not the dialog.
+      if (route.isCurrent) {
+        navigator.pop();
+      } else {
+        navigator.removeRoute(route);
+      }
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('This chat is no longer available'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    });
   }
 
   @override
   void dispose() {
     _messagesWorker?.dispose();
+    _closedWorker?.dispose();
     _scrollController.removeListener(_onScroll);
     _inputController.dispose();
     _inputFocusNode.dispose();
@@ -213,6 +242,27 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     });
     _scrollToBottom();
+  }
+
+  Future<void> _pickAndSendPhoto() async {
+    if (_chatController.isChatBlocked(widget.chatId)) {
+      _showToast('You blocked this user. Unblock them to send messages.');
+      return;
+    }
+    final XFile? picked = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
+      maxWidth: 1600,
+      maxHeight: 1600,
+    );
+    if (picked == null || !mounted) return;
+    _scrollToBottom();
+    final sent = await _chatController.sendPhoto(widget.chatId, picked.path);
+    if (!sent && mounted) {
+      _showToast(_chatController.errorMessage.value.isNotEmpty
+          ? _chatController.errorMessage.value
+          : 'Photo could not be sent');
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -354,9 +404,11 @@ class _ChatScreenState extends State<ChatScreen> {
           message: 'Blocked users cannot contact you',
           confirmText: 'Block',
           onConfirm: () async {
+            _closingSelf = true;
             final ok = await _chatController.blockUserInChat(widget.chatId);
             if (!mounted) return;
             if (!ok) {
+              _closingSelf = false;
               _showToast(_chatController.errorMessage.value.isNotEmpty
                   ? _chatController.errorMessage.value
                   : 'Could not block user');
@@ -384,9 +436,11 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         );
         if (didBlock == true && mounted) {
+          _closingSelf = true;
           final ok = await _chatController.blockUserInChat(widget.chatId);
           if (!mounted) return;
           if (!ok) {
+            _closingSelf = false;
             _showToast(_chatController.errorMessage.value.isNotEmpty
                 ? _chatController.errorMessage.value
                 : 'Could not block user');
@@ -776,6 +830,16 @@ class _ChatScreenState extends State<ChatScreen> {
                               ),
                             ),
                             IconButton(
+                              tooltip: 'Send a photo',
+                              onPressed: _pickAndSendPhoto,
+                              splashRadius: 20,
+                              icon: Icon(
+                                Icons.photo_outlined,
+                                color: Colors.grey.shade600,
+                                size: 22,
+                              ),
+                            ),
+                            IconButton(
                               tooltip: _showEmojiPicker
                                   ? 'Hide emoji'
                                   : 'Emoji',
@@ -861,6 +925,11 @@ class _MessageBubble extends StatelessWidget {
     required this.timeLabel,
   });
 
+  /// A photo, or a photo still uploading (sending bubble with no text yet).
+  bool get hasPhotoSlot =>
+      msg.isPhoto ||
+      (msg.status == MessageStatus.sending && msg.message.isEmpty);
+
   @override
   Widget build(BuildContext context) {
     return Align(
@@ -872,7 +941,9 @@ class _MessageBubble extends StatelessWidget {
         children: [
           Container(
             margin: const EdgeInsets.symmetric(vertical: 6),
-            padding: const EdgeInsets.all(14),
+            padding: hasPhotoSlot
+                ? const EdgeInsets.all(4)
+                : const EdgeInsets.all(14),
             constraints: const BoxConstraints(maxWidth: 260),
             decoration: BoxDecoration(
               color: isMe ? const Color(0xFFEFD6DE) : Colors.white,
@@ -883,7 +954,23 @@ class _MessageBubble extends StatelessWidget {
                 bottomRight: Radius.circular(isMe ? 4 : 16),
               ),
             ),
-            child: Text(msg.message, style: const TextStyle(fontSize: 14)),
+            child: hasPhotoSlot
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _PhotoContent(msg: msg),
+                      if (msg.message.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+                          child: Text(
+                            msg.message,
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                    ],
+                  )
+                : Text(msg.message, style: const TextStyle(fontSize: 14)),
           ),
 
           /// Time + delivery tick
@@ -901,6 +988,66 @@ class _MessageBubble extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PhotoContent extends StatelessWidget {
+  final ChatMessageModel msg;
+
+  const _PhotoContent({required this.msg});
+
+  @override
+  Widget build(BuildContext context) {
+    final url = msg.attachmentUrl ?? '';
+    final placeholder = Container(
+      width: 220,
+      height: 220,
+      color: Colors.grey.shade200,
+      alignment: Alignment.center,
+      child: const SizedBox(
+        width: 24,
+        height: 24,
+        child: CircularProgressIndicator(
+          strokeWidth: 2,
+          color: AppTheme.primaryColor,
+        ),
+      ),
+    );
+    if (url.isEmpty) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: placeholder,
+      );
+    }
+    return GestureDetector(
+      onTap: () => showDialog<void>(
+        context: context,
+        builder: (_) => Dialog(
+          backgroundColor: Colors.black,
+          insetPadding: const EdgeInsets.all(12),
+          child: InteractiveViewer(
+            child: CachedNetworkImage(imageUrl: url, fit: BoxFit.contain),
+          ),
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: CachedNetworkImage(
+          imageUrl: url,
+          width: 220,
+          height: 220,
+          fit: BoxFit.cover,
+          placeholder: (_, __) => placeholder,
+          errorWidget: (_, __, ___) => Container(
+            width: 220,
+            height: 220,
+            color: Colors.grey.shade200,
+            alignment: Alignment.center,
+            child: const Icon(Icons.broken_image_outlined, color: Colors.grey),
+          ),
+        ),
       ),
     );
   }

@@ -13,6 +13,8 @@ class ChatMessageModel {
   final bool isRead;
   final String? attachmentUrl;
   final String? attachmentType; // image, video, document
+  /// Set by the sending device; matches the optimistic bubble to the saved message.
+  final String? clientId;
 
   ChatMessageModel({
     required this.id,
@@ -26,7 +28,12 @@ class ChatMessageModel {
     this.isRead = false,
     this.attachmentUrl,
     this.attachmentType,
+    this.clientId,
   });
+
+  bool get isPhoto =>
+      (attachmentUrl?.isNotEmpty ?? false) &&
+      (attachmentType == null || attachmentType == 'image');
 
   factory ChatMessageModel.fromJson(Map<String, dynamic> json) {
     return ChatMessageModel(
@@ -46,6 +53,7 @@ class ChatMessageModel {
           ? resolveMediaUrl(json['attachmentUrl'].toString())
           : null,
       attachmentType: json['attachmentType'],
+      clientId: json['clientId']?.toString(),
     );
   }
 
@@ -79,6 +87,7 @@ class ChatMessageModel {
       'isRead': isRead,
       'attachmentUrl': attachmentUrl,
       'attachmentType': attachmentType,
+      'clientId': clientId,
     };
   }
 
@@ -94,6 +103,7 @@ class ChatMessageModel {
     bool? isRead,
     String? attachmentUrl,
     String? attachmentType,
+    String? clientId,
   }) {
     return ChatMessageModel(
       id: id ?? this.id,
@@ -107,6 +117,7 @@ class ChatMessageModel {
       isRead: isRead ?? this.isRead,
       attachmentUrl: attachmentUrl ?? this.attachmentUrl,
       attachmentType: attachmentType ?? this.attachmentType,
+      clientId: clientId ?? this.clientId,
     );
   }
 }

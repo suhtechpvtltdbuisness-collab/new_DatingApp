@@ -142,6 +142,7 @@ class ChatService {
     String chatId, {
     int page = 1,
     int limit = 50,
+    String? afterMessageId,
   }) async {
     try {
       _logger.i('Fetching messages for chat: $chatId');
@@ -153,7 +154,12 @@ class ChatService {
 
       final response = await _apiClient.get<Map<String, dynamic>>(
         endpoint,
-        queryParameters: {'page': page, 'limit': limit},
+        queryParameters: {
+          'page': page,
+          'limit': limit,
+          if (afterMessageId != null && afterMessageId.isNotEmpty)
+            'after': afterMessageId,
+        },
         fromJsonT: (json) => json as Map<String, dynamic>,
       );
 
@@ -204,6 +210,7 @@ class ChatService {
     String message, {
     String? attachmentUrl,
     String? attachmentType,
+    String? clientId,
   }) async {
     try {
       _logger.i('Sending message to chat: $chatId');
@@ -217,6 +224,7 @@ class ChatService {
         'message': message,
         if (attachmentUrl != null) 'attachmentUrl': attachmentUrl,
         if (attachmentType != null) 'attachmentType': attachmentType,
+        if (clientId != null) 'clientId': clientId,
       };
 
       final response = await _apiClient.post<Map<String, dynamic>>(

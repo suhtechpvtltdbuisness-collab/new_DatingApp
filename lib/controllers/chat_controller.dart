@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:dating_app/models/chat_model.dart';
 import 'package:dating_app/services/auth_service.dart';
@@ -33,14 +34,19 @@ class ChatController extends GetxController {
   final realtimeConnected = false.obs;
   final unreadCount = 0.obs;
   final hasMoreMessages = false.obs;
+  /// Set when the open chat ends (unmatch or block) so the screen can close.
+  final closedConversationId = ''.obs;
   final messageController = Rx<TextEditingController>(TextEditingController());
 
   String get currentUserId => _authService.getCurrentUserId() ?? '';
 
   static const int PAGE_SIZE = 50;
   int _messagePage = 1;
-  Timer? _pollTimer;
-  Timer? _presenceTimer;
+  static const Duration _ackTimeout = Duration(seconds: 8);
+  final Random _random = Random();
+  // Sends waiting for the server's `message_ack`, keyed by clientId.
+  final Map<String, Completer<Map<String, dynamic>?>> _pendingAcks = {};
+  bool _catchingUp = false;
   Timer? _typingDebounce;
   Timer? _typingClearTimer;
   final List<StreamSubscription<dynamic>> _socketSubscriptions = [];
@@ -55,8 +61,7 @@ class ChatController extends GetxController {
 
   @override
   void onClose() {
-    _pollTimer?.cancel();
-    _presenceTimer?.cancel();
+    _failPendingAcks();
     _typingDebounce?.cancel();
     _typingClearTimer?.cancel();
     for (final sub in _socketSubscriptions) {
@@ -67,86 +72,130 @@ class ChatController extends GetxController {
     super.onClose();
   }
 
-  /// The socket is opened by NotificationController; this listens to the
-  /// chat events on it and falls back to polling whenever it is down.
+  /// The socket is opened by NotificationController (with the user's access
+  /// token); all chat traffic rides on it. There is no polling: when the
+  /// socket comes back, whatever was missed is fetched once.
   void _bindRealtime() {
     realtimeConnected.value = _socket.isConnected;
     _socketSubscriptions.addAll([
       _socket.on('conversation_updated').listen(_onInboxEvent),
       _socket.on('new_message').listen(_onNewMessage),
+      _socket.on('message_ack').listen(_onMessageAck),
       _socket.on('typing').listen(_onTyping),
       _socket.on('messages_delivered').listen(_onDelivered),
       _socket.on('messages_read').listen(_onRead),
       _socket.on('presence').listen(_onPresence),
+      _socket.on('conversation_removed').listen(_onConversationRemoved),
+      _socket.on('match_removed').listen(_onMatchRemoved),
     ]);
     _socketStatusWorker = ever<SocketStatus>(_socket.status, (status) {
       final connected = status == SocketStatus.connected;
       if (connected == realtimeConnected.value) return;
       realtimeConnected.value = connected;
       if (connected) {
-        _stopPolling();
-        // Catch up on anything sent while the socket was down.
-        getConversations(refresh: true, silent: true);
-        final openId = currentConversation.value?.id;
-        if (openId != null && openId.isNotEmpty) {
-          _refreshOpenConversationQuietly(openId);
-        }
+        _catchUp();
       } else {
-        _syncPolling();
+        // Sends in flight fall back to REST instead of waiting for a timeout.
+        _failPendingAcks();
       }
     });
   }
 
-  bool get _realtimeActive => _socket.isConnected;
-
-  bool _chatListVisible = false;
-
-  /// Without realtime, polling runs only while the chat list or a thread is on screen.
-  void setChatListVisible(bool visible) {
-    _chatListVisible = visible;
-    if (visible) getConversations(refresh: true, silent: true);
-    _syncPolling();
-  }
-
-  void _syncPolling() {
-    if (_realtimeActive) {
-      _stopPolling();
-      return;
-    }
-    final threadOpen = currentConversation.value?.id.isNotEmpty ?? false;
-    if (_chatListVisible || threadOpen) {
-      _startPolling();
-    } else {
-      _stopPolling();
-    }
-  }
-
-  void _startPolling() {
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) async {
+  /// Refreshes the chat list and the open thread after a reconnect.
+  Future<void> _catchUp() async {
+    if (_catchingUp) return;
+    _catchingUp = true;
+    try {
+      await getConversations(refresh: true, silent: true);
       final openId = currentConversation.value?.id;
       if (openId != null && openId.isNotEmpty) {
-        await _refreshOpenConversationQuietly(openId);
-      } else {
-        await getConversations(refresh: true, silent: true);
+        await _catchUpOpenConversation(openId);
       }
-    });
-  }
-
-  void _stopPolling() {
-    _pollTimer?.cancel();
-    _pollTimer = null;
-  }
-
-  Future<void> _refreshOpenConversationQuietly(String chatId) async {
-    final response = await _chatService.getMessages(chatId, page: 1, limit: PAGE_SIZE);
-    if (!response.success || response.data == null) return;
-
-    final incoming = response.data!.messages;
-    for (final msg in incoming) {
-      _upsertMessage(msg);
+    } finally {
+      _catchingUp = false;
     }
-    _sortMessages();
+  }
+
+  void setChatListVisible(bool visible) {
+    // Live updates keep the list current; only refresh when they're down.
+    if (visible && !_socket.isConnected) {
+      getConversations(refresh: true, silent: true);
+    }
+  }
+
+  /// Fetches only the messages newer than the last one we have.
+  Future<void> _catchUpOpenConversation(String chatId) async {
+    String? lastId;
+    for (final m in messages.reversed) {
+      if (m.id.isNotEmpty && !m.id.startsWith('temp_')) {
+        lastId = m.id;
+        break;
+      }
+    }
+    final response = await _chatService.getMessages(
+      chatId,
+      page: 1,
+      limit: PAGE_SIZE,
+      afterMessageId: lastId,
+    );
+    if (!response.success || response.data == null) return;
+    if (currentConversation.value?.id != chatId) return;
+
+    if (lastId != null && response.data!.hasMore) {
+      // Too much was missed to patch in; reload the latest page.
+      await getMessages(chatId);
+    } else {
+      for (final msg in response.data!.messages) {
+        _upsertMessage(msg);
+      }
+      _sortMessages();
+    }
+    final last = messages.lastOrNull;
+    if (last != null && last.senderId != currentUserId) {
+      markConversationAsRead(chatId);
+    }
+  }
+
+  void _onMessageAck(Map<String, dynamic> payload) {
+    final clientId = payload['clientId']?.toString() ?? '';
+    final pending = _pendingAcks.remove(clientId);
+    if (pending != null && !pending.isCompleted) pending.complete(payload);
+  }
+
+  void _failPendingAcks() {
+    final pending = Map.of(_pendingAcks);
+    _pendingAcks.clear();
+    for (final completer in pending.values) {
+      if (!completer.isCompleted) completer.complete(null);
+    }
+  }
+
+  void _onConversationRemoved(Map<String, dynamic> payload) {
+    final conversationId = payload['conversationId']?.toString() ?? '';
+    if (conversationId.isEmpty) return;
+    _dropConversation((c) => c.id == conversationId);
+  }
+
+  void _onMatchRemoved(Map<String, dynamic> payload) {
+    final userId = payload['userId']?.toString() ?? '';
+    if (userId.isEmpty) return;
+    _dropConversation((c) => c.otherUserId == userId);
+  }
+
+  void _dropConversation(bool Function(ConversationModel) test) {
+    final ids = conversations.where(test).map((c) => c.id).toSet();
+    final current = currentConversation.value;
+    if (current != null && test(current)) ids.add(current.id);
+    if (ids.isEmpty) return;
+
+    conversations.removeWhere((c) => ids.contains(c.id));
+    _recomputeUnread();
+    for (final id in ids) {
+      NotificationService.instance.clearConversation(id);
+    }
+    if (current != null && ids.contains(current.id)) {
+      closedConversationId.value = current.id;
+    }
   }
 
   void _onInboxEvent(Map<String, dynamic> payload) {
@@ -310,12 +359,14 @@ class ChatController extends GetxController {
       return;
     }
 
-    // Replace optimistic temp bubble with the real message.
+    // Replace the optimistic bubble with the saved message.
+    final clientId = msg.clientId ?? '';
     final tempIdx = messages.indexWhere(
       (m) =>
           m.id.startsWith('temp_') &&
-          m.senderId == msg.senderId &&
-          m.message == msg.message,
+          (clientId.isNotEmpty
+              ? m.clientId == clientId
+              : m.senderId == msg.senderId && m.message == msg.message),
     );
     if (tempIdx != -1) {
       messages[tempIdx] = msg;
@@ -399,9 +450,9 @@ class ChatController extends GetxController {
   }
 
   void resetSession() {
-    _stopPolling();
-    _presenceTimer?.cancel();
+    _failPendingAcks();
     _typingClearTimer?.cancel();
+    closedConversationId.value = '';
     conversations.clear();
     messages.clear();
     currentConversation.value = null;
@@ -422,30 +473,14 @@ class ChatController extends GetxController {
     if (!ok) return false;
 
     NotificationService.instance.clearConversation(chatId);
-    _syncPolling();
-
-    _presenceTimer?.cancel();
-    // Presence arrives over the socket; this only covers the polling fallback.
-    _presenceTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
-      if (_realtimeActive) return;
-      final response = await _chatService.getConversation(chatId);
-      final current = currentConversation.value;
-      if (!response.success || response.data == null || current?.id != chatId) return;
-      currentConversation.value = current!.copyWith(
-        isOnline: response.data!.isOnline,
-        lastSeenTime: response.data!.lastSeenTime,
-      );
-    });
-
+    // Online status and new messages arrive over the socket from here on.
     return true;
   }
 
   Future<void> leaveConversation() async {
-    _presenceTimer?.cancel();
     _typingClearTimer?.cancel();
     isTyping.value = false;
     clearCurrentConversation();
-    _syncPolling();
   }
 
   Future<bool> getConversation(String chatId) async {
@@ -545,44 +580,166 @@ class ChatController extends GetxController {
       return false;
     }
 
-    final optimisticMsg = ChatMessageModel(
-      id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
+    messageController.value.clear();
+    return _deliver(chatId, message: trimmed);
+  }
+
+  /// Uploads a photo, then sends it as a message.
+  Future<bool> sendPhoto(String chatId, String filePath) async {
+    final clientId = _newClientId();
+    final placeholder = _optimistic(chatId, clientId, message: '');
+    messages.add(placeholder);
+
+    final response = await _chatService.uploadChatMedia(chatId, filePath);
+    final url = response.data ?? '';
+    if (!response.success || url.isEmpty) {
+      messages.removeWhere((m) => m.id == placeholder.id);
+      errorMessage.value = response.message.isNotEmpty
+          ? response.message
+          : 'Photo could not be uploaded';
+      return false;
+    }
+    return _deliver(
+      chatId,
+      message: '',
+      attachmentUrl: url,
+      clientId: clientId,
+      optimisticAdded: true,
+    );
+  }
+
+  String _newClientId() =>
+      'c${DateTime.now().microsecondsSinceEpoch}${_random.nextInt(1 << 32)}';
+
+  ChatMessageModel _optimistic(
+    String chatId,
+    String clientId, {
+    required String message,
+    String? attachmentUrl,
+  }) {
+    return ChatMessageModel(
+      id: 'temp_$clientId',
       conversationId: chatId,
       senderId: currentUserId,
       senderName: 'Me',
       senderImage: '',
-      message: trimmed,
+      message: message,
       timestamp: DateTime.now(),
       status: MessageStatus.sending,
+      attachmentUrl: attachmentUrl,
+      attachmentType: attachmentUrl != null ? 'image' : null,
+      clientId: clientId,
     );
-    messages.add(optimisticMsg);
-    messageController.value.clear();
+  }
+
+  /// Sends over the socket and waits for the server's ack. If the socket is
+  /// down or the ack doesn't come, the same message goes over REST; the
+  /// clientId makes the server store it only once.
+  Future<bool> _deliver(
+    String chatId, {
+    required String message,
+    String? attachmentUrl,
+    String? clientId,
+    bool optimisticAdded = false,
+  }) async {
+    final id = clientId ?? _newClientId();
+    final tempId = 'temp_$id';
+    if (!optimisticAdded) {
+      messages.add(_optimistic(chatId, id, message: message));
+    }
 
     try {
       isSending.value = true;
       errorMessage.value = '';
 
-      final response = await _chatService.sendMessage(chatId, trimmed);
+      ChatMessageModel? saved;
+      String? failure;
 
-      if (response.success && response.data != null) {
-        _upsertMessage(response.data!);
+      final ack = await _sendOverSocket(chatId, id, message, attachmentUrl);
+      if (ack != null && ack['ok'] == true && ack['message'] is Map) {
+        saved = ChatMessageModel.fromJson(
+          Map<String, dynamic>.from(ack['message'] as Map),
+        );
+      } else if (ack != null && ack['ok'] == false) {
+        final status = (ack['status'] as num?)?.toInt() ?? 0;
+        failure = ack['error']?.toString();
+        if (status == 403 || status == 404) {
+          _dropConversation((c) => c.id == chatId);
+        }
+        if (status >= 500) failure = null; // retry over REST below
+      }
+
+      if (saved == null && failure == null) {
+        final response = await _chatService.sendMessage(
+          chatId,
+          message,
+          attachmentUrl: attachmentUrl,
+          attachmentType: attachmentUrl != null ? 'image' : null,
+          clientId: id,
+        );
+        if (response.success && response.data != null) {
+          saved = response.data;
+        } else {
+          failure = response.message;
+          if (response.statusCode == 403 || response.statusCode == 404) {
+            _dropConversation((c) => c.id == chatId);
+          }
+        }
+      }
+
+      if (saved != null) {
+        _upsertMessage(saved.clientId == null ? saved.copyWith(clientId: id) : saved);
         _sortMessages();
-        _updateConversationPreview(chatId, trimmed, DateTime.now());
+        _updateConversationPreview(
+          chatId,
+          saved.message.isNotEmpty ? saved.message : '📷 Photo',
+          saved.timestamp,
+        );
         return true;
       }
 
-      messages.removeWhere((m) => m.id == optimisticMsg.id);
-      errorMessage.value = response.message.isNotEmpty
-          ? response.message
+      messages.removeWhere((m) => m.id == tempId);
+      errorMessage.value = (failure != null && failure.isNotEmpty)
+          ? failure
           : 'Message could not be sent';
       return false;
     } catch (e) {
-      messages.removeWhere((m) => m.id == optimisticMsg.id);
+      messages.removeWhere((m) => m.id == tempId);
       errorMessage.value = 'Message could not be sent';
       _logger.e('Send message error', error: e);
       return false;
     } finally {
       isSending.value = false;
+    }
+  }
+
+  /// Null when the socket is down or the server didn't answer in time.
+  Future<Map<String, dynamic>?> _sendOverSocket(
+    String chatId,
+    String clientId,
+    String message,
+    String? attachmentUrl,
+  ) async {
+    if (!_socket.isConnected) return null;
+    final completer = Completer<Map<String, dynamic>?>();
+    _pendingAcks[clientId] = completer;
+    final sent = _socket.send('send_message', {
+      'conversationId': chatId,
+      'clientId': clientId,
+      'message': message,
+      if (attachmentUrl != null) 'attachmentUrl': attachmentUrl,
+      if (attachmentUrl != null) 'attachmentType': 'image',
+    });
+    if (!sent) {
+      _pendingAcks.remove(clientId);
+      return null;
+    }
+    try {
+      return await completer.future.timeout(_ackTimeout);
+    } on TimeoutException {
+      return null;
+    } finally {
+      _pendingAcks.remove(clientId);
     }
   }
 
@@ -606,7 +763,9 @@ class ChatController extends GetxController {
 
   Future<bool> markConversationAsRead(String chatId) async {
     try {
-      await _chatService.markConversationAsRead(chatId);
+      if (!_socket.send('mark_read', {'conversationId': chatId})) {
+        await _chatService.markConversationAsRead(chatId);
+      }
 
       final index = conversations.indexWhere((c) => c.id == chatId);
       if (index != -1) {
