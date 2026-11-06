@@ -1,4 +1,5 @@
 import 'package:dating_app/models/api_models.dart';
+import 'package:dating_app/services/push_service.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/controllers/chat_controller.dart';
 import 'package:dating_app/controllers/notification_controller.dart';
@@ -163,6 +164,9 @@ class AuthController extends GetxController {
     try {
       isLoading.value = true;
       errorMessage.value = '';
+
+      // Stop pushes to this phone while the session can still say so.
+      await PushService.instance.unregister();
 
       // Always clear local state first
       await _authService.logout();

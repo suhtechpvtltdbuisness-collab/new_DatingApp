@@ -30,6 +30,21 @@ class NotificationService {
   NotificationTapHandler? _tapHandler;
   Map<String, dynamic>? _pendingTap;
 
+  /// Called after any setting or mute changes, so the server's copy (used
+  /// for push notifications) can be updated.
+  VoidCallback? onSettingsChanged;
+
+  /// Snapshot of the settings sent to the server with the push token.
+  Map<String, bool> get settings => {
+        'enabled': pushEnabled,
+        'messages': messagesEnabled,
+        'matches': matchesEnabled,
+        'likes': likesEnabled,
+        'account': accountEnabled,
+      };
+
+  List<String> get mutedConversations => _mutedConversations.toList();
+
   static const _messages = _Channel('velora_messages', 'Messages', 'New chat messages');
   static const _matches = _Channel('velora_matches', 'Matches', 'New matches');
   static const _likes = _Channel('velora_likes', 'Likes', 'Super Likes and new likes');
@@ -59,6 +74,20 @@ class NotificationService {
 
     if (defaultTargetPlatform == TargetPlatform.android) {
       await Permission.notification.request();
+      // Push notifications shown by the system while the app is closed use
+      // these channels, so they must exist before the first banner.
+      final android = _plugin.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      for (final channel in [_messages, _matches, _likes, _account]) {
+        await android?.createNotificationChannel(
+          AndroidNotificationChannel(
+            channel.id,
+            channel.name,
+            description: channel.description,
+            importance: Importance.high,
+          ),
+        );
+      }
     }
 
     final prefs = await SharedPreferences.getInstance();
@@ -95,6 +124,12 @@ class NotificationService {
     } catch (_) {
       return;
     }
+    deliverTap(payload);
+  }
+
+  /// A tapped notification, from a local banner or a push. Payload shape:
+  /// `{id, type, metadata}`.
+  void deliverTap(Map<String, dynamic> payload) {
     final handler = _tapHandler;
     if (handler == null) {
       _pendingTap = payload;
@@ -106,6 +141,7 @@ class NotificationService {
   Future<void> _setBool(String key, bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(key, value);
+    onSettingsChanged?.call();
   }
 
   Future<void> setPushEnabled(bool enabled) async {
@@ -146,6 +182,7 @@ class NotificationService {
       StorageKeys.mutedConversations,
       _mutedConversations.toList(),
     );
+    onSettingsChanged?.call();
   }
 
   bool _allows(AppNotification notification) {
@@ -233,6 +270,10 @@ class NotificationService {
   Future<void> clearConversation(String conversationId) async {
     if (kIsWeb || !_initialized || conversationId.isEmpty) return;
     await _plugin.cancel(('chat_$conversationId').hashCode & 0x7fffffff);
+    // Android shows a push with id 0 and the tag the server set.
+    if (defaultTargetPlatform == TargetPlatform.android) {
+      await _plugin.cancel(0, tag: 'chat_$conversationId');
+    }
   }
 
   Future<void> clearAll() async {

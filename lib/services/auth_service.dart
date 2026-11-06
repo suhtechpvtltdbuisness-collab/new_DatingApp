@@ -1,4 +1,5 @@
 import 'package:dating_app/models/api_models.dart';
+import 'package:dating_app/services/push_service.dart';
 import 'package:dating_app/network/api_client.dart';
 import 'package:dating_app/network/api_endpoints.dart';
 import 'package:dating_app/utils/constants.dart';
@@ -43,6 +44,7 @@ class AuthService {
     _apiClient.onSessionExpired = () {
       _logger.w('Session expired — local auth state cleared.');
       _clearTokens();
+      PushService.instance.dropLocalToken();
     };
   }
 

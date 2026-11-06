@@ -3,6 +3,7 @@ import 'package:dating_app/app/app_bindings.dart';
 import 'package:dating_app/app/app_routes.dart';
 import 'package:dating_app/services/auth_service.dart';
 import 'package:dating_app/services/notification_service.dart';
+import 'package:dating_app/services/push_service.dart';
 import 'package:dating_app/utils/theme.dart';
 import 'package:dating_app/utils/constants.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -16,6 +17,7 @@ Future<void> main() async {
   final authService = AuthService();
   await authService.initialize();
   await NotificationService.instance.initialize();
+  await PushService.instance.initialize();
 
   // A stored session must survive a restart, otherwise a logged-in user is
   // sent back through onboarding every time the app is reopened.

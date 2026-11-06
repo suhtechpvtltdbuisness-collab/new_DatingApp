@@ -10,6 +10,7 @@ import 'package:dating_app/screens/chat/chat_screen.dart';
 import 'package:dating_app/screens/notifications/notifications_center_screen.dart';
 import 'package:dating_app/services/notification_inbox_service.dart';
 import 'package:dating_app/services/notification_service.dart';
+import 'package:dating_app/services/push_service.dart';
 import 'package:dating_app/services/realtime_socket_service.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -95,6 +96,8 @@ class NotificationController extends GetxController
 
     _socket.connect();
     loadNotifications();
+    // Lets notifications reach the phone while the app is closed.
+    PushService.instance.register();
   }
 
   /// Logout: drop the socket and everything belonging to the old session.
@@ -285,6 +288,9 @@ class NotificationController extends GetxController
   bool _shouldShowBanner(AppNotification notification) {
     final inForeground =
         WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+
+    // In the background the push shows it; a banner here would be a duplicate.
+    if (!inForeground && PushService.instance.isActive) return false;
 
     if (notification.type == NotificationType.chat && inForeground) {
       // Already looking at this conversation.
