@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "830801416352",
+    "project_id": "vellora-adf01",
+    "storage_bucket": "vellora-adf01.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:830801416352:android:b3320d2ed2f778e6cff9c5",
+        "android_client_info": {
+          "package_name": "com.suhtech.datingapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAX8jj4oNMlE-5AAXX2a4SHFAnkxbvXOkw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
