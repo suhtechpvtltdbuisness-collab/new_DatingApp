@@ -52,12 +52,16 @@ class AppBindings extends Bindings {
     }
 
     // User Controller - lazy load
-    Get.lazyPut<UserController>(() => UserController());
+    Get.lazyPut<UserController>(() => UserController(), fenix: true);
 
     // Swipe Controller - lazy load
-    Get.lazyPut<SwipeController>(() => SwipeController());
+    Get.lazyPut<SwipeController>(() => SwipeController(), fenix: true);
 
-    // Chat Controller - lazy load
-    Get.lazyPut<ChatController>(() => ChatController());
+    // Chat Controller - permanent. As a lazyPut, GetX deleted it when the
+    // screen that first used it closed, which cancelled its socket listeners:
+    // new messages then only showed after a page refresh.
+    if (!Get.isRegistered<ChatController>()) {
+      Get.put<ChatController>(ChatController(), permanent: true);
+    }
   }
 }

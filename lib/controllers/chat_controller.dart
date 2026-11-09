@@ -55,7 +55,9 @@ class ChatController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    getConversations();
+    // Created at app start; before login there is nothing to load. The chat
+    // list loads itself once shown, and again whenever the socket connects.
+    if (_authService.isLoggedIn()) getConversations();
     _bindRealtime();
   }
 
@@ -608,8 +610,10 @@ class ChatController extends GetxController {
     );
   }
 
+  // 0x7fffffff, not 1 << 32: on web, ints are 32-bit for shifts and
+  // `1 << 32` is 0, which nextInt rejects (every send crashed).
   String _newClientId() =>
-      'c${DateTime.now().microsecondsSinceEpoch}${_random.nextInt(1 << 32)}';
+      'c${DateTime.now().microsecondsSinceEpoch}${_random.nextInt(0x7fffffff)}';
 
   ChatMessageModel _optimistic(
     String chatId,
