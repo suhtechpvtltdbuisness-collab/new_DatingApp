@@ -26,10 +26,23 @@ class SwipeActionResponse {
       match = MatchModel.fromJson(normalized);
     }
 
-    final isMatch = normalized['isMatch'] == true ||
-        normalized['matched'] == true ||
-        normalized['isMatched'] == true ||
-        (match?.isAccepted ?? false);
+    // A match is only real when the backend says so explicitly. A missing or
+    // unrecognised `status` used to default to "accepted", which made every
+    // one-sided like / super like look like a mutual match.
+    bool? explicitFlag;
+    for (final key in const ['isMatch', 'matched', 'isMatched']) {
+      final value = normalized[key];
+      if (value is bool) {
+        explicitFlag = (explicitFlag ?? false) || value;
+      }
+    }
+    final rawStatus = (matchJson is Map<String, dynamic>
+            ? matchJson['status']
+            : normalized['status'])
+        ?.toString()
+        .toLowerCase();
+    final statusSaysMatched = rawStatus == 'accepted' || rawStatus == 'matched';
+    final isMatch = explicitFlag ?? (statusSaysMatched && match != null);
 
     return SwipeActionResponse(
       isMatch: isMatch,
