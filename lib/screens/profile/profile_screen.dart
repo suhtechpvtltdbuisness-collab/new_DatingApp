@@ -184,7 +184,7 @@ class _ProfileDetailsContentState extends State<ProfileDetailsContent> {
     }
     final isMatch = response.data?.isMatch ?? false;
     if (isMatch) setState(() => _canChat = true);
-    if (superLike) {
+    if (superLike && isMatch) {
       if (!Get.isRegistered<UserController>()) {
         Get.put(UserController());
       }

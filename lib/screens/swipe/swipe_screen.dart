@@ -80,8 +80,18 @@ class _SwipeScreenState extends State<SwipeScreen> {
           ),
         ),
       );
-    } else if (direction != SwipeAction.dislike &&
-        (result.isMatch || direction == SwipeAction.superLike)) {
+    } else if (direction == SwipeAction.superLike && !result.isMatch) {
+      // One-sided super like: the celebration screen is only for a real
+      // mutual match, so just confirm it quietly.
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(
+            content: Text('Super Like sent to ${profile.firstName}'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+    } else if (direction != SwipeAction.dislike && result.isMatch) {
       if (!Get.isRegistered<UserController>()) {
         Get.put(UserController());
       }

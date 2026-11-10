@@ -2,6 +2,7 @@ import 'package:dating_app/controllers/swipe_controller.dart';
 import 'package:dating_app/models/api_models.dart';
 import 'package:dating_app/models/swipe_models.dart';
 import 'package:dating_app/models/user_model.dart';
+import 'package:dating_app/controllers/user_controller.dart';
 import 'package:dating_app/screens/swipe/swipe_screen.dart';
 import 'package:dating_app/services/super_like_ledger.dart';
 import 'package:dating_app/services/swipe_service.dart';
@@ -29,6 +30,7 @@ UserModel _person(String id) => UserModel(
 
 class _FakeService implements SwipeService {
   final calls = <String>[];
+  bool superLikeMutual = false;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -50,7 +52,7 @@ class _FakeService implements SwipeService {
     calls.add('super:$id');
     return ApiResponse.success(
       message: 'ok',
-      data: const SwipeActionResponse(isMatch: false),
+      data: SwipeActionResponse(isMatch: superLikeMutual),
     );
   }
 }
@@ -137,6 +139,84 @@ void main() {
 
     expect(service.calls, ['super:ana']);
     expect(find.textContaining('Super Like sent to ANA'), findsOneWidget);
+  });
+
+  group('SwipeActionResponse only reports a match when it is mutual', () {
+    bool parse(Map<String, dynamic> json) =>
+        SwipeActionResponse.fromJson(json).isMatch;
+
+    test('explicit flags are trusted', () {
+      expect(parse({'isMatch': true}), isTrue);
+      expect(parse({'matched': true}), isTrue);
+      expect(parse({'data': {'isMatched': true}}), isTrue);
+      expect(parse({'isMatch': false}), isFalse);
+      expect(
+        parse({
+          'isMatch': false,
+          'match': {'id': 'm1', 'targetUserId': 'u2'},
+        }),
+        isFalse,
+      );
+    });
+
+    test('a one-sided swipe record is not a match', () {
+      expect(parse({}), isFalse);
+      expect(parse({'message': 'Super like sent'}), isFalse);
+      expect(parse({'swipe': {'targetUserId': 'u2', 'superLike': true}}), isFalse);
+      expect(parse({'status': 'pending', 'targetUserId': 'u2'}), isFalse);
+      expect(parse({'user': {'id': 'u2', 'status': 'active'}}), isFalse);
+      expect(
+        parse({'match': {'id': 'm1', 'targetUserId': 'u2'}}),
+        isFalse,
+        reason: 'a match object with no status must not default to accepted',
+      );
+    });
+
+    test('an accepted match status counts', () {
+      expect(
+        parse({'match': {'id': 'm1', 'targetUserId': 'u2', 'status': 'accepted'}}),
+        isTrue,
+      );
+    });
+  });
+
+  testWidgets('one-sided super like shows no match screen and no error', (
+    tester,
+  ) async {
+    service.superLikeMutual = false;
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: SwipeScreen())),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byIcon(Icons.star_outline_rounded));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(MatchScreen), findsNothing);
+    expect(find.textContaining('Say hello'), findsNothing);
+    expect(find.textContaining('You can chat once'), findsNothing);
+    expect(find.textContaining('Super Like sent to ANA'), findsOneWidget);
+  });
+
+  testWidgets('mutual super like opens the MUTUAL SUPER LIKE screen', (
+    tester,
+  ) async {
+    service.superLikeMutual = true;
+    final users = Get.put<UserController>(UserController());
+    users.currentUser.value = _person('me');
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: SwipeScreen())),
+    );
+    await tester.pump();
+
+    await tester.tap(find.byIcon(Icons.star_outline_rounded));
+    for (var i = 0; i < 15; i++) {
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+
+    expect(find.byType(MatchScreen), findsOneWidget);
+    expect(find.text('MUTUAL SUPER LIKE'), findsOneWidget);
+    expect(find.text('SUPER LIKE SENT'), findsNothing);
   });
 
   test('ledger matches a Super Like by id or by email', () async {
