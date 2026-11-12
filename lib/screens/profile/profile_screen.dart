@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../chat/chat_screen.dart';
 import '../chat/report_user_screen.dart';
+import '../myprofile/Edit_Profile_Screen.dart';
 
 /// Full profile detail view.
 ///
@@ -487,6 +488,46 @@ class _ProfileDetailsContentState extends State<ProfileDetailsContent> {
             ),
           ],
 
+          if (profile.languages.isNotEmpty) ...[
+            const SizedBox(height: 22),
+            _sectionTitle(Icons.translate_rounded, 'Languages'),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: profile.languages
+                  .map((l) => _chip(l, icon: Icons.chat_bubble_outline_rounded))
+                  .toList(),
+            ),
+          ] else if (isOwn) ...[
+            const SizedBox(height: 22),
+            _sectionTitle(Icons.translate_rounded, 'Languages'),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+              ),
+              child: GlassCard(
+                child: Row(
+                  children: const [
+                    Icon(Icons.add_circle_outline_rounded,
+                        color: AppTheme.primaryColor, size: 18),
+                    SizedBox(width: 8),
+                    Text(
+                      'Add languages you speak',
+                      style: TextStyle(
+                        color: AppTheme.primaryColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+
           const SizedBox(height: 26),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -553,12 +594,6 @@ class _ProfileDetailsContentState extends State<ProfileDetailsContent> {
             Wrap(spacing: 10, runSpacing: 10, children: profile.qualities.map((q) => _chip(q)).toList()),
           ],
 
-          if (profile.languages.isNotEmpty) ...[
-            const SizedBox(height: 26),
-            _sectionTitle(Icons.translate_rounded, 'Languages'),
-            const SizedBox(height: 12),
-            Wrap(spacing: 10, runSpacing: 10, children: profile.languages.map((l) => _chip(l)).toList()),
-          ],
 
           if (profile.openingMoves.isNotEmpty) ...[
             const SizedBox(height: 26),
