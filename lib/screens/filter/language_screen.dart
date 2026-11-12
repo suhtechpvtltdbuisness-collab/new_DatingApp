@@ -3,10 +3,20 @@ import 'package:dating_app/utils/languages.dart';
 import 'package:dating_app/utils/theme.dart';
 
 class LanguageScreen extends StatefulWidget {
-  const LanguageScreen({super.key, this.initialSelection = const []});
+  const LanguageScreen({
+    super.key,
+    this.initialSelection = const [],
+    this.title = "Languages they know",
+    this.description =
+        "Looking for people who know specific languages?\nSelect up to 3 languages and we'll try and connect you with people who know all of them.",
+    this.maxSelection = 3,
+  });
 
   /// Languages already chosen; the updated list is returned on back.
   final List<String> initialSelection;
+  final String title;
+  final String description;
+  final int? maxSelection;
 
   @override
   State<LanguageScreen> createState() => _LanguageScreenState();
@@ -65,8 +75,8 @@ class _LanguageScreenState extends State<LanguageScreen> {
                     ),
                     Expanded(
                       child: Text(
-                        "Languages they know",
-                        style: TextStyle(
+                        widget.title,
+                        style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
                         ),
@@ -83,7 +93,9 @@ class _LanguageScreenState extends State<LanguageScreen> {
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          "${selectedLanguages.length}/3",
+                          widget.maxSelection != null
+                              ? "${selectedLanguages.length}/${widget.maxSelection}"
+                              : "${selectedLanguages.length}",
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -96,13 +108,11 @@ class _LanguageScreenState extends State<LanguageScreen> {
               ),
 
               /// DESCRIPTION
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
-                  "Looking for people who know specific languages?\n"
-                  "Select up to 3 languages and we'll try and connect you "
-                  "with people who know all of them.",
-                  style: TextStyle(color: Colors.black54, fontSize: 13),
+                  widget.description,
+                  style: const TextStyle(color: Colors.black54, fontSize: 13),
                 ),
               ),
 
@@ -250,7 +260,8 @@ class _LanguageScreenState extends State<LanguageScreen> {
                         itemBuilder: (context, index) {
                           String lang = filteredLanguages[index];
                           bool selected = selectedLanguages.contains(lang);
-                          bool canSelect = selectedLanguages.length < 3;
+                          bool canSelect = widget.maxSelection == null ||
+                              selectedLanguages.length < widget.maxSelection!;
 
                           return GestureDetector(
                             onTap: () {
