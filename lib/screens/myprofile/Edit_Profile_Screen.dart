@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:dating_app/screens/filter/language_screen.dart';
 import 'package:dating_app/widgets/photo_source_picker.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -1533,11 +1534,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               ),
                             ),
                             _addChip(
-                              () => _multiSelect(
-                                title: 'Languages',
-                                available: _availableLanguages,
-                                selected: _languages,
-                              ),
+                              () async {
+                                final picked =
+                                    await Navigator.push<List<String>>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => LanguageScreen(
+                                      initialSelection: _languages,
+                                      title: 'Languages you know',
+                                      description:
+                                          'Select the languages you know or speak so people can connect with you.',
+                                      maxSelection: 10,
+                                    ),
+                                  ),
+                                );
+                                if (picked != null) {
+                                  setState(() {
+                                    _languages
+                                      ..clear()
+                                      ..addAll(picked);
+                                  });
+                                }
+                              },
                             ),
                           ],
                         ),
