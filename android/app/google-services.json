@@ -12,7 +12,28 @@
           "package_name": "com.suhtech.datingapp"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "830801416352-0k31q2ds29ikol53pa0mi5ocfsanl3fa.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.suhtech.datingapp",
+            "certificate_hash": "cbc93c43ba0fd07cedd88325518476dafa6985bf"
+          }
+        },
+        {
+          "client_id": "830801416352-lus156rmtdtkftum9gsqc54tnk2m6fou.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.suhtech.datingapp",
+            "certificate_hash": "dbcf77c0fc6235c925e59d0a3ac1a4c5dafbb2f5"
+          }
+        },
+        {
+          "client_id": "830801416352-f13n3vbd8p48mis7059q10sekv981cv5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAX8jj4oNMlE-5AAXX2a4SHFAnkxbvXOkw"
@@ -20,7 +41,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "830801416352-f13n3vbd8p48mis7059q10sekv981cv5.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }
