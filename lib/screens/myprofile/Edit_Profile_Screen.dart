@@ -67,17 +67,17 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     'Creativity',
     'Patience',
   ];
-  final List<String> _availableLanguages = const [
-    'English',
-    'Hindi',
-    'Marathi',
-    'Spanish',
-    'French',
-    'German',
-    'Tamil',
-    'Telugu',
-    'Bengali',
-  ];
+  // final List<String> _availableLanguages = const [
+  //   'English',
+  //   'Hindi',
+  //   'Marathi',
+  //   'Spanish',
+  //   'French',
+  //   'German',
+  //   'Tamil',
+  //   'Telugu',
+  //   'Bengali',
+  // ];
 
   late final TextEditingController _bioController;
   late final TextEditingController _firstNameController;
